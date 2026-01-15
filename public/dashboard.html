@@ -11,18 +11,37 @@
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif; transition: background 0.3s, border 0.3s; }
         body { display:flex; height:100vh; background:var(--bg); overflow:hidden; }
 
-        /* Sidebar - Smooth Transition */
-        .sidebar { width:260px; background:white; border-right:1px solid #ddd; display:flex; flex-direction:column; z-index:100; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* Sidebar - Fixed for Mobile Sliding */
+        .sidebar { 
+            width:260px; 
+            background:white; 
+            border-right:1px solid #ddd; 
+            display:flex; 
+            flex-direction:column; 
+            z-index:2000; 
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
         .logo { background:black; padding:20px; text-align:center; color:var(--accent); font-weight:bold; font-size:22px; border-bottom:4px solid var(--primary); }
         .nav-item { padding:15px 25px; color:#444; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0; transition: 0.2s ease; }
         .nav-item:hover { background: #f8f9fa; padding-left: 30px; }
         .nav-item.active { background:#eef7ff; color:var(--primary); border-left:4px solid var(--primary); font-weight: bold; }
 
         /* Main Area */
-        .main { flex:1; display:flex; flex-direction:column; width:100%; overflow:hidden; }
+        .main { flex:1; display:flex; flex-direction:column; width:100%; overflow:hidden; position: relative; }
         .header { background:linear-gradient(90deg, var(--primary), var(--dark)); color:white; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         
-        /* Page Transition - Smooth Slide Up */
+        /* Overlay for Mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1500;
+            backdrop-filter: blur(2px);
+        }
+
+        /* Page Transition */
         .page { display:none; padding:20px; overflow-y:auto; flex:1; animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .page.active { display:block; }
         @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
@@ -50,17 +69,25 @@
         input, select { width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; outline:none; margin-top:5px; transition: border 0.3s; }
         input:focus { border-color: var(--primary); }
 
-        /* Mobile Adjustments */
+        /* Mobile Adjustments - FIXED SIDEBAR SLIDING */
         .mobile-toggle { display:none; cursor: pointer; font-size: 20px; margin-right: 15px; }
         @media(max-width:768px) { 
-            .sidebar { position:fixed; left:-260px; height:100%; } 
-            .sidebar.show { left:0; transform: translateX(260px); box-shadow:5px 0 15px rgba(0,0,0,0.2); } 
+            .sidebar { 
+                position:fixed; 
+                left:0; 
+                height:100%; 
+                transform: translateX(-100%); /* Starts hidden to the left */
+            } 
+            .sidebar.show { transform: translateX(0); box-shadow:5px 0 15px rgba(0,0,0,0.3); } 
+            .sidebar-overlay.show { display: block; }
             .mobile-toggle { display:block; }
             .neon-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
+
+    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
 
     <div class="sidebar" id="sidebar">
         <div class="logo">Magic9.pro</div>
@@ -71,7 +98,7 @@
         <div class="nav-item" style="margin-top:auto; color:var(--neon-r)" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
     </div>
 
-    <div class="main" onclick="closeSidebar(event)">
+    <div class="main" id="mainContent">
         <div class="header">
             <div style="display:flex; align-items:center;">
                 <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)"></i>
@@ -174,12 +201,11 @@
                     user = d.data;
                     sessionStorage.setItem('currentUser', JSON.stringify(user));
                     document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
-                    // UPDATED: 1 Chip = 1 RS
                     document.getElementById('inr').innerText = user.balance.toLocaleString();
                     document.getElementById('chips').innerText = user.balance.toLocaleString();
-                    document.getElementById('wins').innerText = user.total_wins.toLocaleString();
-                    document.getElementById('lose').innerText = user.total_losses.toLocaleString();
-                    document.getElementById('bet-exp').innerText = user.exposure.toLocaleString();
+                    document.getElementById('wins').innerText = (user.total_wins || 0).toLocaleString();
+                    document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
+                    document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
                 }
             } catch(e) { console.error("Update failed"); }
             loadUsers();
@@ -188,15 +214,17 @@
         }
 
         async function loadHistory() {
-            const res = await fetch('/api/history', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id})});
-            const d = await res.json();
-            const tbody = document.querySelector('#histTable tbody');
-            tbody.innerHTML = d.history.map(h => `<tr>
-                <td style="font-size:11px">${new Date(h.created_at).toLocaleString()}</td>
-                <td><b>${h.type}</b></td>
-                <td style="color:${h.amount >= 0 ? 'var(--neon-g)':'var(--neon-r)'}; font-weight:bold">${h.amount}</td>
-                <td style="font-size:12px; color:#666">${h.description}</td>
-            </tr>`).join('');
+            try {
+                const res = await fetch('/api/history', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id})});
+                const d = await res.json();
+                const tbody = document.querySelector('#histTable tbody');
+                tbody.innerHTML = d.history.map(h => `<tr>
+                    <td style="font-size:11px">${new Date(h.created_at).toLocaleString()}</td>
+                    <td><b>${h.type}</b></td>
+                    <td style="color:${h.amount >= 0 ? 'var(--neon-g)':'var(--neon-r)'}; font-weight:bold">${h.amount}</td>
+                    <td style="font-size:12px; color:#666">${h.description}</td>
+                </tr>`).join('');
+            } catch(e) {}
         }
 
         async function loadUsers() {
@@ -265,23 +293,19 @@
             init();
         }
 
+        // --- FIXED NAVIGATION & SIDEBAR SLIDING ---
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             el.classList.add('active');
-            if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('show');
+            if(window.innerWidth <= 768) toggleSidebar();
         }
 
         function toggleSidebar(e) {
-            e.stopPropagation();
+            if(e) e.stopPropagation();
             document.getElementById('sidebar').classList.toggle('show');
-        }
-
-        function closeSidebar(e) {
-            if(window.innerWidth <= 768 && !document.getElementById('sidebar').contains(e.target)) {
-                document.getElementById('sidebar').classList.remove('show');
-            }
+            document.getElementById('overlay').classList.toggle('show');
         }
 
         function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
