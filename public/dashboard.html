@@ -7,58 +7,61 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- CSS & ANIMATIONS --- */
-        :root { --primary:#00509d; --dark:#011627; --accent:#ffcc00; --neon-g: #39ff14; --neon-r: #ff3131; --bg:#f2f4f8; }
+        :root { --primary:#00509d; --dark:#011627; --accent:#ffcc00; --neon-g: #39ff14; --neon-r: #ff3131; --bg:#0b0e14; }
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif; transition: background 0.3s, border 0.3s; }
-        body { display:flex; height:100vh; background:var(--bg); overflow:hidden; }
+        body { display:flex; height:100vh; background:var(--bg); color: white; overflow:hidden; }
 
         /* Sidebar - Smooth Slide over content */
-        .sidebar { width:260px; background:white; border-right:1px solid #ddd; display:flex; flex-direction:column; z-index:2000; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .logo { background:black; padding:20px; text-align:center; color:var(--accent); font-weight:bold; font-size:22px; border-bottom:4px solid var(--primary); }
-        .nav-item { padding:15px 25px; color:#444; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0; transition: 0.2s ease; }
-        .nav-item:hover { background: #f8f9fa; padding-left: 30px; }
-        .nav-item.active { background:#eef7ff; color:var(--primary); border-left:4px solid var(--primary); font-weight: bold; }
+        .sidebar { width:260px; background:#12161f; border-right:1px solid var(--primary); display:flex; flex-direction:column; z-index:2000; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 5px 0 15px rgba(0, 80, 157, 0.2); }
+        .logo { background:black; padding:20px; text-align:center; color:var(--accent); font-weight:bold; font-size:22px; border-bottom:2px solid var(--primary); text-shadow: 0 0 10px var(--accent); }
+        .nav-item { padding:15px 25px; color:#aaa; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #1a202c; transition: 0.2s ease; }
+        .nav-item:hover { color: white; background: rgba(0, 80, 157, 0.1); padding-left: 30px; }
+        .nav-item.active { background:linear-gradient(90deg, rgba(0, 80, 157, 0.3), transparent); color:var(--accent); border-left:4px solid var(--accent); font-weight: bold; }
 
         /* Mobile Overlay */
-        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1500; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1500; backdrop-filter: blur(3px); }
 
         /* Main Area */
         .main { flex:1; display:flex; flex-direction:column; width:100%; overflow:hidden; position: relative; }
-        .header { background:linear-gradient(90deg, var(--primary), var(--dark)); color:white; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background:#12161f; color:white; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
         
         /* Page Transition */
         .page { display:none; padding:20px; overflow-y:auto; flex:1; animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .page.active { display:block; }
         @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 
-        /* Simple Cards */
-        .account-card { background:var(--dark); border-radius:15px; padding:25px; color:white; text-align:center; margin-bottom:15px; border:1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        /* Professional Neon Cards */
+        .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:25px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); box-shadow: 0 0 20px rgba(0, 80, 157, 0.3); }
         .neon-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-        .neon-box { padding:15px; border-radius:12px; font-weight:bold; text-align:center; font-size:14px; text-transform: uppercase; border: 2px solid #ddd; background: white; }
-        .win-box { border-color: var(--neon-g); color: var(--neon-g); }
-        .lose-box { border-color: var(--neon-r); color: var(--neon-r); }
+        .neon-box { padding:15px; border-radius:12px; font-weight:bold; text-align:center; font-size:14px; text-transform: uppercase; background: #0b0e14; border: 2px solid #333; }
+        .win-box { border-color: var(--neon-g); color: var(--neon-g); box-shadow: 0 0 10px rgba(57, 255, 20, 0.2); }
+        .lose-box { border-color: var(--neon-r); color: var(--neon-r); box-shadow: 0 0 10px rgba(255, 49, 49, 0.2); }
 
-        .card { background:white; border-radius:12px; padding:20px; box-shadow:0 4px 15px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); margin-bottom: 20px; }
+        .card { background:#12161f; border-radius:12px; padding:20px; border: 1px solid #1a202c; box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-bottom: 20px; }
         
         /* Tables */
         table { width:100%; border-collapse:collapse; font-size:14px; margin-top:10px; }
-        th { text-align:left; padding:12px; background:#f8f9fa; color:#666; border-bottom: 2px solid #eee; }
-        td { padding:12px; border-bottom:1px solid #eee; }
-        .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:5px; }
+        th { text-align:left; padding:12px; border-bottom: 1px solid var(--primary); color: var(--accent); background: rgba(255,255,255,0.02); }
+        td { padding:12px; border-bottom:1px solid #1a202c; color: #ddd; }
+        .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:5px; box-shadow: 0 0 8px currentColor; }
 
         /* Buttons & Inputs */
         .btn { padding:10px 20px; background:var(--primary); color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; transition: 0.3s; }
-        .btn:hover { background: var(--dark); transform: translateY(-2px); }
-        .btn-take { background: var(--neon-r); margin-left: 5px; }
-        .chip-btn { width:65px; height:65px; border-radius:50%; background:var(--dark); color:var(--accent); border:2px solid var(--accent); font-weight:bold; cursor:pointer; transition: 0.3s; }
-        input, select { width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; outline:none; margin-top:5px; }
+        .btn:hover { background: var(--accent); color: black; transform: translateY(-2px); box-shadow: 0 0 15px var(--accent); }
+        .btn-take { background: var(--neon-r); margin-left: 5px; box-shadow: 0 0 10px rgba(255, 49, 49, 0.3); }
+        .chip-btn { width:65px; height:65px; border-radius:50%; background:#0b0e14; color:var(--accent); border:2px solid var(--accent); font-weight:bold; cursor:pointer; transition: 0.3s; box-shadow: 0 0 10px rgba(255, 204, 0, 0.2); }
+        .chip-btn:hover { transform: scale(1.1) rotate(10deg); background: var(--accent); color: black; box-shadow: 0 0 20px var(--accent); }
+        
+        input, select { width:100%; padding:10px; border:1px solid #333; border-radius:5px; outline:none; background: #0b0e14; color: white; transition: border 0.3s; }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
 
-        /* Mobile Adjustments - Fixed Sidebar Sliding */
+        /* Mobile Adjustments - FIXED SIDEBAR SLIDING */
         .mobile-toggle { display:none; cursor: pointer; transition: 0.3s; }
         @media(max-width:768px) { 
             .sidebar { position:fixed; left:0; height:100%; transform: translateX(-100%); } 
-            .sidebar.show { transform: translateX(0); box-shadow:5px 0 15px rgba(0,0,0,0.3); } 
+            .sidebar.show { transform: translateX(0); box-shadow:10px 0 30px rgba(0,0,0,0.8); } 
             .sidebar-overlay.show { display: block; }
-            .mobile-toggle { display:block; }
+            .mobile-toggle { display:block !important; font-size: 22px; color: #fff; margin-right: 15px; }
             .neon-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -69,7 +72,7 @@
 
     <div class="sidebar" id="sidebar">
         <div class="logo">Magic9.pro</div>
-        <div class="nav-item active" onclick="nav('user', this)"><i class="fas fa-users"></i> User Management</div>
+        <div class="nav-item active" onclick="nav('user', this)"><i class="fas fa-th-large"></i> Dashboard</div>
         <div class="nav-item" onclick="nav('bet', this)"><i class="fas fa-dice"></i> Live Betting</div>
         <div class="nav-item" onclick="nav('history', this)"><i class="fas fa-history"></i> History</div>
         <div class="nav-item" onclick="nav('account', this)"><i class="fas fa-user-circle"></i> My Account</div>
@@ -79,15 +82,15 @@
     <div class="main">
         <div class="header">
             <div style="display:flex; align-items:center;">
-                <i class="fas fa-th-large mobile-toggle" onclick="toggleSidebar(event)" style="font-size: 22px; color: #fff;"></i>
-                <h3 style="font-weight: 500; margin-left: 10px;">Dashboard</h3>
+                <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)"></i>
+                <h3 style="font-weight: 500;">Dashboard</h3>
             </div>
-            <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(0,0,0,0.2); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent);">🪙 Loading...</div>
+            <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent); box-shadow: 0 0 10px rgba(255,204,0,0.2);">🪙 Loading...</div>
         </div>
 
         <div id="page-user" class="page active">
             <div class="card" id="createBox">
-                <h4 style="margin-bottom:15px;"><i class="fas fa-user-plus"></i> Create Downline</h4>
+                <h4 style="margin-bottom:15px; color:var(--accent)"><i class="fas fa-user-plus"></i> Create Downline</h4>
                 <div style="display:flex; gap:12px; flex-wrap:wrap">
                     <div style="flex:1; min-width:150px;">
                         <label style="font-size:12px; color:#888;">Username</label>
@@ -101,12 +104,12 @@
                         <label style="font-size:12px; color:#888;">Role</label>
                         <select id="nr"></select>
                     </div>
-                    <button onclick="createUser()" class="btn">Create User</button>
+                    <button onclick="createUser()" class="btn" style="align-self: flex-end; height: 40px;">Create</button>
                 </div>
             </div>
 
             <div class="card">
-                <h4 style="margin-bottom:15px;"><i class="fas fa-list"></i> Activity List (Global)</h4>
+                <h4 style="margin-bottom:15px; color:var(--accent)"><i class="fas fa-list"></i> System Activity (Global)</h4>
                 <div style="overflow-x:auto">
                     <table id="userTable">
                         <thead><tr><th>Status</th><th>User</th><th>Role</th><th>Chips</th><th>Exposure</th><th>Action</th></tr></thead>
@@ -117,17 +120,17 @@
         </div>
 
         <div id="page-bet" class="page">
-            <div class="account-card" style="background: linear-gradient(135deg, #001a33, #000);">
+            <div class="account-card">
                 <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">BETTING EXPOSURE</p>
-                <h1 style="color:var(--neon-g); font-size:45px; margin: 10px 0;">🪙 <span id="bet-exp">0</span></h1>
+                <h1 style="color:var(--neon-g); font-size:45px; text-shadow: 0 0 15px var(--neon-g);">🪙 <span id="bet-exp">0</span></h1>
                 <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
-                    <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 150px; background: white; color: black;">
-                    <button onclick="addExp()" class="btn" style="background: var(--accent); color: var(--dark);">Deposit</button>
+                    <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 150px;">
+                    <button onclick="addExp()" class="btn" style="background: var(--accent); color: black;">Deposit</button>
                 </div>
             </div>
             <div class="card" style="text-align:center">
                 <h4 style="margin-bottom:20px;">Place Quick Bet</h4>
-                <div style="display:flex; justify-content:center; gap:25px; padding: 10px 0;">
+                <div style="display:flex; justify-content:center; gap:25px;">
                     <button class="chip-btn" onclick="bet(100)">100</button>
                     <button class="chip-btn" onclick="bet(500)">500</button>
                     <button class="chip-btn" onclick="bet(1000)">1000</button>
@@ -137,7 +140,7 @@
 
         <div id="page-history" class="page">
             <div class="card">
-                <h3><i class="fas fa-history"></i> Transaction History</h3>
+                <h3 style="color:var(--accent)"><i class="fas fa-history"></i> Transaction History</h3>
                 <div style="overflow-x:auto">
                     <table id="histTable">
                         <thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr></thead>
@@ -149,9 +152,9 @@
 
         <div id="page-account" class="page">
             <div class="account-card">
-                <p style="color:#aaa; font-size:12px;">TOTAL BALANCE (INR)</p>
-                <h1 style="color:var(--accent); font-size:40px; margin:10px 0;">₹ <span id="inr">0</span></h1>
-                <p>🪙 <span id="chips">0</span> Chips Available</p>
+                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">TOTAL BALANCE (INR)</p>
+                <h1 style="color:var(--accent); font-size:40px; text-shadow: 0 0 15px var(--accent);">₹ <span id="inr">0</span></h1>
+                <p style="opacity: 0.8;">🪙 <span id="chips">0</span> Chips Available</p>
             </div>
             <div class="neon-grid">
                 <div class="neon-box win-box">WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
@@ -201,55 +204,58 @@
         async function loadUsers() {
             const tbody = document.querySelector('#userTable tbody');
             try {
-                // FIXED: Changed endpoint or body to ensure SuperAdmin sees everyone
+                // FIXED: Pass role to ensure SuperAdmin sees everyone globally
                 const res = await fetch('/api/my-users', {
                     method:'POST', 
                     headers:{'Content-Type':'application/json'}, 
-                    body:JSON.stringify({parentId: user.id, role: user.role}) 
+                    body:JSON.stringify({parentId:user.id, role: user.role})
                 });
                 const d = await res.json();
-                tbody.innerHTML = d.users.map(u => `<tr>
-                    <td><span class="status-dot" style="background:${u.status === 'Online' ? 'var(--neon-g)' : 'var(--neon-r)'}"></span> ${u.status}</td>
-                    <td><b>${u.username}</b></td>
-                    <td><span style="font-size:11px; padding:2px 6px; background:#eee; border-radius:4px;">${u.role}</span></td>
-                    <td style="color:var(--primary); font-weight:bold;">${u.balance}</td>
-                    <td>${u.exposure}</td>
-                    <td>
-                        <button onclick="give(${u.id},'${u.username}')" class="btn" style="padding:5px 10px; font-size:11px;">Give</button>
-                        ${user.role === 'SuperAdmin' ? `<button onclick="takeBack(${u.id})" class="btn btn-take" style="padding:5px 10px; font-size:11px;">Take</button>` : ''}
-                    </td>
-                </tr>`).join('');
+                tbody.innerHTML = d.users.map(u => {
+                    const statusColor = u.status === 'Online' ? 'var(--neon-g)' : 'var(--neon-r)';
+                    return `<tr>
+                        <td><span class="status-dot" style="background:${statusColor}; color:${statusColor}"></span> ${u.status}</td>
+                        <td><b>${u.username}</b></td>
+                        <td><span style="font-size:11px; padding:2px 6px; background:#222; border-radius:4px; color:var(--accent)">${u.role}</span></td>
+                        <td style="color:var(--accent); font-weight:bold;">${u.balance}</td>
+                        <td>${u.exposure}</td>
+                        <td>
+                            <button onclick="give(${u.id},'${u.username}')" class="btn" style="padding:5px 10px; font-size:10px;">Give</button>
+                            ${user.role === 'SuperAdmin' ? `<button onclick="takeBack(${u.id})" class="btn btn-take" style="padding:5px 10px; font-size:10px;">Take</button>` : ''}
+                        </td>
+                    </tr>`;
+                }).join('');
             } catch(e) { tbody.innerHTML = '<tr><td colspan="6">Connection Error</td></tr>'; }
         }
 
         async function takeBack(id) {
-            if(!confirm("Are you sure you want to take back all remaining chips from this user?")) return;
+            if(!confirm("Recover all remaining chips from this user?")) return;
             const res = await fetch('/api/take-back-chips', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({adminId:user.id, userId:id})});
             const d = await res.json();
-            alert(`Recovered ${d.recovered} chips`);
-            init();
+            alert(`Success: Recovered ${d.recovered} chips`); init();
         }
 
         async function addExp() {
             const amt = document.getElementById('expInp').value;
             if(!amt || amt < 1000) return alert("Min 1000 required");
-            await fetch('/api/add-exposure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, amount:amt})});
-            init();
+            const res = await fetch('/api/add-exposure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, amount:amt})});
+            const d = await res.json();
+            alert(d.message); init();
         }
 
         async function bet(amt) {
             if(user.exposure < amt) return alert("Insufficient Exposure Wallet Balance!");
             const win = Math.random() > 0.5;
             await fetch('/api/place-bet', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, betAmount:amt, isWin:win})});
-            alert(win ? "WON! Profits distributed to uplines." : "LOST!");
-            init();
+            alert(win ? "WON! Profits distributed to uplines." : "LOST!"); init();
         }
 
         async function give(id, name) {
             const amt = prompt(`Enter chips for ${name}:`);
             if(!amt || isNaN(amt)) return;
-            await fetch('/api/transfer-credits', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({senderId:user.id, receiverId:id, amount:amt})});
-            init();
+            const res = await fetch('/api/transfer-credits', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({senderId:user.id, receiverId:id, amount:amt})});
+            const d = await res.json();
+            alert(d.message); init();
         }
 
         function setupRoles() {
@@ -268,10 +274,10 @@
             if(!u || !p) return alert("Fill all fields");
             const res = await fetch('/api/create-user', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({newUsername:u, newPassword:p, newRole:r, creatorId:user.id})});
             const d = await res.json();
-            alert(d.message);
-            init();
+            alert(d.message); init();
         }
 
+        // --- FIXED NAVIGATION & SIDEBAR SLIDING ---
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active');
