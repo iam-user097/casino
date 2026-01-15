@@ -6,26 +6,25 @@
     <title>Magic9 Pro Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- CSS & ANIMATIONS --- */
+        /* --- NEON DARK THEME --- */
         :root { --primary:#00509d; --dark:#011627; --accent:#ffcc00; --neon-g: #39ff14; --neon-r: #ff3131; --bg:#0b0e14; }
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif; transition: background 0.3s, border 0.3s; }
         body { display:flex; height:100vh; background:var(--bg); color: white; overflow:hidden; }
 
-        /* Sidebar - Smooth Slide over content */
+        /* Sidebar - Smooth Neon Slide over content */
         .sidebar { width:260px; background:#12161f; border-right:1px solid var(--primary); display:flex; flex-direction:column; z-index:2000; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 5px 0 15px rgba(0, 80, 157, 0.2); }
         .logo { background:black; padding:20px; text-align:center; color:var(--accent); font-weight:bold; font-size:22px; border-bottom:2px solid var(--primary); text-shadow: 0 0 10px var(--accent); }
         .nav-item { padding:15px 25px; color:#aaa; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #1a202c; transition: 0.2s ease; }
         .nav-item:hover { color: white; background: rgba(0, 80, 157, 0.1); padding-left: 30px; }
         .nav-item.active { background:linear-gradient(90deg, rgba(0, 80, 157, 0.3), transparent); color:var(--accent); border-left:4px solid var(--accent); font-weight: bold; }
 
-        /* Mobile Overlay */
+        /* Fixed Mobile Logic Overlay */
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1500; backdrop-filter: blur(3px); }
 
-        /* Main Area */
         .main { flex:1; display:flex; flex-direction:column; width:100%; overflow:hidden; position: relative; }
         .header { background:#12161f; color:white; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
         
-        /* Page Transition */
+        /* Page Transition - Smooth Slide Up */
         .page { display:none; padding:20px; overflow-y:auto; flex:1; animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .page.active { display:block; }
         @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
@@ -83,7 +82,7 @@
         <div class="header">
             <div style="display:flex; align-items:center;">
                 <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)"></i>
-                <h3 style="font-weight: 500;">Dashboard</h3>
+                <h3 style="font-weight: 500; margin-left: 10px;">Dashboard</h3>
             </div>
             <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent); box-shadow: 0 0 10px rgba(255,204,0,0.2);">🪙 Loading...</div>
         </div>
@@ -109,7 +108,7 @@
             </div>
 
             <div class="card">
-                <h4 style="margin-bottom:15px; color:var(--accent)"><i class="fas fa-list"></i> System Activity (Global)</h4>
+                <h4 style="margin-bottom:15px; color:var(--accent)"><i class="fas fa-list"></i> Activity List (Global)</h4>
                 <div style="overflow-x:auto">
                     <table id="userTable">
                         <thead><tr><th>Status</th><th>User</th><th>Role</th><th>Chips</th><th>Exposure</th><th>Action</th></tr></thead>
@@ -152,9 +151,9 @@
 
         <div id="page-account" class="page">
             <div class="account-card">
-                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">TOTAL BALANCE (INR)</p>
+                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">SAVED MONEY (INR)</p>
                 <h1 style="color:var(--accent); font-size:40px; text-shadow: 0 0 15px var(--accent);">₹ <span id="inr">0</span></h1>
-                <p style="opacity: 0.8;">🪙 <span id="chips">0</span> Chips Available</p>
+                <p style="opacity: 0.8; margin-top: 10px;">Playable Chips: <span id="chips">0</span></p>
             </div>
             <div class="neon-grid">
                 <div class="neon-box win-box">WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
@@ -174,14 +173,19 @@
                 if(d.success) {
                     user = d.data;
                     sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    
+                    // Header Chips
                     document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
-                    document.getElementById('inr').innerText = user.balance.toLocaleString();
+                    
+                    // Account Page Separation
+                    document.getElementById('inr').innerText = (user.inr_balance || 0).toLocaleString();
                     document.getElementById('chips').innerText = user.balance.toLocaleString();
+                    
                     document.getElementById('wins').innerText = (user.total_wins || 0).toLocaleString();
                     document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
                     document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
                 }
-            } catch(e) {}
+            } catch(e) { console.error("Init Error"); }
             loadUsers();
             setupRoles();
             loadHistory();
@@ -204,7 +208,7 @@
         async function loadUsers() {
             const tbody = document.querySelector('#userTable tbody');
             try {
-                // FIXED: Pass role to ensure SuperAdmin sees everyone globally
+                // FIXED: Pass role for Global Visibility logic
                 const res = await fetch('/api/my-users', {
                     method:'POST', 
                     headers:{'Content-Type':'application/json'}, 
@@ -229,33 +233,34 @@
         }
 
         async function takeBack(id) {
-            if(!confirm("Recover all remaining chips from this user?")) return;
+            if(!confirm("Recover playable chips? User's Saved Money (INR) will remain safe.")) return;
             const res = await fetch('/api/take-back-chips', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({adminId:user.id, userId:id})});
             const d = await res.json();
-            alert(`Success: Recovered ${d.recovered} chips`); init();
+            if(d.success) {
+                alert(`Success: Recovered ${d.recovered} chips`);
+                init(); // Refresh UI instantly
+            }
         }
 
         async function addExp() {
             const amt = document.getElementById('expInp').value;
             if(!amt || amt < 1000) return alert("Min 1000 required");
-            const res = await fetch('/api/add-exposure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, amount:amt})});
-            const d = await res.json();
-            alert(d.message); init();
+            await fetch('/api/add-exposure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, amount:amt})});
+            init();
         }
 
         async function bet(amt) {
             if(user.exposure < amt) return alert("Insufficient Exposure Wallet Balance!");
             const win = Math.random() > 0.5;
             await fetch('/api/place-bet', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, betAmount:amt, isWin:win})});
-            alert(win ? "WON! Profits distributed to uplines." : "LOST!"); init();
+            alert(win ? "WON! Profits distributed." : "LOST!"); init();
         }
 
         async function give(id, name) {
             const amt = prompt(`Enter chips for ${name}:`);
             if(!amt || isNaN(amt)) return;
-            const res = await fetch('/api/transfer-credits', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({senderId:user.id, receiverId:id, amount:amt})});
-            const d = await res.json();
-            alert(d.message); init();
+            await fetch('/api/transfer-credits', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({senderId:user.id, receiverId:id, amount:amt})});
+            init();
         }
 
         function setupRoles() {
@@ -277,7 +282,7 @@
             alert(d.message); init();
         }
 
-        // --- FIXED NAVIGATION & SIDEBAR SLIDING ---
+        // --- NAVIGATION & SIDEBAR SLIDING ---
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active');
