@@ -107,10 +107,11 @@ app.post('/api/place-bet', (req, res) => {
         conn.beginTransaction(() => {
             if (isWin) {
                 const profit = amt; 
-                // Profit is added to playable balance (Chips)
-                conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, total_wins = total_wins + ? WHERE id = ?', 
-                [amt, amt + profit, profit, userId]);
-                logTx(userId, 'Win', profit, `Bet Win Reward`);
+                // FIXED: profit is now added to BOTH balance (chips) and inr_balance (money)
+                conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, inr_balance = inr_balance + ?, total_wins = total_wins + ? WHERE id = ?', 
+                [amt, amt + profit, profit, profit, userId]);
+                
+                logTx(userId, 'Win', profit, `Bet Win: Chips & INR updated`);
 
                 const spread = (childId) => {
                     conn.query('SELECT parent_id FROM users WHERE id = ?', [childId], (err, res) => {
@@ -120,7 +121,8 @@ app.post('/api/place-bet', (req, res) => {
                                 const parent = pData[0];
                                 const comm = profit * (rates[parent.role] || 0);
                                 if (comm > 0) {
-                                    conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [comm, parent.id]);
+                                    // Commissions are also added to both chips and INR for uplines
+                                    conn.query('UPDATE users SET balance = balance + ?, inr_balance = inr_balance + ? WHERE id = ?', [comm, comm, parent.id]);
                                     logTx(parent.id, 'Commission', comm, `Commission from downline win`);
                                 }
                                 if (parent.role !== 'SuperAdmin') spread(parent.id);
@@ -183,3 +185,4 @@ app.post('/api/create-user', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server Online`));
+
