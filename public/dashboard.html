@@ -11,38 +11,31 @@
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif; transition: background 0.3s, border 0.3s; }
         body { display:flex; height:100vh; background:var(--bg); overflow:hidden; }
 
-        /* Sidebar - Smooth Transition */
+        /* Sidebar - Smooth Slide over content */
         .sidebar { width:260px; background:white; border-right:1px solid #ddd; display:flex; flex-direction:column; z-index:2000; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .logo { background:black; padding:20px; text-align:center; color:var(--accent); font-weight:bold; font-size:22px; border-bottom:4px solid var(--primary); }
         .nav-item { padding:15px 25px; color:#444; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0; transition: 0.2s ease; }
         .nav-item:hover { background: #f8f9fa; padding-left: 30px; }
         .nav-item.active { background:#eef7ff; color:var(--primary); border-left:4px solid var(--primary); font-weight: bold; }
 
+        /* Mobile Overlay */
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1500; }
+
         /* Main Area */
         .main { flex:1; display:flex; flex-direction:column; width:100%; overflow:hidden; position: relative; }
         .header { background:linear-gradient(90deg, var(--primary), var(--dark)); color:white; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         
-        /* Overlay for Mobile Fixed sliding */
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4);
-            z-index: 1500;
-        }
-
         /* Page Transition */
         .page { display:none; padding:20px; overflow-y:auto; flex:1; animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .page.active { display:block; }
         @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 
-        /* Simple Professional Cards */
+        /* Simple Cards */
         .account-card { background:var(--dark); border-radius:15px; padding:25px; color:white; text-align:center; margin-bottom:15px; border:1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
         .neon-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-        .neon-box { padding:15px; border-radius:12px; font-weight:bold; text-align:center; font-size:14px; text-transform: uppercase; border: 2px solid #ddd; }
-        .neon-win { border-color: var(--neon-g); color:var(--neon-g); background:rgba(57,255,20,0.05); }
-        .neon-lose { border-color: var(--neon-r); color:var(--neon-r); background:rgba(255,49,49,0.05); }
+        .neon-box { padding:15px; border-radius:12px; font-weight:bold; text-align:center; font-size:14px; text-transform: uppercase; border: 2px solid #ddd; background: white; }
+        .win-box { border-color: var(--neon-g); color: var(--neon-g); }
+        .lose-box { border-color: var(--neon-r); color: var(--neon-r); }
 
         .card { background:white; border-radius:12px; padding:20px; box-shadow:0 4px 15px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); margin-bottom: 20px; }
         
@@ -55,11 +48,11 @@
         /* Buttons & Inputs */
         .btn { padding:10px 20px; background:var(--primary); color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; transition: 0.3s; }
         .btn:hover { background: var(--dark); transform: translateY(-2px); }
+        .btn-take { background: var(--neon-r); margin-left: 5px; }
         .chip-btn { width:65px; height:65px; border-radius:50%; background:var(--dark); color:var(--accent); border:2px solid var(--accent); font-weight:bold; cursor:pointer; transition: 0.3s; }
-        .chip-btn:hover { transform: scale(1.1) rotate(10deg); background: var(--accent); color: var(--dark); }
-        input, select { width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; outline:none; margin-top:5px; transition: border 0.3s; }
+        input, select { width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; outline:none; margin-top:5px; }
 
-        /* Mobile Adjustments - UNIQUE DICE ICON */
+        /* Mobile Adjustments - Fixed Sidebar Sliding */
         .mobile-toggle { display:none; cursor: pointer; transition: 0.3s; }
         @media(max-width:768px) { 
             .sidebar { position:fixed; left:0; height:100%; transform: translateX(-100%); } 
@@ -108,12 +101,12 @@
                         <label style="font-size:12px; color:#888;">Role</label>
                         <select id="nr"></select>
                     </div>
-                    <button onclick="createUser()" class="btn" style="align-self: flex-end; height: 40px;">Create User</button>
+                    <button onclick="createUser()" class="btn">Create User</button>
                 </div>
             </div>
 
             <div class="card">
-                <h4 style="margin-bottom:15px;"><i class="fas fa-list"></i> Activity List</h4>
+                <h4 style="margin-bottom:15px;"><i class="fas fa-list"></i> Activity List (Global)</h4>
                 <div style="overflow-x:auto">
                     <table id="userTable">
                         <thead><tr><th>Status</th><th>User</th><th>Role</th><th>Chips</th><th>Exposure</th><th>Action</th></tr></thead>
@@ -128,7 +121,7 @@
                 <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">BETTING EXPOSURE</p>
                 <h1 style="color:var(--neon-g); font-size:45px; margin: 10px 0;">🪙 <span id="bet-exp">0</span></h1>
                 <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
-                    <input type="number" id="expInp" placeholder="Amount (Min 1000)" style="max-width: 150px; background: rgba(255,255,255,0.1); color: white; border: 1px solid #444;">
+                    <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 150px; background: white; color: black;">
                     <button onclick="addExp()" class="btn" style="background: var(--accent); color: var(--dark);">Deposit</button>
                 </div>
             </div>
@@ -156,13 +149,13 @@
 
         <div id="page-account" class="page">
             <div class="account-card">
-                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">TOTAL BALANCE (INR)</p>
+                <p style="color:#aaa; font-size:12px;">TOTAL BALANCE (INR)</p>
                 <h1 style="color:var(--accent); font-size:40px; margin:10px 0;">₹ <span id="inr">0</span></h1>
-                <p style="opacity: 0.8;">🪙 <span id="chips">0</span> Chips Available</p>
+                <p>🪙 <span id="chips">0</span> Chips Available</p>
             </div>
             <div class="neon-grid">
-                <div class="neon-box neon-win">WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
-                <div class="neon-box neon-lose">LOSSES<br><span id="lose" style="font-size: 20px;">0</span></div>
+                <div class="neon-box win-box">WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
+                <div class="neon-box lose-box">LOSSES<br><span id="lose" style="font-size: 20px;">0</span></div>
             </div>
         </div>
     </div>
@@ -208,7 +201,12 @@
         async function loadUsers() {
             const tbody = document.querySelector('#userTable tbody');
             try {
-                const res = await fetch('/api/my-users', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({parentId:user.id})});
+                // FIXED: Changed endpoint or body to ensure SuperAdmin sees everyone
+                const res = await fetch('/api/my-users', {
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'}, 
+                    body:JSON.stringify({parentId: user.id, role: user.role}) 
+                });
                 const d = await res.json();
                 tbody.innerHTML = d.users.map(u => `<tr>
                     <td><span class="status-dot" style="background:${u.status === 'Online' ? 'var(--neon-g)' : 'var(--neon-r)'}"></span> ${u.status}</td>
@@ -216,9 +214,20 @@
                     <td><span style="font-size:11px; padding:2px 6px; background:#eee; border-radius:4px;">${u.role}</span></td>
                     <td style="color:var(--primary); font-weight:bold;">${u.balance}</td>
                     <td>${u.exposure}</td>
-                    <td><button onclick="give(${u.id},'${u.username}')" class="btn" style="padding:5px 10px; font-size:11px;">Give</button></td>
+                    <td>
+                        <button onclick="give(${u.id},'${u.username}')" class="btn" style="padding:5px 10px; font-size:11px;">Give</button>
+                        ${user.role === 'SuperAdmin' ? `<button onclick="takeBack(${u.id})" class="btn btn-take" style="padding:5px 10px; font-size:11px;">Take</button>` : ''}
+                    </td>
                 </tr>`).join('');
-            } catch(e) {}
+            } catch(e) { tbody.innerHTML = '<tr><td colspan="6">Connection Error</td></tr>'; }
+        }
+
+        async function takeBack(id) {
+            if(!confirm("Are you sure you want to take back all remaining chips from this user?")) return;
+            const res = await fetch('/api/take-back-chips', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({adminId:user.id, userId:id})});
+            const d = await res.json();
+            alert(`Recovered ${d.recovered} chips`);
+            init();
         }
 
         async function addExp() {
@@ -232,11 +241,12 @@
             if(user.exposure < amt) return alert("Insufficient Exposure Wallet Balance!");
             const win = Math.random() > 0.5;
             await fetch('/api/place-bet', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, betAmount:amt, isWin:win})});
-            alert(win ? "WON!" : "LOST!"); init();
+            alert(win ? "WON! Profits distributed to uplines." : "LOST!");
+            init();
         }
 
         async function give(id, name) {
-            const amt = prompt(`Chips for ${name}:`);
+            const amt = prompt(`Enter chips for ${name}:`);
             if(!amt || isNaN(amt)) return;
             await fetch('/api/transfer-credits', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({senderId:user.id, receiverId:id, amount:amt})});
             init();
@@ -246,15 +256,22 @@
             const roles = ['Admin','SuperMaster','Master','Agent','Client'];
             const hierarchy = {'SuperAdmin':6,'Admin':5,'SuperMaster':4,'Master':3,'Agent':2,'Client':1};
             const sel = document.getElementById('nr');
-            if(sel && sel.options.length === 0) roles.forEach(r => { if(hierarchy[r] < hierarchy[user.role]) sel.innerHTML += `<option value="${r}">${r}</option>`; });
+            if(sel && sel.options.length === 0) {
+                roles.forEach(r => { if(hierarchy[r] < hierarchy[user.role]) sel.innerHTML += `<option value="${r}">${r}</option>`; });
+            }
         }
 
         async function createUser() {
-            const res = await fetch('/api/create-user', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({newUsername:document.getElementById('nu').value, newPassword:document.getElementById('np').value, newRole:document.getElementById('nr').value, creatorId:user.id})});
-            const d = await res.json(); alert(d.message); init();
+            const u = document.getElementById('nu').value;
+            const p = document.getElementById('np').value;
+            const r = document.getElementById('nr').value;
+            if(!u || !p) return alert("Fill all fields");
+            const res = await fetch('/api/create-user', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({newUsername:u, newPassword:p, newRole:r, creatorId:user.id})});
+            const d = await res.json();
+            alert(d.message);
+            init();
         }
 
-        // --- UPDATED NAVIGATION & SIDEBAR ---
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active');
