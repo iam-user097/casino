@@ -52,20 +52,29 @@ app.post('/api/login', (req, res) => {
 });
 
 app.post('/api/user-details', (req, res) => {
-    // UPDATED: Chip value is 1:1, so balance_inr is now same as balance
-    db.query('SELECT *, balance as balance_inr FROM users WHERE id=?', [req.body.id], (e, r) => {
+    // 1 Chip = 1 RS Logic: Select actual balance and inr_balance separately
+    db.query('SELECT *, balance, inr_balance FROM users WHERE id=?', [req.body.id], (e, r) => {
         r && r.length ? res.json({ success: true, data: r[0] }) : res.json({ success: false });
     });
 });
 
 app.post('/api/my-users', (req, res) => {
-    db.query(
-        `SELECT id, username, role, balance, exposure, total_wins, total_losses,
-        CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
-        FROM users WHERE parent_id=?`,
-        [req.body.parentId],
-        (_, r) => res.json({ users: r || [] })
-    );
+    const { parentId, role } = req.body;
+    
+    // GLOBAL VISIBILITY: SuperAdmin sees everyone. Others see direct downlines.
+    let query = `SELECT id, username, role, balance, exposure, total_wins, total_losses,
+                CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
+                FROM users`;
+    
+    let params = [];
+    if (role === 'SuperAdmin') {
+        query += ` WHERE role != 'SuperAdmin'`; 
+    } else {
+        query += ` WHERE parent_id = ?`;
+        params.push(parentId);
+    }
+
+    db.query(query, params, (_, r) => res.json({ users: r || [] }));
 });
 
 // Get Transaction History
@@ -98,6 +107,7 @@ app.post('/api/place-bet', (req, res) => {
         conn.beginTransaction(() => {
             if (isWin) {
                 const profit = amt; 
+                // Profit is added to playable balance (Chips)
                 conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, total_wins = total_wins + ? WHERE id = ?', 
                 [amt, amt + profit, profit, userId]);
                 logTx(userId, 'Win', profit, `Bet Win Reward`);
@@ -146,13 +156,17 @@ app.post('/api/transfer-credits', (req, res) => {
     });
 });
 
+// UPDATED: Take back only resets Chips (balance) to 0. INR Money remains safe.
 app.post('/api/take-back-chips', (req, res) => {
     const { adminId, userId } = req.body;
     db.query('SELECT balance FROM users WHERE id=?', [userId], (e, r) => {
+        if (e || !r.length) return res.json({ success: false });
         const amt = r[0].balance;
+        
         db.query('UPDATE users SET balance = 0 WHERE id=?', [userId], () => {
             db.query('UPDATE users SET balance = balance + ? WHERE id=?', [amt, adminId], () => {
                 logTx(adminId, 'Clawback', amt, `Took back chips from User ID: ${userId}`);
+                logTx(userId, 'TakeBack', -amt, `Playable chips removed by SuperAdmin`);
                 res.json({ success: true, recovered: amt });
             });
         });
@@ -161,7 +175,7 @@ app.post('/api/take-back-chips', (req, res) => {
 
 app.post('/api/create-user', (req, res) => {
     const { newUsername, newPassword, newRole, creatorId } = req.body;
-    db.query('INSERT INTO users(username, password, role, parent_id, balance) VALUES(?,?,?,?,0)', 
+    db.query('INSERT INTO users(username, password, role, parent_id, balance, inr_balance) VALUES(?,?,?,?,0,0)', 
     [newUsername, newPassword, newRole, creatorId], (err) => {
         res.json({ success: !err, message: err ? 'Error' : 'User Created' });
     });
