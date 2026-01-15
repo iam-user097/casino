@@ -31,6 +31,11 @@ const db = mysql.createPool({
     connectionLimit: 10
 });
 
+// Helper function for Transaction Logging
+const logTx = (uid, type, amt, desc) => {
+    db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [uid, type, amt, desc]);
+};
+
 // --- API ROUTES ---
 
 app.post('/api/login', (req, res) => {
@@ -47,7 +52,8 @@ app.post('/api/login', (req, res) => {
 });
 
 app.post('/api/user-details', (req, res) => {
-    db.query('SELECT *, (balance * 100) as balance_inr FROM users WHERE id=?', [req.body.id], (e, r) => {
+    // UPDATED: Chip value is 1:1, so balance_inr is now same as balance
+    db.query('SELECT *, balance as balance_inr FROM users WHERE id=?', [req.body.id], (e, r) => {
         r && r.length ? res.json({ success: true, data: r[0] }) : res.json({ success: false });
     });
 });
@@ -62,6 +68,11 @@ app.post('/api/my-users', (req, res) => {
     );
 });
 
+// Get Transaction History
+app.post('/api/history', (req, res) => {
+    db.query('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 20', [req.body.userId], (_, r) => res.json({ history: r || [] }));
+});
+
 // Exposure Wallet Logic
 app.post('/api/add-exposure', (req, res) => {
     const { userId, amount } = req.body;
@@ -70,8 +81,10 @@ app.post('/api/add-exposure', (req, res) => {
 
     db.query('UPDATE users SET balance = balance - ?, exposure = exposure + ? WHERE id = ? AND balance >= ?', 
     [amt, amt, userId, amt], (err, result) => {
-        if (result && result.affectedRows > 0) res.json({ success: true, message: 'Exposure Updated' });
-        else res.json({ success: false, message: 'Insufficient Balance' });
+        if (result && result.affectedRows > 0) {
+            logTx(userId, 'Exposure', -amt, 'Deposited to Exposure Wallet');
+            res.json({ success: true, message: 'Exposure Updated' });
+        } else res.json({ success: false, message: 'Insufficient Balance' });
     });
 });
 
@@ -87,6 +100,7 @@ app.post('/api/place-bet', (req, res) => {
                 const profit = amt; 
                 conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, total_wins = total_wins + ? WHERE id = ?', 
                 [amt, amt + profit, profit, userId]);
+                logTx(userId, 'Win', profit, `Bet Win Reward`);
 
                 const spread = (childId) => {
                     conn.query('SELECT parent_id FROM users WHERE id = ?', [childId], (err, res) => {
@@ -95,7 +109,10 @@ app.post('/api/place-bet', (req, res) => {
                             conn.query('SELECT id, role FROM users WHERE id = ?', [pid], (err, pData) => {
                                 const parent = pData[0];
                                 const comm = profit * (rates[parent.role] || 0);
-                                if (comm > 0) conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [comm, parent.id]);
+                                if (comm > 0) {
+                                    conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [comm, parent.id]);
+                                    logTx(parent.id, 'Commission', comm, `Commission from downline win`);
+                                }
                                 if (parent.role !== 'SuperAdmin') spread(parent.id);
                                 else conn.commit(() => { conn.release(); });
                             });
@@ -106,6 +123,7 @@ app.post('/api/place-bet', (req, res) => {
                 res.json({ success: true });
             } else {
                 conn.query('UPDATE users SET exposure = exposure - ?, total_losses = total_losses + ? WHERE id = ?', [amt, amt, userId], () => {
+                    logTx(userId, 'Loss', -amt, 'Bet Loss');
                     conn.commit(() => { res.json({ success: true }); conn.release(); });
                 });
             }
@@ -118,6 +136,8 @@ app.post('/api/transfer-credits', (req, res) => {
     db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amount, senderId, amount], (err, res1) => {
         if (res1.affectedRows > 0) {
             db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amount, receiverId], () => {
+                logTx(senderId, 'Sent', -amount, `Transferred to User ID: ${receiverId}`);
+                logTx(receiverId, 'Received', amount, `Received from User ID: ${senderId}`);
                 res.json({ success: true, message: 'Transfer Success' });
             });
         } else {
@@ -132,6 +152,7 @@ app.post('/api/take-back-chips', (req, res) => {
         const amt = r[0].balance;
         db.query('UPDATE users SET balance = 0 WHERE id=?', [userId], () => {
             db.query('UPDATE users SET balance = balance + ? WHERE id=?', [amt, adminId], () => {
+                logTx(adminId, 'Clawback', amt, `Took back chips from User ID: ${userId}`);
                 res.json({ success: true, recovered: amt });
             });
         });
