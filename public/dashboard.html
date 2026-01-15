@@ -11,16 +11,8 @@
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif; transition: background 0.3s, border 0.3s; }
         body { display:flex; height:100vh; background:var(--bg); overflow:hidden; }
 
-        /* Sidebar - Fixed for Mobile Sliding */
-        .sidebar { 
-            width:260px; 
-            background:white; 
-            border-right:1px solid #ddd; 
-            display:flex; 
-            flex-direction:column; 
-            z-index:2000; 
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-        }
+        /* Sidebar - Smooth Transition */
+        .sidebar { width:260px; background:white; border-right:1px solid #ddd; display:flex; flex-direction:column; z-index:2000; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .logo { background:black; padding:20px; text-align:center; color:var(--accent); font-weight:bold; font-size:22px; border-bottom:4px solid var(--primary); }
         .nav-item { padding:15px 25px; color:#444; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0; transition: 0.2s ease; }
         .nav-item:hover { background: #f8f9fa; padding-left: 30px; }
@@ -30,15 +22,14 @@
         .main { flex:1; display:flex; flex-direction:column; width:100%; overflow:hidden; position: relative; }
         .header { background:linear-gradient(90deg, var(--primary), var(--dark)); color:white; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         
-        /* Overlay for Mobile */
+        /* Overlay for Mobile Fixed sliding */
         .sidebar-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.4);
             z-index: 1500;
-            backdrop-filter: blur(2px);
         }
 
         /* Page Transition */
@@ -46,12 +37,12 @@
         .page.active { display:block; }
         @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 
-        /* Professional Neon Cards */
+        /* Simple Professional Cards */
         .account-card { background:var(--dark); border-radius:15px; padding:25px; color:white; text-align:center; margin-bottom:15px; border:1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
         .neon-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-        .neon-box { padding:15px; border-radius:12px; font-weight:bold; text-align:center; font-size:14px; text-transform: uppercase; }
-        .neon-win { border:2px solid var(--neon-g); color:var(--neon-g); box-shadow: 0 0 10px rgba(57,255,20,0.2); background:rgba(57,255,20,0.05); }
-        .neon-lose { border:2px solid var(--neon-r); color:var(--neon-r); box-shadow: 0 0 10px rgba(255, 49, 49, 0.2); background:rgba(255,49,49,0.05); }
+        .neon-box { padding:15px; border-radius:12px; font-weight:bold; text-align:center; font-size:14px; text-transform: uppercase; border: 2px solid #ddd; }
+        .neon-win { border-color: var(--neon-g); color:var(--neon-g); background:rgba(57,255,20,0.05); }
+        .neon-lose { border-color: var(--neon-r); color:var(--neon-r); background:rgba(255,49,49,0.05); }
 
         .card { background:white; border-radius:12px; padding:20px; box-shadow:0 4px 15px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); margin-bottom: 20px; }
         
@@ -67,17 +58,11 @@
         .chip-btn { width:65px; height:65px; border-radius:50%; background:var(--dark); color:var(--accent); border:2px solid var(--accent); font-weight:bold; cursor:pointer; transition: 0.3s; }
         .chip-btn:hover { transform: scale(1.1) rotate(10deg); background: var(--accent); color: var(--dark); }
         input, select { width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; outline:none; margin-top:5px; transition: border 0.3s; }
-        input:focus { border-color: var(--primary); }
 
-        /* Mobile Adjustments - FIXED SIDEBAR SLIDING */
-        .mobile-toggle { display:none; cursor: pointer; font-size: 20px; margin-right: 15px; }
+        /* Mobile Adjustments - UNIQUE DICE ICON */
+        .mobile-toggle { display:none; cursor: pointer; transition: 0.3s; }
         @media(max-width:768px) { 
-            .sidebar { 
-                position:fixed; 
-                left:0; 
-                height:100%; 
-                transform: translateX(-100%); /* Starts hidden to the left */
-            } 
+            .sidebar { position:fixed; left:0; height:100%; transform: translateX(-100%); } 
             .sidebar.show { transform: translateX(0); box-shadow:5px 0 15px rgba(0,0,0,0.3); } 
             .sidebar-overlay.show { display: block; }
             .mobile-toggle { display:block; }
@@ -98,11 +83,11 @@
         <div class="nav-item" style="margin-top:auto; color:var(--neon-r)" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
     </div>
 
-    <div class="main" id="mainContent">
+    <div class="main">
         <div class="header">
             <div style="display:flex; align-items:center;">
-                <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)"></i>
-                <h3 style="font-weight: 500;">Dashboard</h3>
+                <i class="fas fa-th-large mobile-toggle" onclick="toggleSidebar(event)" style="font-size: 22px; color: #fff;"></i>
+                <h3 style="font-weight: 500; margin-left: 10px;">Dashboard</h3>
             </div>
             <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(0,0,0,0.2); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent);">🪙 Loading...</div>
         </div>
@@ -154,7 +139,6 @@
                     <button class="chip-btn" onclick="bet(500)">500</button>
                     <button class="chip-btn" onclick="bet(1000)">1000</button>
                 </div>
-                <p style="margin-top:20px; font-size:13px; color:#888;">Balance is updated instantly for all uplines.</p>
             </div>
         </div>
 
@@ -177,14 +161,8 @@
                 <p style="opacity: 0.8;">🪙 <span id="chips">0</span> Chips Available</p>
             </div>
             <div class="neon-grid">
-                <div class="neon-box neon-win">
-                    <i class="fas fa-arrow-trend-up"></i><br>
-                    WINNINGS<br><span id="wins" style="font-size: 20px;">0</span>
-                </div>
-                <div class="neon-box neon-lose">
-                    <i class="fas fa-arrow-trend-down"></i><br>
-                    LOSSES<br><span id="lose" style="font-size: 20px;">0</span>
-                </div>
+                <div class="neon-box neon-win">WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
+                <div class="neon-box neon-lose">LOSSES<br><span id="lose" style="font-size: 20px;">0</span></div>
             </div>
         </div>
     </div>
@@ -207,7 +185,7 @@
                     document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
                     document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
                 }
-            } catch(e) { console.error("Update failed"); }
+            } catch(e) {}
             loadUsers();
             setupRoles();
             loadHistory();
@@ -232,27 +210,21 @@
             try {
                 const res = await fetch('/api/my-users', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({parentId:user.id})});
                 const d = await res.json();
-                tbody.innerHTML = '';
-                d.users.forEach(u => {
-                    const statusColor = u.status === 'Online' ? 'var(--neon-g)' : 'var(--neon-r)';
-                    tbody.innerHTML += `<tr>
-                        <td><span class="status-dot" style="background:${statusColor}; box-shadow: 0 0 5px ${statusColor}"></span> ${u.status}</td>
-                        <td><b>${u.username}</b></td>
-                        <td><span style="font-size:11px; padding:2px 6px; background:#eee; border-radius:4px;">${u.role}</span></td>
-                        <td style="color:var(--primary); font-weight:bold;">${u.balance}</td>
-                        <td style="color:#666;">${u.exposure}</td>
-                        <td><button onclick="give(${u.id},'${u.username}')" class="btn" style="padding:5px 10px; font-size:11px;"><i class="fas fa-coins"></i> Give</button></td>
-                    </tr>`;
-                });
-            } catch(e) { tbody.innerHTML = '<tr><td colspan="6">Connection Error</td></tr>'; }
+                tbody.innerHTML = d.users.map(u => `<tr>
+                    <td><span class="status-dot" style="background:${u.status === 'Online' ? 'var(--neon-g)' : 'var(--neon-r)'}"></span> ${u.status}</td>
+                    <td><b>${u.username}</b></td>
+                    <td><span style="font-size:11px; padding:2px 6px; background:#eee; border-radius:4px;">${u.role}</span></td>
+                    <td style="color:var(--primary); font-weight:bold;">${u.balance}</td>
+                    <td>${u.exposure}</td>
+                    <td><button onclick="give(${u.id},'${u.username}')" class="btn" style="padding:5px 10px; font-size:11px;">Give</button></td>
+                </tr>`).join('');
+            } catch(e) {}
         }
 
         async function addExp() {
             const amt = document.getElementById('expInp').value;
-            if(!amt || amt < 1000) return alert("Min 1000 deposit required");
-            const res = await fetch('/api/add-exposure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, amount:amt})});
-            const d = await res.json();
-            alert(d.message);
+            if(!amt || amt < 1000) return alert("Min 1000 required");
+            await fetch('/api/add-exposure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, amount:amt})});
             init();
         }
 
@@ -260,16 +232,13 @@
             if(user.exposure < amt) return alert("Insufficient Exposure Wallet Balance!");
             const win = Math.random() > 0.5;
             await fetch('/api/place-bet', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, betAmount:amt, isWin:win})});
-            alert(win ? "WON! Profits distributed to uplines." : "LOST! Better luck next time.");
-            init();
+            alert(win ? "WON!" : "LOST!"); init();
         }
 
         async function give(id, name) {
-            const amt = prompt(`Enter chip amount for ${name}:`);
+            const amt = prompt(`Chips for ${name}:`);
             if(!amt || isNaN(amt)) return;
-            const res = await fetch('/api/transfer-credits', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({senderId:user.id, receiverId:id, amount:amt})});
-            const d = await res.json();
-            alert(d.message);
+            await fetch('/api/transfer-credits', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({senderId:user.id, receiverId:id, amount:amt})});
             init();
         }
 
@@ -277,23 +246,15 @@
             const roles = ['Admin','SuperMaster','Master','Agent','Client'];
             const hierarchy = {'SuperAdmin':6,'Admin':5,'SuperMaster':4,'Master':3,'Agent':2,'Client':1};
             const sel = document.getElementById('nr');
-            if(sel && sel.options.length === 0) {
-                roles.forEach(r => { if(hierarchy[r] < hierarchy[user.role]) sel.innerHTML += `<option value="${r}">${r}</option>`; });
-            }
+            if(sel && sel.options.length === 0) roles.forEach(r => { if(hierarchy[r] < hierarchy[user.role]) sel.innerHTML += `<option value="${r}">${r}</option>`; });
         }
 
         async function createUser() {
-            const u = document.getElementById('nu').value;
-            const p = document.getElementById('np').value;
-            const r = document.getElementById('nr').value;
-            if(!u || !p) return alert("Fill all fields");
-            const res = await fetch('/api/create-user', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({newUsername:u, newPassword:p, newRole:r, creatorId:user.id})});
-            const d = await res.json();
-            alert(d.message);
-            init();
+            const res = await fetch('/api/create-user', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({newUsername:document.getElementById('nu').value, newPassword:document.getElementById('np').value, newRole:document.getElementById('nr').value, creatorId:user.id})});
+            const d = await res.json(); alert(d.message); init();
         }
 
-        // --- FIXED NAVIGATION & SIDEBAR SLIDING ---
+        // --- UPDATED NAVIGATION & SIDEBAR ---
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active');
@@ -309,7 +270,6 @@
         }
 
         function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
-        
         init();
     </script>
 </body>
