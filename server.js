@@ -6,8 +6,21 @@ const path = require('path');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the 'public' folder
 app.use(express.static(path.join(__dirname, 'public')));
 
+// FORCE ROUTE: Send login.html when user visits the base URL
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// FORCE ROUTE: Send dashboard.html
+app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+// MySQL Pool
 const db = mysql.createPool({
     host: process.env.DB_HOST || "srv1952.hstgr.io",
     user: process.env.DB_USER || "u178691095_magic9",
@@ -49,11 +62,11 @@ app.post('/api/my-users', (req, res) => {
     );
 });
 
-// Deposit to Exposure (Min 1000)
+// Exposure Wallet Logic
 app.post('/api/add-exposure', (req, res) => {
     const { userId, amount } = req.body;
     const amt = parseFloat(amount);
-    if (amt < 1000) return res.json({ success: false, message: 'Minimum 1000 chips required' });
+    if (amt < 1000) return res.json({ success: false, message: 'Min 1000 required' });
 
     db.query('UPDATE users SET balance = balance - ?, exposure = exposure + ? WHERE id = ? AND balance >= ?', 
     [amt, amt, userId, amt], (err, result) => {
@@ -62,7 +75,7 @@ app.post('/api/add-exposure', (req, res) => {
     });
 });
 
-// Place Bet & Recursive Spread
+// Place Bet & Recursive Spread (Commission Chain)
 app.post('/api/place-bet', (req, res) => {
     const { userId, betAmount, isWin } = req.body;
     const amt = parseFloat(betAmount);
@@ -71,7 +84,7 @@ app.post('/api/place-bet', (req, res) => {
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
             if (isWin) {
-                const profit = amt; // Winning 1:1 for demo
+                const profit = amt; 
                 conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, total_wins = total_wins + ? WHERE id = ?', 
                 [amt, amt + profit, profit, userId]);
 
@@ -90,7 +103,7 @@ app.post('/api/place-bet', (req, res) => {
                     });
                 };
                 spread(userId);
-                res.json({ success: true, message: 'Win Processed' });
+                res.json({ success: true });
             } else {
                 conn.query('UPDATE users SET exposure = exposure - ?, total_losses = total_losses + ? WHERE id = ?', [amt, amt, userId], () => {
                     conn.commit(() => { res.json({ success: true }); conn.release(); });
@@ -105,10 +118,10 @@ app.post('/api/transfer-credits', (req, res) => {
     db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amount, senderId, amount], (err, res1) => {
         if (res1.affectedRows > 0) {
             db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amount, receiverId], () => {
-                res.json({ success: true, message: 'Chips Sent' });
+                res.json({ success: true, message: 'Transfer Success' });
             });
         } else {
-            res.json({ success: false, message: 'Insufficient Balance' });
+            res.json({ success: false, message: 'Low Balance' });
         }
     });
 });
@@ -129,9 +142,9 @@ app.post('/api/create-user', (req, res) => {
     const { newUsername, newPassword, newRole, creatorId } = req.body;
     db.query('INSERT INTO users(username, password, role, parent_id, balance) VALUES(?,?,?,?,0)', 
     [newUsername, newPassword, newRole, creatorId], (err) => {
-        res.json({ success: !err, message: err ? 'Error creating user' : 'User Created' });
+        res.json({ success: !err, message: err ? 'Error' : 'User Created' });
     });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running` ));
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🚀 Server Online`));
