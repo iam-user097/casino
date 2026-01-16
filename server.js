@@ -45,6 +45,22 @@ app.post('/api/user-details', (req, res) => {
     });
 });
 
+// ENHANCED SECURITY: Update password with OLD password verification
+app.post('/api/change-password-secure', (req, res) => {
+    const { userId, oldPass, newPass } = req.body;
+    // Verify old password first
+    db.query('SELECT password FROM users WHERE id = ?', [userId], (e, r) => {
+        if (r && r[0].password === oldPass) {
+            db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err) => {
+                res.json({ success: !err, message: err ? 'Update failed' : 'Password changed successfully' });
+            });
+        } else {
+            res.json({ success: false, message: 'Current password is incorrect' });
+        }
+    });
+});
+
+// Quick Password Reset (For Admin/Key button)
 app.post('/api/update-password', (req, res) => {
     const { userId, newPass } = req.body;
     db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err) => {
@@ -54,7 +70,7 @@ app.post('/api/update-password', (req, res) => {
 
 app.post('/api/my-users', (req, res) => {
     const { parentId, role } = req.body;
-    let query = `SELECT id, username, first_name, role, balance, exposure, total_wins, total_losses, max_logins,
+    let query = `SELECT id, username, first_name, role, balance, exposure, total_wins, total_losses, max_logins, force_password_change,
                 CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
                 FROM users`;
     let params = [];
@@ -67,7 +83,7 @@ app.post('/api/history', (req, res) => {
     db.query('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 20', [req.body.userId], (_, r) => res.json({ history: r || [] }));
 });
 
-// NEW: Withdraw Chips (Button W)
+// Withdraw Chips (Button W)
 app.post('/api/withdraw-chips', (req, res) => {
     const { adminId, userId, amount } = req.body;
     const amt = parseFloat(amount);
@@ -81,7 +97,7 @@ app.post('/api/withdraw-chips', (req, res) => {
     });
 });
 
-// NEW: Delete User (Button Trash - Check Balance 0)
+// Delete User logic (safety check)
 app.post('/api/delete-user', (req, res) => {
     const { id } = req.body;
     db.query('DELETE FROM users WHERE id = ? AND balance = 0', [id], (err, r) => {
@@ -90,7 +106,7 @@ app.post('/api/delete-user', (req, res) => {
     });
 });
 
-// NEW: Edit User (Update Name and Logins)
+// Edit User (Update Name and Logins Only)
 app.post('/api/update-user', (req, res) => {
     const { id, fName, logins } = req.body;
     db.query('UPDATE users SET first_name = ?, max_logins = ? WHERE id = ?', [fName, logins, id], (err) => {
@@ -184,26 +200,22 @@ app.post('/api/create-user-advanced', (req, res) => {
     const { fName, uName, pass, role, logins, deposit, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
     
-    // Logic: Force password only if the NEW user is NOT a SuperAdmin
+    // Logic: Force password change ONLY if the NEW user is NOT a SuperAdmin
     const forceFlag = (role === 'SuperAdmin') ? 0 : 1;
 
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
             const sql = `INSERT INTO users(first_name, username, password, role, parent_id, max_logins, balance, inr_balance, force_password_change) 
                          VALUES(?,?,?,?,?,?,?,?,?)`;
-            
             conn.query(sql, [fName, uName, pass, role, creatorId, logins, depAmt, 0, forceFlag], (err, result) => {
                 if (err) return conn.rollback(() => res.json({ success: false, message: 'Username already exists' }));
-                
                 if (depAmt > 0) {
                     conn.query('UPDATE users SET balance = balance - ? WHERE id = ?', [depAmt, creatorId], () => {
                         logTx(creatorId, 'Deduction', -depAmt, `Setup deposit for ${uName}`);
                         logTx(result.insertId, 'Deposit', depAmt, `Initial setup deposit`);
                         conn.commit(() => { res.json({ success: true, message: 'User Created & Deposited' }); });
                     });
-                } else {
-                    conn.commit(() => { res.json({ success: true, message: 'User Created Successfully' }); });
-                }
+                } else conn.commit(() => { res.json({ success: true, message: 'User Created Successfully' }); });
             });
         });
     });
