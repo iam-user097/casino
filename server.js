@@ -7,20 +7,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from the 'public' folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// FORCE ROUTE: Send login.html when user visits the base URL
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
+app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'login.html')); });
+app.get('/dashboard', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'dashboard.html')); });
 
-// FORCE ROUTE: Send dashboard.html
-app.get('/dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-});
-
-// MySQL Pool
 const db = mysql.createPool({
     host: process.env.DB_HOST || "srv1952.hstgr.io",
     user: process.env.DB_USER || "u178691095_magic9",
@@ -31,7 +22,6 @@ const db = mysql.createPool({
     connectionLimit: 10
 });
 
-// Helper function for Transaction Logging
 const logTx = (uid, type, amt, desc) => {
     db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [uid, type, amt, desc]);
 };
@@ -45,20 +35,16 @@ app.post('/api/login', (req, res) => {
         if (result.length > 0) {
             db.query('UPDATE users SET last_active=NOW() WHERE id=?', [result[0].id]);
             res.json({ success: true, user: result[0] });
-        } else {
-            res.json({ success: false, message: 'Invalid Login' });
-        }
+        } else res.json({ success: false, message: 'Invalid Login' });
     });
 });
 
 app.post('/api/user-details', (req, res) => {
-    // UPDATED: Now includes force_password_change flag
     db.query('SELECT *, balance, inr_balance, force_password_change FROM users WHERE id=?', [req.body.id], (e, r) => {
         r && r.length ? res.json({ success: true, data: r[0] }) : res.json({ success: false });
     });
 });
 
-// SECURITY: Update password and remove "Force Change" flag
 app.post('/api/update-password', (req, res) => {
     const { userId, newPass } = req.body;
     db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err) => {
@@ -68,20 +54,12 @@ app.post('/api/update-password', (req, res) => {
 
 app.post('/api/my-users', (req, res) => {
     const { parentId, role } = req.body;
-    
-    // GLOBAL VISIBILITY Logic
-    let query = `SELECT id, username, first_name, role, balance, exposure, total_wins, total_losses,
+    let query = `SELECT id, username, first_name, role, balance, exposure, total_wins, total_losses, max_logins,
                 CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
                 FROM users`;
-    
     let params = [];
-    if (role === 'SuperAdmin') {
-        query += ` WHERE role != 'SuperAdmin'`; 
-    } else {
-        query += ` WHERE parent_id = ?`;
-        params.push(parentId);
-    }
-
+    if (role === 'SuperAdmin') query += ` WHERE role != 'SuperAdmin'`;
+    else { query += ` WHERE parent_id = ?`; params.push(parentId); }
     db.query(query, params, (_, r) => res.json({ users: r || [] }));
 });
 
@@ -89,11 +67,41 @@ app.post('/api/history', (req, res) => {
     db.query('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 20', [req.body.userId], (_, r) => res.json({ history: r || [] }));
 });
 
+// NEW: Withdraw Chips (Button W)
+app.post('/api/withdraw-chips', (req, res) => {
+    const { adminId, userId, amount } = req.body;
+    const amt = parseFloat(amount);
+    db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amt, userId, amt], (err, r) => {
+        if (r && r.affectedRows > 0) {
+            db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amt, adminId]);
+            logTx(userId, 'Withdrawal', -amt, `Chips taken by Admin`);
+            logTx(adminId, 'Clawback', amt, `Withdrew from User ID: ${userId}`);
+            res.json({ success: true, message: 'Withdrawal Successful' });
+        } else res.json({ success: false, message: 'Insufficient user balance' });
+    });
+});
+
+// NEW: Delete User (Button Trash - Check Balance 0)
+app.post('/api/delete-user', (req, res) => {
+    const { id } = req.body;
+    db.query('DELETE FROM users WHERE id = ? AND balance = 0', [id], (err, r) => {
+        if (r && r.affectedRows > 0) res.json({ success: true, message: 'User Deleted' });
+        else res.json({ success: false, message: 'Cannot delete: User has active chips' });
+    });
+});
+
+// NEW: Edit User (Update Name and Logins)
+app.post('/api/update-user', (req, res) => {
+    const { id, fName, logins } = req.body;
+    db.query('UPDATE users SET first_name = ?, max_logins = ? WHERE id = ?', [fName, logins, id], (err) => {
+        res.json({ success: !err, message: err ? 'Update failed' : 'User updated successfully' });
+    });
+});
+
 app.post('/api/add-exposure', (req, res) => {
     const { userId, amount } = req.body;
     const amt = parseFloat(amount);
     if (amt < 1000) return res.json({ success: false, message: 'Min 1000 required' });
-
     db.query('UPDATE users SET balance = balance - ?, exposure = exposure + ? WHERE id = ? AND balance >= ?', 
     [amt, amt, userId, amt], (err, result) => {
         if (result && result.affectedRows > 0) {
@@ -112,12 +120,9 @@ app.post('/api/place-bet', (req, res) => {
         conn.beginTransaction(() => {
             if (isWin) {
                 const profit = amt; 
-                // 1 Win = 1 Chip + 1 INR logic
                 conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, inr_balance = inr_balance + ?, total_wins = total_wins + ? WHERE id = ?', 
                 [amt, amt + profit, profit, profit, userId]);
-                
                 logTx(userId, 'Win', profit, `Bet Win: Chips & INR updated`);
-
                 const spread = (childId) => {
                     conn.query('SELECT parent_id FROM users WHERE id = ?', [childId], (err, res) => {
                         if (res[0]?.parent_id) {
@@ -150,15 +155,13 @@ app.post('/api/place-bet', (req, res) => {
 app.post('/api/transfer-credits', (req, res) => {
     const { senderId, receiverId, amount } = req.body;
     db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amount, senderId, amount], (err, res1) => {
-        if (res1.affectedRows > 0) {
+        if (res1 && res1.affectedRows > 0) {
             db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amount, receiverId], () => {
-                logTx(senderId, 'Sent', -amount, `Transferred to User ID: ${receiverId}`);
+                logTx(senderId, 'Sent', -amount, `Sent to User ID: ${receiverId}`);
                 logTx(receiverId, 'Received', amount, `Received from User ID: ${senderId}`);
                 res.json({ success: true, message: 'Transfer Success' });
             });
-        } else {
-            res.json({ success: false, message: 'Low Balance' });
-        }
+        } else res.json({ success: false, message: 'Low Balance' });
     });
 });
 
@@ -169,7 +172,7 @@ app.post('/api/take-back-chips', (req, res) => {
         const amt = r[0].balance;
         db.query('UPDATE users SET balance = 0 WHERE id=?', [userId], () => {
             db.query('UPDATE users SET balance = balance + ? WHERE id=?', [amt, adminId], () => {
-                logTx(adminId, 'Clawback', amt, `Recovered chips from User ID: ${userId}`);
+                logTx(adminId, 'Clawback', amt, `Took back all chips from User ID: ${userId}`);
                 logTx(userId, 'TakeBack', -amt, `Chips removed by Admin (INR Safe)`);
                 res.json({ success: true, recovered: amt });
             });
@@ -177,25 +180,21 @@ app.post('/api/take-back-chips', (req, res) => {
     });
 });
 
-// NEW: Advanced User Creation Route
 app.post('/api/create-user-advanced', (req, res) => {
     const { fName, uName, pass, role, logins, deposit, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
+    
+    // Logic: Force password only if the NEW user is NOT a SuperAdmin
+    const forceFlag = (role === 'SuperAdmin') ? 0 : 1;
 
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
-            // Default force_password_change = 1
             const sql = `INSERT INTO users(first_name, username, password, role, parent_id, max_logins, balance, inr_balance, force_password_change) 
-                         VALUES(?,?,?,?,?,?,?,?,1)`;
+                         VALUES(?,?,?,?,?,?,?,?,?)`;
             
-            conn.query(sql, [fName, uName, pass, role, creatorId, logins, depAmt, 0], (err, result) => {
-                if (err) {
-                    return conn.rollback(() => {
-                        res.json({ success: false, message: 'Username already exists' });
-                    });
-                }
+            conn.query(sql, [fName, uName, pass, role, creatorId, logins, depAmt, 0, forceFlag], (err, result) => {
+                if (err) return conn.rollback(() => res.json({ success: false, message: 'Username already exists' }));
                 
-                // If deposit > 0, deduct from creator and log it
                 if (depAmt > 0) {
                     conn.query('UPDATE users SET balance = balance - ? WHERE id = ?', [depAmt, creatorId], () => {
                         logTx(creatorId, 'Deduction', -depAmt, `Setup deposit for ${uName}`);
