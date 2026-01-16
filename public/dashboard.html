@@ -81,7 +81,6 @@
             .sidebar.show { transform: translateX(0); box-shadow:10px 0 30px rgba(0,0,0,0.8); } 
             .sidebar-overlay.show { display: block; }
             .mobile-toggle { display:block !important; font-size: 22px; color: #fff; margin-right: 15px; }
-            .modal-content { width: 95%; }
             .modal-body { grid-template-columns: 1fr; }
             .full-row { grid-column: span 1; }
         }
@@ -209,11 +208,11 @@
         </div>
 
         <div id="page-history" class="page">
-            <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px;">
-                <h3 style="color:var(--accent); margin-bottom:15px;"><i class="fas fa-history"></i> Transaction Log</h3>
+            <div class="card">
+                <h3 style="color:var(--accent)"><i class="fas fa-history"></i> Transaction History</h3>
                 <div style="overflow-x:auto">
-                    <table id="histTable" style="width:100%; border-collapse:collapse;">
-                        <thead><tr><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Date</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Type</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Amount</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Details</th></tr></thead>
+                    <table id="histTable" style="color:white; background:transparent;">
+                        <thead><tr><th style="background:transparent; border-bottom:1px solid var(--primary)">Date</th><th style="background:transparent; border-bottom:1px solid var(--primary)">Type</th><th style="background:transparent; border-bottom:1px solid var(--primary)">Amount</th><th style="background:transparent; border-bottom:1px solid var(--primary)">Details</th></tr></thead>
                         <tbody style="color:#ddd"></tbody>
                     </table>
                 </div>
@@ -278,10 +277,8 @@
                     document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
                     document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
 
-                    // FIXED: Client bug fix
                     if(user.role === 'Client') document.getElementById('addBtn').style.display = 'none';
 
-                    // Security Force Password logic
                     if(user.force_password_change === 1 && user.role !== 'SuperAdmin') {
                         document.getElementById('passChangeModal').style.display = 'flex';
                     }
@@ -376,9 +373,21 @@
 
         async function deleteUser(id, bal) {
             if(bal > 0) return alert("Withdraw all chips before deleting!");
-            if(!confirm("Delete user permanently?")) return;
-            await fetch('/api/delete-user', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
-            init();
+            if(!confirm("Delete user permanently? This will wipe their history and record.")) return;
+            
+            // FIXED: Added properly structured fetch call for deletion
+            try {
+                const res = await fetch('/api/delete-user', {
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'}, 
+                    body:JSON.stringify({id})
+                });
+                const d = await res.json();
+                alert(d.message);
+                if(d.success) init(); 
+            } catch(e) {
+                alert("Server Connection Error");
+            }
         }
 
         async function resetKey(id) {
