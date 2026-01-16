@@ -67,12 +67,18 @@ app.post('/api/update-password', (req, res) => {
 
 app.post('/api/my-users', (req, res) => {
     const { parentId, role } = req.body;
-    let query = `SELECT id, username, first_name, role, balance, exposure, total_wins, total_losses, max_logins, force_password_change,
-                CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
-                FROM users`;
+    
+    // UPDATED QUERY: Joins transactions to sum 'Commission' records for the Settlement column
+    let query = `
+        SELECT u.id, u.username, u.first_name, u.role, u.balance, u.exposure, u.total_wins, u.total_losses, u.max_logins,
+        (SELECT SUM(amount) FROM transactions WHERE user_id = u.id AND type = 'Commission') as settlement,
+        CASE WHEN u.last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
+        FROM users u`;
+    
     let params = [];
-    if (role === 'SuperAdmin') query += ` WHERE role != 'SuperAdmin'`;
-    else { query += ` WHERE parent_id = ?`; params.push(parentId); }
+    if (role === 'SuperAdmin') query += ` WHERE u.role != 'SuperAdmin'`;
+    else { query += ` WHERE u.parent_id = ?`; params.push(parentId); }
+    
     db.query(query, params, (_, r) => res.json({ users: r || [] }));
 });
 
@@ -93,41 +99,23 @@ app.post('/api/withdraw-chips', (req, res) => {
     });
 });
 
-// FIXED: Delete User with full history cleanup logic
 app.post('/api/delete-user', (req, res) => {
     const { id } = req.body;
-
     db.getConnection((err, conn) => {
         if (err) return res.json({ success: false, message: 'Connection Error' });
-
         conn.beginTransaction((tErr) => {
             if (tErr) { conn.release(); return res.json({ success: false }); }
-
-            // 1. Check if user still has chips (Sir's requirement)
             conn.query('SELECT balance FROM users WHERE id = ?', [id], (e, r) => {
                 if (e || !r.length) {
                     return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'User not found' }); });
                 }
-                
                 if (r[0].balance > 0) {
                     return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'Withdraw chips before deleting!' }); });
                 }
-
-                // 2. Delete all transaction history first to avoid Foreign Key Error
                 conn.query('DELETE FROM transactions WHERE user_id = ?', [id], (txErr) => {
-                    if (txErr) {
-                        return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'Failed to clear history' }); });
-                    }
-
-                    // 3. Delete the user account
+                    if (txErr) return conn.rollback(() => { conn.release(); res.json({ success: false }); });
                     conn.query('DELETE FROM users WHERE id = ?', [id], (usrErr) => {
-                        if (usrErr) {
-                            return conn.rollback(() => {
-                                conn.release();
-                                res.json({ success: false, message: 'Cannot delete: This user has sub-users linked to them.' });
-                            });
-                        }
-
+                        if (usrErr) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'Cannot delete: Sub-users linked' }); });
                         conn.commit((cErr) => {
                             if (cErr) return conn.rollback(() => { conn.release(); res.json({ success: false }); });
                             conn.release();
@@ -164,7 +152,6 @@ app.post('/api/place-bet', (req, res) => {
     const { userId, betAmount, isWin } = req.body;
     const amt = parseFloat(betAmount);
     const rates = { 'SuperAdmin': 0.08, 'Admin': 0.06, 'SuperMaster': 0.05, 'Master': 0.04, 'Agent': 0.02 };
-
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
             if (isWin) {
@@ -233,11 +220,9 @@ app.post('/api/create-user-advanced', (req, res) => {
     const { fName, uName, pass, role, logins, deposit, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
     const forceFlag = (role === 'SuperAdmin') ? 0 : 1;
-
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
-            const sql = `INSERT INTO users(first_name, username, password, role, parent_id, max_logins, balance, inr_balance, force_password_change) 
-                         VALUES(?,?,?,?,?,?,?,?,?)`;
+            const sql = `INSERT INTO users(first_name, username, password, role, parent_id, max_logins, balance, inr_balance, force_password_change) VALUES(?,?,?,?,?,?,?,?,?)`;
             conn.query(sql, [fName, uName, pass, role, creatorId, logins, depAmt, 0, forceFlag], (err, result) => {
                 if (err) return conn.rollback(() => res.json({ success: false, message: 'Username already exists' }));
                 if (depAmt > 0) {
