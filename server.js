@@ -52,17 +52,25 @@ app.post('/api/login', (req, res) => {
 });
 
 app.post('/api/user-details', (req, res) => {
-    // 1 Chip = 1 RS Logic: Select actual balance and inr_balance separately
-    db.query('SELECT *, balance, inr_balance FROM users WHERE id=?', [req.body.id], (e, r) => {
+    // UPDATED: Now includes force_password_change flag
+    db.query('SELECT *, balance, inr_balance, force_password_change FROM users WHERE id=?', [req.body.id], (e, r) => {
         r && r.length ? res.json({ success: true, data: r[0] }) : res.json({ success: false });
+    });
+});
+
+// SECURITY: Update password and remove "Force Change" flag
+app.post('/api/update-password', (req, res) => {
+    const { userId, newPass } = req.body;
+    db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err) => {
+        res.json({ success: !err });
     });
 });
 
 app.post('/api/my-users', (req, res) => {
     const { parentId, role } = req.body;
     
-    // GLOBAL VISIBILITY: SuperAdmin sees everyone. Others see direct downlines.
-    let query = `SELECT id, username, role, balance, exposure, total_wins, total_losses,
+    // GLOBAL VISIBILITY Logic
+    let query = `SELECT id, username, first_name, role, balance, exposure, total_wins, total_losses,
                 CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
                 FROM users`;
     
@@ -77,12 +85,10 @@ app.post('/api/my-users', (req, res) => {
     db.query(query, params, (_, r) => res.json({ users: r || [] }));
 });
 
-// Get Transaction History
 app.post('/api/history', (req, res) => {
     db.query('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 20', [req.body.userId], (_, r) => res.json({ history: r || [] }));
 });
 
-// Exposure Wallet Logic
 app.post('/api/add-exposure', (req, res) => {
     const { userId, amount } = req.body;
     const amt = parseFloat(amount);
@@ -97,7 +103,6 @@ app.post('/api/add-exposure', (req, res) => {
     });
 });
 
-// Place Bet & Recursive Spread (Commission Chain)
 app.post('/api/place-bet', (req, res) => {
     const { userId, betAmount, isWin } = req.body;
     const amt = parseFloat(betAmount);
@@ -107,7 +112,7 @@ app.post('/api/place-bet', (req, res) => {
         conn.beginTransaction(() => {
             if (isWin) {
                 const profit = amt; 
-                // FIXED: profit is now added to BOTH balance (chips) and inr_balance (money)
+                // 1 Win = 1 Chip + 1 INR logic
                 conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, inr_balance = inr_balance + ?, total_wins = total_wins + ? WHERE id = ?', 
                 [amt, amt + profit, profit, profit, userId]);
                 
@@ -121,7 +126,6 @@ app.post('/api/place-bet', (req, res) => {
                                 const parent = pData[0];
                                 const comm = profit * (rates[parent.role] || 0);
                                 if (comm > 0) {
-                                    // Commissions are also added to both chips and INR for uplines
                                     conn.query('UPDATE users SET balance = balance + ?, inr_balance = inr_balance + ? WHERE id = ?', [comm, comm, parent.id]);
                                     logTx(parent.id, 'Commission', comm, `Commission from downline win`);
                                 }
@@ -158,31 +162,53 @@ app.post('/api/transfer-credits', (req, res) => {
     });
 });
 
-// UPDATED: Take back only resets Chips (balance) to 0. INR Money remains safe.
 app.post('/api/take-back-chips', (req, res) => {
     const { adminId, userId } = req.body;
     db.query('SELECT balance FROM users WHERE id=?', [userId], (e, r) => {
         if (e || !r.length) return res.json({ success: false });
         const amt = r[0].balance;
-        
         db.query('UPDATE users SET balance = 0 WHERE id=?', [userId], () => {
             db.query('UPDATE users SET balance = balance + ? WHERE id=?', [amt, adminId], () => {
-                logTx(adminId, 'Clawback', amt, `Took back chips from User ID: ${userId}`);
-                logTx(userId, 'TakeBack', -amt, `Playable chips removed by SuperAdmin`);
+                logTx(adminId, 'Clawback', amt, `Recovered chips from User ID: ${userId}`);
+                logTx(userId, 'TakeBack', -amt, `Chips removed by Admin (INR Safe)`);
                 res.json({ success: true, recovered: amt });
             });
         });
     });
 });
 
-app.post('/api/create-user', (req, res) => {
-    const { newUsername, newPassword, newRole, creatorId } = req.body;
-    db.query('INSERT INTO users(username, password, role, parent_id, balance, inr_balance) VALUES(?,?,?,?,0,0)', 
-    [newUsername, newPassword, newRole, creatorId], (err) => {
-        res.json({ success: !err, message: err ? 'Error' : 'User Created' });
+// NEW: Advanced User Creation Route
+app.post('/api/create-user-advanced', (req, res) => {
+    const { fName, uName, pass, role, logins, deposit, creatorId } = req.body;
+    const depAmt = parseFloat(deposit) || 0;
+
+    db.getConnection((err, conn) => {
+        conn.beginTransaction(() => {
+            // Default force_password_change = 1
+            const sql = `INSERT INTO users(first_name, username, password, role, parent_id, max_logins, balance, inr_balance, force_password_change) 
+                         VALUES(?,?,?,?,?,?,?,?,1)`;
+            
+            conn.query(sql, [fName, uName, pass, role, creatorId, logins, depAmt, 0], (err, result) => {
+                if (err) {
+                    return conn.rollback(() => {
+                        res.json({ success: false, message: 'Username already exists' });
+                    });
+                }
+                
+                // If deposit > 0, deduct from creator and log it
+                if (depAmt > 0) {
+                    conn.query('UPDATE users SET balance = balance - ? WHERE id = ?', [depAmt, creatorId], () => {
+                        logTx(creatorId, 'Deduction', -depAmt, `Setup deposit for ${uName}`);
+                        logTx(result.insertId, 'Deposit', depAmt, `Initial setup deposit`);
+                        conn.commit(() => { res.json({ success: true, message: 'User Created & Deposited' }); });
+                    });
+                } else {
+                    conn.commit(() => { res.json({ success: true, message: 'User Created Successfully' }); });
+                }
+            });
+        });
     });
 });
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server Online`));
-
