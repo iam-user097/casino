@@ -29,47 +29,47 @@
         .page.active { display:block; }
         @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 
-        /* NEW TABLE DESIGN (Matches Image 2) - MOBILE FRIENDLY SCROLL */
-        .table-container { background: #fff; border-radius: 4px; overflow-x: auto; margin-top: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-        table { width:100%; border-collapse:collapse; background: #fff; color: #333; min-width: 900px; }
-        th { background: var(--primary); color: white; padding: 12px; font-size: 13px; text-transform: capitalize; border: 1px solid rgba(255,255,255,0.1); text-align: center; }
-        td { padding: 10px; border: 1px solid #ddd; text-align: center; font-weight: 500; font-size: 13px; vertical-align: middle; }
-        tr:hover { background: #f9f9f9; }
+        /* NEON DARK TABLE DESIGN (Matching dashboard theme) */
+        .table-container { background: #12161f; border-radius: 8px; overflow-x: auto; margin-top: 10px; border: 1px solid var(--primary); box-shadow: 0 0 20px rgba(0, 80, 157, 0.2); }
+        table { width:100%; border-collapse:collapse; background: transparent; color: #eee; min-width: 900px; }
+        th { background: #011627; color: var(--accent); padding: 12px; font-size: 13px; text-transform: capitalize; border-bottom: 1px solid var(--primary); text-align: center; }
+        td { padding: 12px; border-bottom: 1px solid #1a202c; text-align: center; font-weight: 500; font-size: 13px; vertical-align: middle; }
+        tr:hover { background: rgba(0, 80, 157, 0.1); }
 
-        /* MODAL STYLES (Matches Image 3) */
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:3000; justify-content:center; align-items:center; }
-        .modal-content { background:white; color:#333; width:90%; max-width:700px; border-radius:8px; overflow:hidden; animation: zoomIn 0.3s; }
-        .modal-header { background:#eee; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid var(--neon-r); }
-        .modal-header h3 { margin: 0; font-size: 18px; }
-        .modal-body { padding:20px; display:grid; grid-template-columns: 1fr 1fr; gap:15px; max-height: 80vh; overflow-y: auto; }
-        .form-group { display:flex; flex-direction:column; gap:5px; }
-        .form-group label { font-size: 13px; font-weight: bold; color: #555; }
-        .form-group input, .form-group select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; background: #fff; color: #333; outline: none; }
-        .full-row { grid-column: span 2; }
-        .modal-footer { padding: 15px; background: #f8f9fa; display: flex; justify-content: flex-end; gap: 10px; }
-        
-        /* CIRCULAR ACTION BUTTONS */
+        /* CIRCULAR NEON ACTION BUTTONS */
         .act-btn { width: 30px; height: 30px; border-radius: 50%; border: none; color: white; cursor: pointer; margin: 0 2px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
         .act-btn:hover { transform: scale(1.1); filter: brightness(1.2); }
-        .btn-edit { background: #007bff; }
-        .btn-d { background: #17a2b8; }
+        .btn-edit { background: #007bff; box-shadow: 0 0 5px #007bff; }
+        .btn-d { background: var(--primary); box-shadow: 0 0 5px var(--primary); }
         .btn-w { background: #6c757d; }
-        .btn-mode { background: #00509d; border-radius: 4px; width: auto; padding: 0 8px; }
-        .btn-ms { background: #28a745; }
+        .btn-mode { background: #00509d; border-radius: 4px; width: auto; padding: 0 8px; font-size: 9px; }
+        .btn-ms { background: var(--neon-g); color: #000; box-shadow: 0 0 5px var(--neon-g); }
         .btn-key { background: #343a40; }
-        .btn-del { background: var(--neon-r); }
+        .btn-del { background: var(--neon-r); box-shadow: 0 0 5px var(--neon-r); }
 
-        /* STATUS TOGGLES */
+        /* NEON STATUS TOGGLES */
         .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(16px); }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; border: 1px solid #444; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); border-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(16px); background-color: var(--accent); }
+
+        /* NEON MODAL STYLES */
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
+        .modal-content { background:#12161f; color:white; width:90%; max-width:650px; border-radius:12px; overflow:hidden; animation: zoomIn 0.3s; border: 1px solid var(--primary); box-shadow: 0 0 30px rgba(0, 80, 157, 0.5); }
+        .modal-header { background:#011627; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid var(--neon-r); color: var(--accent); }
+        .modal-body { padding:25px; display:grid; grid-template-columns: 1fr 1fr; gap:20px; max-height: 80vh; overflow-y: auto; }
+        .form-group { display:flex; flex-direction:column; gap:8px; }
+        .form-group label { font-size: 13px; font-weight: bold; color: var(--accent); }
+        .form-group input, .form-group select { padding: 12px; border: 1px solid #333; border-radius: 6px; font-size: 14px; background: #0b0e14; color: white; outline: none; }
+        .form-group input:focus { border-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
+        .full-row { grid-column: span 2; }
+        .modal-footer { padding: 20px; background: #011627; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #1a202c; }
 
         @keyframes zoomIn { from { transform:scale(0.8); opacity:0; } to { transform:scale(1); opacity:1; } }
 
-        /* Professional Neon Cards */
+        /* Account & Neon Boxes */
         .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:25px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); box-shadow: 0 0 20px rgba(0, 80, 157, 0.3); }
         .neon-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
         .neon-box { padding:15px; border-radius:12px; font-weight:bold; text-align:center; font-size:14px; text-transform: uppercase; background: #0b0e14; border: 2px solid #333; }
@@ -81,8 +81,6 @@
             .sidebar.show { transform: translateX(0); box-shadow:10px 0 30px rgba(0,0,0,0.8); } 
             .sidebar-overlay.show { display: block; }
             .mobile-toggle { display:block !important; font-size: 22px; color: #fff; margin-right: 15px; }
-            .neon-grid { grid-template-columns: 1fr; }
-            .modal-content { width: 95%; }
             .modal-body { grid-template-columns: 1fr; }
             .full-row { grid-column: span 1; }
         }
@@ -93,53 +91,53 @@
     <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
 
     <div class="modal" id="passChangeModal">
-        <div class="modal-content" style="max-width: 400px;">
-            <div class="modal-header"><h3>Security Update</h3></div>
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header"><h3>Security Reset Required</h3></div>
             <div class="modal-body" style="grid-template-columns: 1fr;">
-                <p style="font-size:13px;">For security reasons, you must change the temporary password provided by the Admin.</p>
-                <div class="form-group"><label>New Password</label><input type="password" id="newSecurePass"></div>
-                <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmSecurePass"></div>
-                <button class="btn" style="background:var(--neon-g); color:black; width:100%;" onclick="forceUpdatePass()">Update & Login</button>
+                <p style="font-size:13px; color:#aaa; margin-bottom:10px;">For your protection, please update your temporary password.</p>
+                <div class="form-group"><label>Current Password</label><input type="password" id="oldSecurePass" required></div>
+                <div class="form-group"><label>New Password</label><input type="password" id="newSecurePass" required></div>
+                <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmSecurePass" required></div>
+                <button class="btn" style="background:var(--neon-g); color:black; padding:12px; font-weight:bold; border-radius:6px; margin-top:10px;" onclick="forceUpdatePass()">Update & Access Dashboard</button>
             </div>
         </div>
     </div>
 
     <div class="modal" id="userModal">
         <div class="modal-content">
-            <div class="modal-header"><h3 id="mTitle">Add User</h3><i class="fas fa-times-circle" style="color:red; cursor:pointer; font-size:20px;" onclick="closeModal()"></i></div>
+            <div class="modal-header"><h3 id="mTitle">Add User</h3><i class="fas fa-times-circle" style="color:red; cursor:pointer; font-size:22px;" onclick="closeModal()"></i></div>
             <div class="modal-body">
-                <div class="form-group" id="fNameDiv"><label>First Name</label><input type="text" id="mFName" placeholder="Enter First Name"></div>
-                <div class="form-group"><label>User Name</label><input type="text" id="mUName" placeholder="Enter User Name"></div>
-                <div class="form-group" id="passDiv"><label>Password</label><input type="password" id="mPass" placeholder="Enter Password"></div>
-                <div class="form-group" id="cPassDiv"><label>Confirm Password</label><input type="password" id="mCPass" placeholder="Confirm Password"></div>
-                <div class="form-group" id="roleDiv"><label>Role</label><select id="mRole"></select></div>
-                <div class="form-group"><label>No. Of Login</label><input type="number" id="mLogins" value="1" min="1"></div>
-                <div class="form-group full-row" id="depoDiv"><label>Deposit (Chips)</label><input type="number" id="mDeposit" placeholder="Enter Deposit Amount"></div>
+                <div class="form-group" id="fNameDiv"><label>First Name*</label><input type="text" id="mFName" placeholder="First Name" required></div>
+                <div class="form-group"><label>User Name*</label><input type="text" id="mUName" placeholder="Username" required></div>
+                <div class="form-group" id="passDiv"><label>Password*</label><input type="password" id="mPass" placeholder="Password" required></div>
+                <div class="form-group" id="cPassDiv"><label>Confirm Password*</label><input type="password" id="mCPass" placeholder="Confirm" required></div>
+                <div class="form-group" id="roleDiv"><label>Role*</label><select id="mRole" required></select></div>
+                <div class="form-group"><label>No. Of Login*</label><input type="number" id="mLogins" value="1" min="1" required></div>
+                <div class="form-group full-row" id="depoDiv"><label>Initial Deposit (Chips)*</label><input type="number" id="mDeposit" placeholder="0.00" required></div>
             </div>
             <div class="modal-footer">
-                <button class="btn" style="background:var(--neon-r); padding: 8px 20px;" onclick="closeModal()">Cancel</button>
-                <button class="btn" style="background:var(--neon-g); color:black; padding: 8px 20px;" onclick="submitUser()">Submit</button>
+                <button class="btn" style="background:var(--neon-r); padding: 10px 25px; border-radius:6px; font-weight:bold;" onclick="closeModal()">Cancel</button>
+                <button class="btn" style="background:var(--neon-g); color:black; padding: 10px 25px; border-radius:6px; font-weight:bold;" onclick="submitUser()">Submit</button>
             </div>
         </div>
     </div>
 
     <div class="modal" id="msModal">
         <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header"><h3>Market Setting</h3><i class="fas fa-times-circle" style="color:red; cursor:pointer; font-size:20px;" onclick="closeModal()"></i></div>
+            <div class="modal-header"><h3>Advanced Market Settings</h3><i class="fas fa-times-circle" style="color:red; cursor:pointer; font-size:20px;" onclick="closeModal()"></i></div>
             <div class="modal-body" style="grid-template-columns: 1fr;">
-                <div style="background:#f9f9f9; padding:15px; border-radius:5px; border:1px solid #ddd;">
-                    <p style="font-weight:bold; color:var(--primary); margin-bottom:10px;">Select Active Markets:</p>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                        <label><input type="checkbox" checked> Cricket</label>
-                        <label><input type="checkbox" checked> Football</label>
-                        <label><input type="checkbox" checked> Tennis</label>
-                        <label><input type="checkbox" checked> Casino</label>
-                        <label><input type="checkbox" checked> Jackpot</label>
+                <div style="background:#0b0e14; padding:15px; border-radius:8px; border:1px solid var(--primary);">
+                    <p style="color:var(--accent); font-weight:bold; margin-bottom:12px;">Active Games & Markets:</p>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                        <label><input type="checkbox" checked> Cricket (Match Odds)</label>
+                        <label><input type="checkbox" checked> Cricket (Toss)</label>
+                        <label><input type="checkbox" checked> Football (Match Odd)</label>
+                        <label><input type="checkbox" checked> Football (Over/Under)</label>
+                        <label><input type="checkbox" checked> Casino Games</label>
+                        <label><input type="checkbox" checked> Jackpot Markets</label>
                     </div>
-                    <hr style="margin:15px 0;">
-                    <p style="font-size:11px; color:#777;">Specific Cricket Markets: Match Odd, Toss, Super Over...</p>
                 </div>
-                <button class="btn" style="background:var(--primary);" onclick="closeModal()">Save Markets</button>
+                <button class="btn" style="background:var(--primary); padding:12px; border-radius:6px; font-weight:bold;" onclick="closeModal()">Save Configuration</button>
             </div>
         </div>
     </div>
@@ -165,10 +163,10 @@
         <div id="page-user" class="page active">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
                 <div style="position:relative; width: 300px;">
-                    <i class="fas fa-search" style="position:absolute; left:12px; top:12px; color:#888;"></i>
-                    <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User Here..." style="width:100%; padding:10px 10px 10px 35px; border-radius:4px; background:#12161f; border:1px solid #333; color:white;">
+                    <i class="fas fa-search" style="position:absolute; left:12px; top:10px; color:#888;"></i>
+                    <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User..." style="width:100%; padding:8px 10px 8px 35px; border-radius:6px; background:#12161f; border:1px solid #333; color:white;">
                 </div>
-                <button class="btn" style="font-size:22px; padding: 2px 15px; background: var(--primary);" onclick="openModal()">+</button>
+                <button id="addBtn" class="btn" style="font-size:22px; padding: 2px 15px; background: var(--primary); border-radius:6px; box-shadow: 0 0 10px rgba(0,80,157,0.4);" onclick="openModal()">+</button>
             </div>
 
             <div class="table-container">
@@ -196,26 +194,26 @@
                 <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">BETTING EXPOSURE</p>
                 <h1 style="color:var(--neon-g); font-size:45px; text-shadow: 0 0 15px var(--neon-g);">🪙 <span id="bet-exp">0</span></h1>
                 <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
-                    <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 150px;">
-                    <button onclick="addExp()" class="btn" style="background: var(--accent); color: black;">Deposit</button>
+                    <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 150px; background:#0b0e14; color:white; border:1px solid #333; padding:8px; border-radius:4px;">
+                    <button onclick="addExp()" class="btn" style="background: var(--accent); color: black; font-weight:bold; padding:8px 15px; border-radius:4px;">Deposit</button>
                 </div>
             </div>
-            <div class="card" style="text-align:center">
-                <h4 style="margin-bottom:20px;">Place Quick Bet</h4>
+            <div class="card" style="text-align:center; background:#12161f; border:1px solid #1a202c; padding:20px; border-radius:12px;">
+                <h4 style="margin-bottom:20px; color:var(--accent)">Place Quick Bet</h4>
                 <div style="display:flex; justify-content:center; gap:25px;">
-                    <button class="chip-btn" onclick="bet(100)">100</button>
-                    <button class="chip-btn" onclick="bet(500)">500</button>
-                    <button class="chip-btn" onclick="bet(1000)">1000</button>
+                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(100)">100</button>
+                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(500)">500</button>
+                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(1000)">1000</button>
                 </div>
             </div>
         </div>
 
         <div id="page-history" class="page">
-            <div class="card">
-                <h3 style="color:var(--accent)"><i class="fas fa-history"></i> Transaction History</h3>
+            <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px;">
+                <h3 style="color:var(--accent); margin-bottom:15px;"><i class="fas fa-history"></i> Transaction Log</h3>
                 <div style="overflow-x:auto">
-                    <table id="histTable" style="color:white; background:transparent;">
-                        <thead><tr><th style="background:transparent; border-bottom:1px solid var(--primary)">Date</th><th style="background:transparent; border-bottom:1px solid var(--primary)">Type</th><th style="background:transparent; border-bottom:1px solid var(--primary)">Amount</th><th style="background:transparent; border-bottom:1px solid var(--primary)">Details</th></tr></thead>
+                    <table id="histTable" style="width:100%; border-collapse:collapse;">
+                        <thead><tr><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Date</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Type</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Amount</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Details</th></tr></thead>
                         <tbody style="color:#ddd"></tbody>
                     </table>
                 </div>
@@ -224,13 +222,13 @@
 
         <div id="page-account" class="page">
             <div class="account-card">
-                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">SAVED MONEY (INR)</p>
+                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">TOTAL SAVED MONEY</p>
                 <h1 style="color:var(--accent); font-size:40px; text-shadow: 0 0 15px var(--accent);">₹ <span id="inr">0</span></h1>
-                <p style="opacity: 0.8; margin-top: 10px;">Playable Chips: <span id="chips">0</span></p>
+                <p style="opacity: 0.8; margin-top: 10px; font-size:14px;">Available Chips: <span id="chips">0</span></p>
             </div>
             <div class="neon-grid">
-                <div class="neon-box win-box">WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
-                <div class="neon-box lose-box">LOSSES<br><span id="lose" style="font-size: 20px;">0</span></div>
+                <div class="neon-box win-box">TOTAL WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
+                <div class="neon-box lose-box">TOTAL LOSSES<br><span id="lose" style="font-size: 20px;">0</span></div>
             </div>
         </div>
     </div>
@@ -242,7 +240,7 @@
 
         function openModal() { 
             editUserId = null;
-            document.getElementById('mTitle').innerText = "Add User";
+            document.getElementById('mTitle').innerText = "Add New User";
             document.getElementById('passDiv').style.display = 'flex';
             document.getElementById('cPassDiv').style.display = 'flex';
             document.getElementById('roleDiv').style.display = 'flex';
@@ -252,7 +250,7 @@
 
         function openEdit(id, uname, fname, logins) {
             editUserId = id;
-            document.getElementById('mTitle').innerText = "Edit User";
+            document.getElementById('mTitle').innerText = "Edit User Data";
             document.getElementById('mUName').value = uname;
             document.getElementById('mFName').value = fname || "";
             document.getElementById('mLogins').value = logins;
@@ -272,6 +270,7 @@
                 if(d.success) {
                     user = d.data;
                     sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    
                     document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
                     document.getElementById('inr').innerText = (user.inr_balance || 0).toLocaleString();
                     document.getElementById('chips').innerText = user.balance.toLocaleString();
@@ -279,9 +278,12 @@
                     document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
                     document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
 
-                    // SECURITY: Check Force Password Flag (SuperAdmin is exempt)
+                    // FIXED: Client restriction logic
+                    if(user.role === 'Client') document.getElementById('addBtn').style.display = 'none';
+
+                    // SECURITY: Force Password Flag (SuperAdmin is exempt)
                     if(user.force_password_change === 1 && user.role !== 'SuperAdmin') {
-                    document.getElementById('passChangeModal').style.display = 'flex';
+                        document.getElementById('passChangeModal').style.display = 'flex';
                     }
                 }
             } catch(e) {}
@@ -299,27 +301,27 @@
                     <tr>
                         <td><i class="fas fa-arrow-circle-right" style="color:var(--neon-r); font-size:18px;"></i></td>
                         <td style="text-align:left; padding-left:15px;">
-                            <span style="color:#333; font-weight:bold;">${u.username}</span><br>
-                            <small style="color:#00509d; font-weight:bold;">( ${u.role.toUpperCase()} )</small>
+                            <span style="color:var(--accent); font-weight:bold;">${u.username}</span><br>
+                            <small style="color:var(--primary); font-weight:bold;">( ${u.role.toUpperCase()} )</small>
                         </td>
-                        <td>${u.exposure}</td>
-                        <td>0</td>
-                        <td style="color:#333; font-weight:bold;">${u.balance}</td>
+                        <td style="color:var(--neon-g)">${u.exposure}</td>
+                        <td style="color:#aaa">0</td>
+                        <td style="color:var(--accent); font-weight:bold;">${u.balance}</td>
                         <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
-                        <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                        <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
                         <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
                         <td>
-                            <button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}','${u.first_name}',${u.max_logins})"><i class="fas fa-edit"></i></button>
-                            <button class="act-btn btn-d" onclick="give(${u.id},'${u.username}')">D</button>
-                            <button class="act-btn btn-w" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                            <button class="act-btn btn-mode" onclick="alert('Gaming Modes Loaded')">MODE</button>
-                            <button class="act-btn btn-ms" onclick="document.getElementById('msModal').style.display='flex'">MS</button>
-                            <button class="act-btn btn-key" onclick="resetKey(${u.id})"><i class="fas fa-key"></i></button>
-                            ${user.role === 'SuperAdmin' ? `<button class="act-btn btn-del" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>` : ''}
+                            <button class="act-btn btn-edit" title="Edit Name/Logins" onclick="openEdit(${u.id},'${u.username}','${u.first_name}',${u.max_logins})"><i class="fas fa-edit"></i></button>
+                            <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
+                            <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
+                            <button class="act-btn btn-mode" title="Gaming Modes">MODE</button>
+                            <button class="act-btn btn-ms" title="Market Config" onclick="document.getElementById('msModal').style.display='flex'">MS</button>
+                            <button class="act-btn btn-key" title="Change Pass" onclick="resetKey(${u.id})"><i class="fas fa-key"></i></button>
+                            ${user.role === 'SuperAdmin' ? `<button class="act-btn btn-del" title="Delete User" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>` : ''}
                         </td>
                     </tr>
                 `).join('');
-            } catch(e) { tbody.innerHTML = '<tr><td colspan="9" style="color:red">Error loading users</td></tr>'; }
+            } catch(e) { tbody.innerHTML = '<tr><td colspan="9" style="color:red">Connection Error</td></tr>'; }
         }
 
         async function submitUser() {
@@ -333,12 +335,36 @@
                 creatorId: user.id
             };
             
+            // Validate all fields are required
+            if(!data.fName || !data.uName || (!editUserId && !data.pass) || !data.role || !data.logins || !data.deposit) return alert("Error: All fields are required!");
+
             const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
             if(editUserId) data.id = editUserId;
 
             const res = await fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
             const d = await res.json();
             alert(d.message); if(d.success) { closeModal(); init(); }
+        }
+
+        async function forceUpdatePass() {
+            const oldP = document.getElementById('oldSecurePass').value;
+            const newP = document.getElementById('newSecurePass').value;
+            const confP = document.getElementById('confirmSecurePass').value;
+
+            if(!oldP || !newP) return alert("Fill all password fields!");
+            if(newP !== confP) return alert("New passwords do not match!");
+            
+            // Verify old password before change
+            const res = await fetch('/api/change-password-secure', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({userId:user.id, oldPass: oldP, newPass: newP})
+            });
+            const d = await res.json();
+            if(d.success) {
+                alert("Security Verified! Welcome to the Dashboard.");
+                location.reload();
+            } else { alert(d.message); }
         }
 
         async function withdraw(id, name) {
@@ -349,17 +375,17 @@
         }
 
         async function deleteUser(id, bal) {
-            if(bal > 0) return alert("User still has chips! Withdraw first.");
-            if(!confirm("Delete user permanently?")) return;
+            if(bal > 0) return alert("Error: User still has chips! Withdraw first.");
+            if(!confirm("Are you sure? This user will be deleted permanently.")) return;
             await fetch('/api/delete-user', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
             init();
         }
 
         async function resetKey(id) {
-            const newP = prompt("Enter new password for this user:");
+            const newP = prompt("Enter new master password for user:");
             if(!newP) return;
             await fetch('/api/update-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:id, newPass: newP})});
-            alert("Password Updated.");
+            alert("Master Password Updated.");
         }
 
         function filterUsers() {
@@ -369,31 +395,23 @@
             });
         }
 
-        async function forceUpdatePass() {
-            const newP = document.getElementById('newSecurePass').value;
-            const confP = document.getElementById('confirmSecurePass').value;
-            if(!newP || newP !== confP) return alert("Passwords do not match!");
-            const res = await fetch('/api/update-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, newPass: newP})});
-            if(res.ok) { alert("Welcome!"); location.reload(); }
-        }
-
         async function loadHistory() {
             try {
                 const res = await fetch('/api/history', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id})});
                 const d = await res.json();
                 const tbody = document.querySelector('#histTable tbody');
-                tbody.innerHTML = d.history.map(h => `<tr><td style="font-size:11px">${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type}</b></td><td style="color:${h.amount >= 0 ? 'var(--neon-g)':'var(--neon-r)'}; font-weight:bold">${h.amount}</td><td style="font-size:12px; color:#aaa">${h.description}</td></tr>`).join('');
+                tbody.innerHTML = d.history.map(h => `<tr><td style="font-size:11px; padding:10px;">${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type}</b></td><td style="color:${h.amount >= 0 ? 'var(--neon-g)':'var(--neon-r)'}; font-weight:bold">${h.amount}</td><td style="font-size:12px; color:#aaa">${h.description}</td></tr>`).join('');
             } catch(e) {}
         }
 
         async function takeBack(id) {
-            if(!confirm("Recover playable chips? User's Saved Money (INR) will remain safe.")) return;
+            if(!confirm("Take back all chips? INR Saved balance will stay safe.")) return;
             const res = await fetch('/api/take-back-chips', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({adminId:user.id, userId:id})});
-            if(res.ok) { alert("Success!"); init(); }
+            if(res.ok) { alert("Recovered!"); init(); }
         }
 
         async function give(id, name) {
-            const amt = prompt(`Deposit for ${name}:`);
+            const amt = prompt(`Deposit amount for ${name}:`);
             if(!amt || isNaN(amt)) return;
             const res = await fetch('/api/transfer-credits', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({senderId:user.id, receiverId:id, amount:amt})});
             alert((await res.json()).message); init();
@@ -407,7 +425,7 @@
         }
 
         async function bet(amt) {
-            if(user.exposure < amt) return alert("Insufficient Exposure!");
+            if(user.exposure < amt) return alert("Exposure low!");
             const win = Math.random() > 0.5;
             await fetch('/api/place-bet', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, betAmount:amt, isWin:win})});
             alert(win ? "WON!" : "LOST!"); init();
@@ -439,4 +457,3 @@
     </script>
 </body>
 </html>
-
