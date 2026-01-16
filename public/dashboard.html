@@ -208,11 +208,11 @@
         </div>
 
         <div id="page-history" class="page">
-            <div class="card">
-                <h3 style="color:var(--accent)"><i class="fas fa-history"></i> Transaction History</h3>
+            <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px;">
+                <h3 style="color:var(--accent); margin-bottom:15px;"><i class="fas fa-history"></i> Transaction Log</h3>
                 <div style="overflow-x:auto">
-                    <table id="histTable" style="color:white; background:transparent;">
-                        <thead><tr><th style="background:transparent; border-bottom:1px solid var(--primary)">Date</th><th style="background:transparent; border-bottom:1px solid var(--primary)">Type</th><th style="background:transparent; border-bottom:1px solid var(--primary)">Amount</th><th style="background:transparent; border-bottom:1px solid var(--primary)">Details</th></tr></thead>
+                    <table id="histTable" style="width:100%; border-collapse:collapse;">
+                        <thead><tr><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Date</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Type</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Amount</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Details</th></tr></thead>
                         <tbody style="color:#ddd"></tbody>
                     </table>
                 </div>
@@ -316,7 +316,7 @@
                             <button class="act-btn btn-mode" title="Gaming Modes" onclick="alert('Gaming Modes Loaded')">MODE</button>
                             <button class="act-btn btn-ms" title="Market Config" onclick="document.getElementById('msModal').style.display='flex'">MS</button>
                             <button class="act-btn btn-key" title="Change Pass" onclick="resetKey(${u.id})"><i class="fas fa-key"></i></button>
-                            ${user.role === 'SuperAdmin' ? `<button class="act-btn btn-del" title="Delete User" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>` : ''}
+                            <button class="act-btn btn-del" title="Delete User" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>
                 `; }).join('');
@@ -375,7 +375,6 @@
             if(bal > 0) return alert("Withdraw all chips before deleting!");
             if(!confirm("Delete user permanently? This will wipe their history and record.")) return;
             
-            // FIXED: Added properly structured fetch call for deletion
             try {
                 const res = await fetch('/api/delete-user', {
                     method:'POST', 
