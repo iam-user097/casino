@@ -2,13 +2,8 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const path = require('path');
-const http = require('http'); // ADDED for real-time
-const { Server } = require('socket.io'); // ADDED for real-time
 
 const app = express();
-const server = http.createServer(app); // Wrap express app
-const io = new Server(server, { cors: { origin: "*" } }); // Initialize Socket.io
-
 app.use(cors());
 app.use(express.json());
 
@@ -31,13 +26,6 @@ const logTx = (uid, type, amt, desc) => {
     db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [uid, type, amt, desc]);
 };
 
-// --- NEW FEATURE: REAL-TIME NOTIFICATION LOGIC ---
-io.on('connection', (socket) => {
-    socket.on('join-admin-room', (adminId) => {
-        socket.join(`admin_${adminId}`); // Admins join their private notification room
-    });
-});
-
 // --- API ROUTES ---
 
 app.post('/api/login', (req, res) => {
@@ -45,16 +33,8 @@ app.post('/api/login', (req, res) => {
     db.query('SELECT * FROM users WHERE username=? AND password=?', [username, password], (err, result) => {
         if (err) return res.json({ success: false });
         if (result.length > 0) {
-            const user = result[0];
-            db.query('UPDATE users SET last_active=NOW() WHERE id=?', [user.id]);
-            
-            // BROADCAST: Notify parent admin that this user has logged in
-            io.to(`admin_${user.parent_id}`).emit('user-logged-in', {
-                username: user.username,
-                role: user.role
-            });
-
-            res.json({ success: true, user: user });
+            db.query('UPDATE users SET last_active=NOW() WHERE id=?', [result[0].id]);
+            res.json({ success: true, user: result[0] });
         } else res.json({ success: false, message: 'Invalid Login' });
     });
 });
@@ -68,6 +48,7 @@ app.post('/api/user-details', (req, res) => {
 // ENHANCED SECURITY: Update password with OLD password verification
 app.post('/api/change-password-secure', (req, res) => {
     const { userId, oldPass, newPass } = req.body;
+    // Verify old password first
     db.query('SELECT password FROM users WHERE id = ?', [userId], (e, r) => {
         if (r && r[0].password === oldPass) {
             db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err) => {
@@ -119,14 +100,21 @@ app.post('/api/withdraw-chips', (req, res) => {
 // FIXED: Delete User with full history cleanup
 app.post('/api/delete-user', (req, res) => {
     const { id } = req.body;
+
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
+            // 1. Check if user still has chips (Sir's requirement)
             conn.query('SELECT balance FROM users WHERE id = ?', [id], (e, r) => {
                 if (e || !r.length) return conn.rollback(() => res.json({ success: false, message: 'User not found' }));
+                
                 if (r[0].balance > 0) {
                     return conn.rollback(() => res.json({ success: false, message: 'Withdraw chips before deleting!' }));
                 }
+
+                // 2. Delete all transaction history for this user first
                 conn.query('DELETE FROM transactions WHERE user_id = ?', [id], () => {
+                    
+                    // 3. Delete the user account
                     conn.query('DELETE FROM users WHERE id = ?', [id], (err, final) => {
                         if (err) {
                             return conn.rollback(() => {
@@ -166,6 +154,7 @@ app.post('/api/place-bet', (req, res) => {
     const { userId, betAmount, isWin } = req.body;
     const amt = parseFloat(betAmount);
     const rates = { 'SuperAdmin': 0.08, 'Admin': 0.06, 'SuperMaster': 0.05, 'Master': 0.04, 'Agent': 0.02 };
+
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
             if (isWin) {
@@ -233,7 +222,10 @@ app.post('/api/take-back-chips', (req, res) => {
 app.post('/api/create-user-advanced', (req, res) => {
     const { fName, uName, pass, role, logins, deposit, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
+    
+    // Logic: Force password change ONLY if the NEW user is NOT a SuperAdmin
     const forceFlag = (role === 'SuperAdmin') ? 0 : 1;
+
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
             const sql = `INSERT INTO users(first_name, username, password, role, parent_id, max_logins, balance, inr_balance, force_password_change) 
@@ -253,4 +245,4 @@ app.post('/api/create-user-advanced', (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log(`🚀 Server Online with Notifications`));
+app.listen(PORT, () => console.log(`🚀 Server Online`));
