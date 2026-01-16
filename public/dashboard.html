@@ -55,7 +55,7 @@
         input:checked + .slider { background-color: var(--primary); border-color: var(--accent); }
         input:checked + .slider:before { transform: translateX(16px); background-color: var(--accent); }
 
-        /* MODAL STYLES */
+        /* NEON MODAL STYLES */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
         .modal-content { background:#12161f; color:white; width:90%; max-width:650px; border-radius:12px; overflow:hidden; animation: zoomIn 0.3s; border: 1px solid var(--primary); box-shadow: 0 0 30px rgba(0, 80, 157, 0.5); }
         .modal-header { background:#011627; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid var(--neon-r); color: var(--accent); }
@@ -67,15 +67,14 @@
         .full-row { grid-column: span 2; }
         .modal-footer { padding: 20px; background: #011627; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #1a202c; }
 
-        /* NEW ACCOUNT LIST STYLING */
-        .acc-list-container { max-width: 400px; margin: 20px auto; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
-        .acc-header-box { background: #fff; padding: 5px; }
-        .acc-data-row { display: flex; justify-content: space-between; padding: 12px 15px; background: #fff; color: #333; border-bottom: 1px solid #eee; font-weight: bold; font-size: 14px; }
-        .acc-link-item { display: flex; align-items: center; gap: 15px; padding: 15px; background: #e0f2f1; color: #000; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; text-decoration: none; font-weight: 500; font-size: 14px; transition: 0.2s; }
-        .acc-link-item:hover { background: #b2dfdb; padding-left: 20px; }
-        .acc-link-item i { width: 20px; color: #333; }
-
         @keyframes zoomIn { from { transform:scale(0.8); opacity:0; } to { transform:scale(1); opacity:1; } }
+
+        /* Professional Neon Cards */
+        .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:25px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); box-shadow: 0 0 20px rgba(0, 80, 157, 0.3); }
+        .neon-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+        .neon-box { padding:15px; border-radius:12px; font-weight:bold; text-align:center; font-size:14px; text-transform: uppercase; background: #0b0e14; border: 2px solid #333; }
+        .win-box { border-color: var(--neon-g); color: var(--neon-g); box-shadow: 0 0 10px rgba(57, 255, 20, 0.2); }
+        .lose-box { border-color: var(--neon-r); color: var(--neon-r); box-shadow: 0 0 10px rgba(255, 49, 49, 0.2); }
 
         @media(max-width:768px) { 
             .sidebar { position:fixed; left:0; height:100%; transform: translateX(-100%); } 
@@ -221,16 +220,14 @@
         </div>
 
         <div id="page-account" class="page">
-            <div class="acc-list-container">
-                <div class="acc-header-box">
-                    <div class="acc-data-row"><span>Chips</span><span id="acc-chips" style="color:var(--neon-g)">0.00</span></div>
-                    <div class="acc-data-row"><span>P & L</span><span id="acc-pl" style="color:var(--neon-r)">-0.00</span></div>
-                    <div class="acc-data-row"><span>Exposure</span><span id="acc-exp" style="color:#000">0</span></div>
-                </div>
-                <a class="acc-link-item" onclick="alert('Account Statement logic...')"><i class="fas fa-university"></i> Account Statment</a>
-                <a class="acc-link-item" onclick="nav('history', document.querySelector('.nav-item:nth-child(3)'))"><i class="fas fa-file-alt"></i> Profit & Loss</a>
-                <a class="acc-link-item" onclick="alert('Stake setting logic...')"><i class="fas fa-layer-group"></i> Edit Stakes</a>
-                <a class="acc-link-item" onclick="document.getElementById('passChangeModal').style.display='flex'"><i class="fas fa-lock"></i> Change Password</a>
+            <div class="account-card">
+                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">TOTAL SAVED MONEY</p>
+                <h1 style="color:var(--accent); font-size:40px; text-shadow: 0 0 15px var(--accent);">₹ <span id="inr">0</span></h1>
+                <p style="opacity: 0.8; margin-top: 10px; font-size:14px;">Available Chips: <span id="chips">0</span></p>
+            </div>
+            <div class="neon-grid">
+                <div class="neon-box win-box">TOTAL WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
+                <div class="neon-box lose-box">TOTAL LOSSES<br><span id="lose" style="font-size: 20px;">0</span></div>
             </div>
         </div>
     </div>
@@ -243,10 +240,10 @@
         function openModal() { 
             editUserId = null;
             document.getElementById('mTitle').innerText = "Add New User";
-            ['fNameDiv','passDiv','cPassDiv','roleDiv','depoDiv'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.style.display = 'flex';
-            });
+            document.getElementById('passDiv').style.display = 'flex';
+            document.getElementById('cPassDiv').style.display = 'flex';
+            document.getElementById('roleDiv').style.display = 'flex';
+            document.getElementById('depoDiv').style.display = 'flex';
             document.getElementById('userModal').style.display = 'flex'; 
         }
 
@@ -256,10 +253,10 @@
             document.getElementById('mUName').value = uname;
             document.getElementById('mFName').value = fname || "";
             document.getElementById('mLogins').value = logins;
-            ['passDiv','cPassDiv','roleDiv','depoDiv'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.style.display = 'none';
-            });
+            document.getElementById('passDiv').style.display = 'none';
+            document.getElementById('cPassDiv').style.display = 'none';
+            document.getElementById('roleDiv').style.display = 'none';
+            document.getElementById('depoDiv').style.display = 'none';
             document.getElementById('userModal').style.display = 'flex';
         }
 
@@ -272,21 +269,24 @@
                 if(d.success) {
                     user = d.data;
                     sessionStorage.setItem('currentUser', JSON.stringify(user));
-                    document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
                     
-                    document.getElementById('acc-chips').innerText = user.balance.toFixed(2);
-                    const pl = (user.total_wins - user.total_losses) || 0;
-                    document.getElementById('acc-pl').innerText = pl.toFixed(2);
-                    document.getElementById('acc-pl').style.color = pl >= 0 ? 'var(--neon-g)' : 'var(--neon-r)';
-                    document.getElementById('acc-exp').innerText = user.exposure || 0;
+                    document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
+                    document.getElementById('inr').innerText = (user.inr_balance || 0).toLocaleString();
+                    document.getElementById('chips').innerText = user.balance.toLocaleString();
+                    document.getElementById('wins').innerText = (user.total_wins || 0).toLocaleString();
+                    document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
+                    document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
 
                     if(user.role === 'Client') document.getElementById('addBtn').style.display = 'none';
+
                     if(user.force_password_change === 1 && user.role !== 'SuperAdmin') {
                         document.getElementById('passChangeModal').style.display = 'flex';
                     }
                 }
             } catch(e) {}
-            loadUsers(); setupRoles(); loadHistory();
+            loadUsers();
+            setupRoles();
+            loadHistory();
         }
 
         async function loadUsers() {
@@ -304,7 +304,7 @@
                             <small style="color:var(--primary); font-weight:bold;">( ${u.role.toUpperCase()} )</small>
                         </td>
                         <td style="color:var(--neon-g)">${u.exposure}</td>
-                        <td style="color:var(--accent); font-weight:bold;">${(u.settlement || 0).toFixed(2)}</td>
+                        <td style="color:#aaa">0</td>
                         <td style="color:var(--accent); font-weight:bold;">${u.balance}</td>
                         <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
                         <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
@@ -313,7 +313,7 @@
                             <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}','${u.first_name}',${u.max_logins})"><i class="fas fa-edit"></i></button>
                             <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
                             <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                            <button class="act-btn btn-mode" title="Gaming Modes">MODE</button>
+                            <button class="act-btn btn-mode" title="Gaming Modes" onclick="alert('Gaming Modes Loaded')">MODE</button>
                             <button class="act-btn btn-ms" title="Market Config" onclick="document.getElementById('msModal').style.display='flex'">MS</button>
                             <button class="act-btn btn-key" title="Change Pass" onclick="resetKey(${u.id})"><i class="fas fa-key"></i></button>
                             <button class="act-btn btn-del" title="Delete User" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>
@@ -325,13 +325,20 @@
 
         async function submitUser() {
             const data = {
-                fName: document.getElementById('mFName').value, uName: document.getElementById('mUName').value,
-                pass: document.getElementById('mPass').value, role: document.getElementById('mRole').value,
-                logins: document.getElementById('mLogins').value, deposit: document.getElementById('mDeposit').value, creatorId: user.id
+                fName: document.getElementById('mFName').value,
+                uName: document.getElementById('mUName').value,
+                pass: document.getElementById('mPass').value,
+                role: document.getElementById('mRole').value,
+                logins: document.getElementById('mLogins').value,
+                deposit: document.getElementById('mDeposit').value,
+                creatorId: user.id
             };
+            
             if(!data.fName || !data.uName || (!editUserId && !data.pass) || !data.role || !data.logins || !data.deposit) return alert("All fields are required!");
+
             const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
             if(editUserId) data.id = editUserId;
+
             const res = await fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
             const d = await res.json();
             alert(d.message); if(d.success) { closeModal(); init(); }
@@ -341,11 +348,20 @@
             const oldP = document.getElementById('oldSecurePass').value;
             const newP = document.getElementById('newSecurePass').value;
             const confP = document.getElementById('confirmSecurePass').value;
-            if(!oldP || !newP || !confP) return alert("Fill all fields!");
+
+            if(!oldP || !newP || !confP) return alert("All fields are required!");
             if(newP !== confP) return alert("New passwords do not match!");
-            const res = await fetch('/api/change-password-secure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, oldPass: oldP, newPass: newP})});
+            
+            const res = await fetch('/api/change-password-secure', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({userId:user.id, oldPass: oldP, newPass: newP})
+            });
             const d = await res.json();
-            if(d.success) location.reload(); else alert(d.message);
+            if(d.success) {
+                alert("Security Verified!");
+                location.reload();
+            } else { alert(d.message); }
         }
 
         async function withdraw(id, name) {
@@ -358,11 +374,19 @@
         async function deleteUser(id, bal) {
             if(bal > 0) return alert("Withdraw all chips before deleting!");
             if(!confirm("Delete user permanently? This will wipe their history and record.")) return;
+            
             try {
-                const res = await fetch('/api/delete-user', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
+                const res = await fetch('/api/delete-user', {
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'}, 
+                    body:JSON.stringify({id})
+                });
                 const d = await res.json();
-                alert(d.message); if(d.success) init(); 
-            } catch(e) { alert("Server Connection Error"); }
+                alert(d.message);
+                if(d.success) init(); 
+            } catch(e) {
+                alert("Server Connection Error");
+            }
         }
 
         async function resetKey(id) {
@@ -372,13 +396,10 @@
             alert("Updated.");
         }
 
-        // FIXED: Search Filter now scans row content properly
         function filterUsers() {
             let input = document.getElementById('userSearch').value.toLowerCase();
-            let rows = document.querySelectorAll('#userTable tbody tr');
-            rows.forEach(row => {
-                let text = row.innerText.toLowerCase();
-                row.style.display = text.includes(input) ? "" : "none";
+            document.querySelectorAll('#userTable tbody tr').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
             });
         }
 
@@ -429,7 +450,7 @@
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            if(el) el.classList.add('active');
+            el.classList.add('active');
             if(window.innerWidth <= 768) toggleSidebar();
         }
 
