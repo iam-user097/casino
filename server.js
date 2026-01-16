@@ -45,10 +45,8 @@ app.post('/api/user-details', (req, res) => {
     });
 });
 
-// ENHANCED SECURITY: Update password with OLD password verification
 app.post('/api/change-password-secure', (req, res) => {
     const { userId, oldPass, newPass } = req.body;
-    // Verify old password first
     db.query('SELECT password FROM users WHERE id = ?', [userId], (e, r) => {
         if (r && r[0].password === oldPass) {
             db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err) => {
@@ -60,7 +58,6 @@ app.post('/api/change-password-secure', (req, res) => {
     });
 });
 
-// Quick Password Reset (For Admin/Key button)
 app.post('/api/update-password', (req, res) => {
     const { userId, newPass } = req.body;
     db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err) => {
@@ -83,7 +80,6 @@ app.post('/api/history', (req, res) => {
     db.query('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 20', [req.body.userId], (_, r) => res.json({ history: r || [] }));
 });
 
-// Withdraw Chips (Button W)
 app.post('/api/withdraw-chips', (req, res) => {
     const { adminId, userId, amount } = req.body;
     const amt = parseFloat(amount);
@@ -97,31 +93,46 @@ app.post('/api/withdraw-chips', (req, res) => {
     });
 });
 
-// FIXED: Delete User with full history cleanup
+// FIXED: Delete User with full history cleanup logic
 app.post('/api/delete-user', (req, res) => {
     const { id } = req.body;
 
     db.getConnection((err, conn) => {
-        conn.beginTransaction(() => {
+        if (err) return res.json({ success: false, message: 'Connection Error' });
+
+        conn.beginTransaction((tErr) => {
+            if (tErr) { conn.release(); return res.json({ success: false }); }
+
             // 1. Check if user still has chips (Sir's requirement)
             conn.query('SELECT balance FROM users WHERE id = ?', [id], (e, r) => {
-                if (e || !r.length) return conn.rollback(() => res.json({ success: false, message: 'User not found' }));
+                if (e || !r.length) {
+                    return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'User not found' }); });
+                }
                 
                 if (r[0].balance > 0) {
-                    return conn.rollback(() => res.json({ success: false, message: 'Withdraw chips before deleting!' }));
+                    return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'Withdraw chips before deleting!' }); });
                 }
 
-                // 2. Delete all transaction history for this user first
-                conn.query('DELETE FROM transactions WHERE user_id = ?', [id], () => {
-                    
+                // 2. Delete all transaction history first to avoid Foreign Key Error
+                conn.query('DELETE FROM transactions WHERE user_id = ?', [id], (txErr) => {
+                    if (txErr) {
+                        return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'Failed to clear history' }); });
+                    }
+
                     // 3. Delete the user account
-                    conn.query('DELETE FROM users WHERE id = ?', [id], (err, final) => {
-                        if (err) {
+                    conn.query('DELETE FROM users WHERE id = ?', [id], (usrErr) => {
+                        if (usrErr) {
                             return conn.rollback(() => {
-                                res.json({ success: false, message: 'Cannot delete: This user is a parent to other users.' });
+                                conn.release();
+                                res.json({ success: false, message: 'Cannot delete: This user has sub-users linked to them.' });
                             });
                         }
-                        conn.commit(() => res.json({ success: true, message: 'User deleted successfully' }));
+
+                        conn.commit((cErr) => {
+                            if (cErr) return conn.rollback(() => { conn.release(); res.json({ success: false }); });
+                            conn.release();
+                            res.json({ success: true, message: 'User deleted successfully' });
+                        });
                     });
                 });
             });
@@ -129,7 +140,6 @@ app.post('/api/delete-user', (req, res) => {
     });
 });
 
-// Edit User (Update Name and Logins Only)
 app.post('/api/update-user', (req, res) => {
     const { id, fName, logins } = req.body;
     db.query('UPDATE users SET first_name = ?, max_logins = ? WHERE id = ?', [fName, logins, id], (err) => {
@@ -222,8 +232,6 @@ app.post('/api/take-back-chips', (req, res) => {
 app.post('/api/create-user-advanced', (req, res) => {
     const { fName, uName, pass, role, logins, deposit, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
-    
-    // Logic: Force password change ONLY if the NEW user is NOT a SuperAdmin
     const forceFlag = (role === 'SuperAdmin') ? 0 : 1;
 
     db.getConnection((err, conn) => {
