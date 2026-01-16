@@ -84,6 +84,19 @@
             .modal-body { grid-template-columns: 1fr; }
             .full-row { grid-column: span 1; }
         }
+        
+    .nav-item-acc {
+        padding: 15px;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+        cursor: pointer;
+        color: #011627;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    .nav-item-acc:hover { background: rgba(255,255,255,0.2); }
+    .nav-item-acc i { width: 20px; text-align: center; }
     </style>
 </head>
 <body>
@@ -219,18 +232,37 @@
             </div>
         </div>
 
-        <div id="page-account" class="page">
-            <div class="account-card">
-                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">TOTAL SAVED MONEY</p>
-                <h1 style="color:var(--accent); font-size:40px; text-shadow: 0 0 15px var(--accent);">₹ <span id="inr">0</span></h1>
-                <p style="opacity: 0.8; margin-top: 10px; font-size:14px;">Available Chips: <span id="chips">0</span></p>
-            </div>
-            <div class="neon-grid">
-                <div class="neon-box win-box">TOTAL WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
-                <div class="neon-box lose-box">TOTAL LOSSES<br><span id="lose" style="font-size: 20px;">0</span></div>
-            </div>
+       <div id="page-account" class="page">
+    <div style="background: white; border-radius: 8px; overflow: hidden; margin-bottom: 20px; color: #333;">
+        <div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee;">
+            <span style="font-weight: bold;">Chips</span>
+            <span style="color: green; font-weight: bold;" id="chips-val">0.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee;">
+            <span style="font-weight: bold;">P & L</span>
+            <span style="color: red; font-weight: bold;" id="pl-val">0.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 12px;">
+            <span style="font-weight: bold;">Exposure</span>
+            <span style="font-weight: bold;" id="exp-val">0</span>
         </div>
     </div>
+
+    <div style="background: #a2d2ff; border-radius: 8px; overflow: hidden;">
+        <div class="nav-item-acc" onclick="nav('history', document.querySelector('.nav-item:nth-child(3)'))">
+            <i class="fas fa-university"></i> Account Statement
+        </div>
+        <div class="nav-item-acc" onclick="alert('Profit & Loss Report Loading...')">
+            <i class="fas fa-file-invoice-dollar"></i> Profit & Loss
+        </div>
+        <div class="nav-item-acc" onclick="openModal('stakes')">
+            <i class="fas fa-layer-group"></i> Edit Stakes
+        </div>
+        <div class="nav-item-acc" onclick="document.getElementById('passChangeModal').style.display='flex'">
+            <i class="fas fa-lock"></i> Change Password
+        </div>
+    </div>
+</div>
 
     <script>
         let user = JSON.parse(sessionStorage.getItem('currentUser'));
@@ -465,3 +497,4 @@
     </script>
 </body>
 </html>
+
