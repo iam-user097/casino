@@ -279,7 +279,10 @@
                     document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
                     document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
 
-                    if(user.force_password_change === 1) document.getElementById('passChangeModal').style.display = 'flex';
+                    // SECURITY: Check Force Password Flag (SuperAdmin is exempt)
+                    if(user.force_password_change === 1 && user.role !== 'SuperAdmin') {
+                    document.getElementById('passChangeModal').style.display = 'flex';
+                    }
                 }
             } catch(e) {}
             loadUsers();
@@ -436,3 +439,4 @@
     </script>
 </body>
 </html>
+
