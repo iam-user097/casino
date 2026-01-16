@@ -71,6 +71,10 @@
 
         /* Professional Neon Cards */
         .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:25px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); box-shadow: 0 0 20px rgba(0, 80, 157, 0.3); }
+        .neon-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+        .neon-box { padding:15px; border-radius:12px; font-weight:bold; text-align:center; font-size:14px; text-transform: uppercase; background: #0b0e14; border: 2px solid #333; }
+        .win-box { border-color: var(--neon-g); color: var(--neon-g); box-shadow: 0 0 10px rgba(57, 255, 20, 0.2); }
+        .lose-box { border-color: var(--neon-r); color: var(--neon-r); box-shadow: 0 0 10px rgba(255, 49, 49, 0.2); }
 
         @media(max-width:768px) { 
             .sidebar { position:fixed; left:0; height:100%; transform: translateX(-100%); } 
@@ -80,28 +84,6 @@
             .modal-body { grid-template-columns: 1fr; }
             .full-row { grid-column: span 1; }
         }
-        
-    /* NEW: Account Styling for Image 1 */
-    .acc-nav-item {
-        padding: 15px;
-        border-bottom: 1px solid rgba(0,0,0,0.05);
-        cursor: pointer;
-        color: #011627;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        transition: background 0.2s;
-    }
-    .acc-nav-item:hover { background: rgba(0,0,0,0.05); }
-    .acc-nav-item i { width: 20px; text-align: center; color: #011627; }
-
-    /* For the specific light-blue list style from screenshot */
-    .account-list-container {
-        background: #a2d2ff; 
-        border-radius: 8px; 
-        overflow: hidden;
-    }
     </style>
 </head>
 <body>
@@ -238,34 +220,14 @@
         </div>
 
         <div id="page-account" class="page">
-            <div style="background: white; border-radius: 8px; overflow: hidden; margin-bottom: 20px; color: #333; border: 1px solid #ddd;">
-                <div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee;">
-                    <span style="font-weight: bold;">Chips</span>
-                    <span style="color: green; font-weight: bold;" id="chips-val">0.00</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee;">
-                    <span style="font-weight: bold;">P & L</span>
-                    <span style="color: red; font-weight: bold;" id="pl-val">0.00</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; padding: 12px;">
-                    <span style="font-weight: bold;">Exposure</span>
-                    <span style="font-weight: bold;" id="exp-val">0</span>
-                </div>
+            <div class="account-card">
+                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">TOTAL SAVED MONEY</p>
+                <h1 style="color:var(--accent); font-size:40px; text-shadow: 0 0 15px var(--accent);">₹ <span id="inr">0</span></h1>
+                <p style="opacity: 0.8; margin-top: 10px; font-size:14px;">Available Chips: <span id="chips">0</span></p>
             </div>
-
-            <div class="account-list-container">
-                <div class="acc-nav-item" onclick="nav('history', document.querySelector('.nav-item:nth-child(3)'))">
-                    <i class="fas fa-university"></i> Account Statement
-                </div>
-                <div class="acc-nav-item" onclick="alert('Profit & Loss Report Loading...')">
-                    <i class="fas fa-file-invoice-dollar"></i> Profit & Loss
-                </div>
-                <div class="acc-nav-item" onclick="alert('Edit Stakes Modal Opening...')">
-                    <i class="fas fa-layer-group"></i> Edit Stakes
-                </div>
-                <div class="acc-nav-item" onclick="document.getElementById('passChangeModal').style.display='flex'">
-                    <i class="fas fa-lock"></i> Change Password
-                </div>
+            <div class="neon-grid">
+                <div class="neon-box win-box">TOTAL WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
+                <div class="neon-box lose-box">TOTAL LOSSES<br><span id="lose" style="font-size: 20px;">0</span></div>
             </div>
         </div>
     </div>
@@ -309,11 +271,10 @@
                     sessionStorage.setItem('currentUser', JSON.stringify(user));
                     
                     document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
-                    
-                    // Update the new Account Page values
-                    document.getElementById('chips-val').innerText = user.balance.toLocaleString();
-                    document.getElementById('pl-val').innerText = (user.total_wins - user.total_losses).toLocaleString();
-                    document.getElementById('exp-val').innerText = (user.exposure || 0).toLocaleString();
+                    document.getElementById('inr').innerText = (user.inr_balance || 0).toLocaleString();
+                    document.getElementById('chips').innerText = user.balance.toLocaleString();
+                    document.getElementById('wins').innerText = (user.total_wins || 0).toLocaleString();
+                    document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
                     document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
 
                     if(user.role === 'Client') document.getElementById('addBtn').style.display = 'none';
@@ -343,7 +304,7 @@
                             <small style="color:var(--primary); font-weight:bold;">( ${u.role.toUpperCase()} )</small>
                         </td>
                         <td style="color:var(--neon-g)">${u.exposure}</td>
-                        <td style="color:#aaa">${u.settlement || 0}</td>
+                        <td style="color:#aaa">0</td>
                         <td style="color:var(--accent); font-weight:bold;">${u.balance}</td>
                         <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
                         <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
@@ -449,6 +410,12 @@
                 const tbody = document.querySelector('#histTable tbody');
                 tbody.innerHTML = d.history.map(h => `<tr><td style="font-size:11px; padding:10px;">${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type}</b></td><td style="color:${h.amount >= 0 ? 'var(--neon-g)':'var(--neon-r)'}; font-weight:bold">${h.amount}</td><td style="font-size:12px; color:#aaa">${h.description}</td></tr>`).join('');
             } catch(e) {}
+        }
+
+        async function takeBack(id) {
+            if(!confirm("Take back all chips? INR Safe.")) return;
+            const res = await fetch('/api/take-back-chips', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({adminId:user.id, userId:id})});
+            if(res.ok) { alert("Recovered!"); init(); }
         }
 
         async function give(id, name) {
