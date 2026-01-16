@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Magic9 Pro Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         /* --- NEON DARK THEME CORE --- */
         :root { --primary:#00509d; --dark:#011627; --accent:#ffcc00; --neon-g: #39ff14; --neon-r: #ff3131; --bg:#0b0e14; }
@@ -81,10 +82,12 @@
             .sidebar.show { transform: translateX(0); box-shadow:10px 0 30px rgba(0,0,0,0.8); } 
             .sidebar-overlay.show { display: block; }
             .mobile-toggle { display:block !important; font-size: 22px; color: #fff; margin-right: 15px; }
-            .modal-content { width: 95%; }
             .modal-body { grid-template-columns: 1fr; }
             .full-row { grid-column: span 1; }
         }
+
+        /* Notification Toast Styling */
+        .toast { position: fixed; top: 20px; right: 20px; background: #12161f; color: var(--neon-g); padding: 15px 25px; border-radius: 8px; border: 1px solid var(--neon-g); box-shadow: 0 0 20px rgba(57, 255, 20, 0.4); z-index: 9999; animation: slideUp 0.3s ease-out; font-weight: bold; display: flex; align-items: center; gap: 10px; }
     </style>
 </head>
 <body>
@@ -234,17 +237,28 @@
     </div>
 
     <script>
+        // NEW FEATURE: Initialize real-time connection
+        const socket = io();
         let user = JSON.parse(sessionStorage.getItem('currentUser'));
         if(!user) window.location.href = 'login.html';
         let editUserId = null;
 
+        // Join Private Admin Room for Notifications
+        socket.emit('join-admin-room', user.id);
+        
+        socket.on('user-logged-in', (data) => {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-bolt"></i> ${data.username} (${data.role}) Logged In!`;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 4000);
+            loadUsers(); // Auto-refresh toggle buttons
+        });
+
         function openModal() { 
             editUserId = null;
             document.getElementById('mTitle').innerText = "Add New User";
-            document.getElementById('passDiv').style.display = 'flex';
-            document.getElementById('cPassDiv').style.display = 'flex';
-            document.getElementById('roleDiv').style.display = 'flex';
-            document.getElementById('depoDiv').style.display = 'flex';
+            ['passDiv','cPassDiv','roleDiv','depoDiv'].forEach(id => document.getElementById(id).style.display = 'flex');
             document.getElementById('userModal').style.display = 'flex'; 
         }
 
@@ -254,10 +268,7 @@
             document.getElementById('mUName').value = uname;
             document.getElementById('mFName').value = fname || "";
             document.getElementById('mLogins').value = logins;
-            document.getElementById('passDiv').style.display = 'none';
-            document.getElementById('cPassDiv').style.display = 'none';
-            document.getElementById('roleDiv').style.display = 'none';
-            document.getElementById('depoDiv').style.display = 'none';
+            ['passDiv','cPassDiv','roleDiv','depoDiv'].forEach(id => document.getElementById(id).style.display = 'none');
             document.getElementById('userModal').style.display = 'flex';
         }
 
@@ -270,7 +281,6 @@
                 if(d.success) {
                     user = d.data;
                     sessionStorage.setItem('currentUser', JSON.stringify(user));
-                    
                     document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
                     document.getElementById('inr').innerText = (user.inr_balance || 0).toLocaleString();
                     document.getElementById('chips').innerText = user.balance.toLocaleString();
@@ -278,18 +288,15 @@
                     document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
                     document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
 
-                    // FIXED: Client bug fix
+                    // NEW Logic: Hide create button if user is a Client
                     if(user.role === 'Client') document.getElementById('addBtn').style.display = 'none';
 
-                    // Security Force Password logic
                     if(user.force_password_change === 1 && user.role !== 'SuperAdmin') {
                         document.getElementById('passChangeModal').style.display = 'flex';
                     }
                 }
             } catch(e) {}
-            loadUsers();
-            setupRoles();
-            loadHistory();
+            loadUsers(); setupRoles(); loadHistory();
         }
 
         async function loadUsers() {
@@ -336,12 +343,9 @@
                 deposit: document.getElementById('mDeposit').value,
                 creatorId: user.id
             };
-            
-            if(!data.fName || !data.uName || (!editUserId && !data.pass) || !data.role || !data.logins || !data.deposit) return alert("All fields are required!");
-
+            if(!data.fName || !data.uName || (!editUserId && !data.pass) || !data.role || !data.logins || !data.deposit) return alert("Error: All fields are required!");
             const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
             if(editUserId) data.id = editUserId;
-
             const res = await fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
             const d = await res.json();
             alert(d.message); if(d.success) { closeModal(); init(); }
@@ -351,20 +355,11 @@
             const oldP = document.getElementById('oldSecurePass').value;
             const newP = document.getElementById('newSecurePass').value;
             const confP = document.getElementById('confirmSecurePass').value;
-
-            if(!oldP || !newP || !confP) return alert("All fields are required!");
+            if(!oldP || !newP || !confP) return alert("Fill all fields!");
             if(newP !== confP) return alert("New passwords do not match!");
-            
-            const res = await fetch('/api/change-password-secure', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({userId:user.id, oldPass: oldP, newPass: newP})
-            });
+            const res = await fetch('/api/change-password-secure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, oldPass: oldP, newPass: newP})});
             const d = await res.json();
-            if(d.success) {
-                alert("Security Verified!");
-                location.reload();
-            } else { alert(d.message); }
+            if(d.success) location.reload(); else alert(d.message);
         }
 
         async function withdraw(id, name) {
@@ -390,9 +385,7 @@
 
         function filterUsers() {
             let input = document.getElementById('userSearch').value.toLowerCase();
-            document.querySelectorAll('#userTable tbody tr').forEach(row => {
-                row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
-            });
+            document.querySelectorAll('#userTable tbody tr').forEach(row => { row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none"; });
         }
 
         async function loadHistory() {
