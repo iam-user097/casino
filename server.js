@@ -97,12 +97,35 @@ app.post('/api/withdraw-chips', (req, res) => {
     });
 });
 
-// Delete User logic (safety check)
+// FIXED: Delete User with full history cleanup
 app.post('/api/delete-user', (req, res) => {
     const { id } = req.body;
-    db.query('DELETE FROM users WHERE id = ? AND balance = 0', [id], (err, r) => {
-        if (r && r.affectedRows > 0) res.json({ success: true, message: 'User Deleted' });
-        else res.json({ success: false, message: 'Cannot delete: User has active chips' });
+
+    db.getConnection((err, conn) => {
+        conn.beginTransaction(() => {
+            // 1. Check if user still has chips (Sir's requirement)
+            conn.query('SELECT balance FROM users WHERE id = ?', [id], (e, r) => {
+                if (e || !r.length) return conn.rollback(() => res.json({ success: false, message: 'User not found' }));
+                
+                if (r[0].balance > 0) {
+                    return conn.rollback(() => res.json({ success: false, message: 'Withdraw chips before deleting!' }));
+                }
+
+                // 2. Delete all transaction history for this user first
+                conn.query('DELETE FROM transactions WHERE user_id = ?', [id], () => {
+                    
+                    // 3. Delete the user account
+                    conn.query('DELETE FROM users WHERE id = ?', [id], (err, final) => {
+                        if (err) {
+                            return conn.rollback(() => {
+                                res.json({ success: false, message: 'Cannot delete: This user is a parent to other users.' });
+                            });
+                        }
+                        conn.commit(() => res.json({ success: true, message: 'User deleted successfully' }));
+                    });
+                });
+            });
+        });
     });
 });
 
@@ -223,3 +246,4 @@ app.post('/api/create-user-advanced', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server Online`));
+
