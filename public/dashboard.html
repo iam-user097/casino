@@ -29,14 +29,27 @@
         .page.active { display:block; }
         @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 
-        /* NEON DARK TABLE DESIGN (Matching dashboard theme) */
+        /* NEON DARK TABLE DESIGN (Professional Style) */
         .table-container { background: #12161f; border-radius: 8px; overflow-x: auto; margin-top: 10px; border: 1px solid var(--primary); box-shadow: 0 0 20px rgba(0, 80, 157, 0.2); }
         table { width:100%; border-collapse:collapse; background: transparent; color: #eee; min-width: 900px; }
         th { background: #011627; color: var(--accent); padding: 12px; font-size: 13px; text-transform: capitalize; border-bottom: 1px solid var(--primary); text-align: center; }
         td { padding: 12px; border-bottom: 1px solid #1a202c; text-align: center; font-weight: 500; font-size: 13px; vertical-align: middle; }
         tr:hover { background: rgba(0, 80, 157, 0.1); }
 
-        /* CIRCULAR NEON ACTION BUTTONS */
+        /* MODAL STYLES (Professional Theme) */
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
+        .modal-content { background:#12161f; color:white; width:90%; max-width:650px; border-radius:12px; overflow:hidden; animation: zoomIn 0.3s; border: 1px solid var(--primary); box-shadow: 0 0 30px rgba(0, 80, 157, 0.5); }
+        .modal-header { background:#011627; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid var(--neon-r); color: var(--accent); }
+        .modal-header h3 { margin: 0; font-size: 18px; }
+        .modal-body { padding:25px; display:grid; grid-template-columns: 1fr 1fr; gap:20px; max-height: 80vh; overflow-y: auto; }
+        .form-group { display:flex; flex-direction:column; gap:8px; }
+        .form-group label { font-size: 13px; font-weight: bold; color: var(--accent); }
+        .form-group input, .form-group select { padding: 12px; border: 1px solid #333; border-radius: 6px; font-size: 14px; background: #0b0e14; color: white; outline: none; }
+        .form-group input:focus { border-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
+        .full-row { grid-column: span 2; }
+        .modal-footer { padding: 20px; background: #011627; display: flex; justify-content: flex-end; gap: 12px; }
+
+        /* CIRCULAR ACTION BUTTONS */
         .act-btn { width: 30px; height: 30px; border-radius: 50%; border: none; color: white; cursor: pointer; margin: 0 2px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
         .act-btn:hover { transform: scale(1.1); filter: brightness(1.2); }
         .btn-edit { background: #007bff; box-shadow: 0 0 5px #007bff; }
@@ -47,7 +60,7 @@
         .btn-key { background: #343a40; }
         .btn-del { background: var(--neon-r); box-shadow: 0 0 5px var(--neon-r); }
 
-        /* NEON STATUS TOGGLES */
+        /* STATUS TOGGLES */
         .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; border: 1px solid #444; }
@@ -55,32 +68,15 @@
         input:checked + .slider { background-color: var(--primary); border-color: var(--accent); }
         input:checked + .slider:before { transform: translateX(16px); background-color: var(--accent); }
 
-        /* NEON MODAL STYLES */
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
-        .modal-content { background:#12161f; color:white; width:90%; max-width:650px; border-radius:12px; overflow:hidden; animation: zoomIn 0.3s; border: 1px solid var(--primary); box-shadow: 0 0 30px rgba(0, 80, 157, 0.5); }
-        .modal-header { background:#011627; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid var(--neon-r); color: var(--accent); }
-        .modal-body { padding:25px; display:grid; grid-template-columns: 1fr 1fr; gap:20px; max-height: 80vh; overflow-y: auto; }
-        .form-group { display:flex; flex-direction:column; gap:8px; }
-        .form-group label { font-size: 13px; font-weight: bold; color: var(--accent); }
-        .form-group input, .form-group select { padding: 12px; border: 1px solid #333; border-radius: 6px; font-size: 14px; background: #0b0e14; color: white; outline: none; }
-        .form-group input:focus { border-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
-        .full-row { grid-column: span 2; }
-        .modal-footer { padding: 20px; background: #011627; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #1a202c; }
-
         @keyframes zoomIn { from { transform:scale(0.8); opacity:0; } to { transform:scale(1); opacity:1; } }
-
-        /* Account & Neon Boxes */
-        .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:25px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); box-shadow: 0 0 20px rgba(0, 80, 157, 0.3); }
-        .neon-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-        .neon-box { padding:15px; border-radius:12px; font-weight:bold; text-align:center; font-size:14px; text-transform: uppercase; background: #0b0e14; border: 2px solid #333; }
-        .win-box { border-color: var(--neon-g); color: var(--neon-g); box-shadow: 0 0 10px rgba(57, 255, 20, 0.2); }
-        .lose-box { border-color: var(--neon-r); color: var(--neon-r); box-shadow: 0 0 10px rgba(255, 49, 49, 0.2); }
 
         @media(max-width:768px) { 
             .sidebar { position:fixed; left:0; height:100%; transform: translateX(-100%); } 
             .sidebar.show { transform: translateX(0); box-shadow:10px 0 30px rgba(0,0,0,0.8); } 
             .sidebar-overlay.show { display: block; }
             .mobile-toggle { display:block !important; font-size: 22px; color: #fff; margin-right: 15px; }
+            .neon-grid { grid-template-columns: 1fr; }
+            .modal-content { width: 95%; }
             .modal-body { grid-template-columns: 1fr; }
             .full-row { grid-column: span 1; }
         }
@@ -94,7 +90,7 @@
         <div class="modal-content" style="max-width: 450px;">
             <div class="modal-header"><h3>Security Reset Required</h3></div>
             <div class="modal-body" style="grid-template-columns: 1fr;">
-                <p style="font-size:13px; color:#aaa; margin-bottom:10px;">For your protection, please update your temporary password.</p>
+                <p style="font-size:13px; color:#aaa; margin-bottom:10px;">Change your password to access the dashboard.</p>
                 <div class="form-group"><label>Current Password</label><input type="password" id="oldSecurePass" required></div>
                 <div class="form-group"><label>New Password</label><input type="password" id="newSecurePass" required></div>
                 <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmSecurePass" required></div>
@@ -107,13 +103,13 @@
         <div class="modal-content">
             <div class="modal-header"><h3 id="mTitle">Add User</h3><i class="fas fa-times-circle" style="color:red; cursor:pointer; font-size:22px;" onclick="closeModal()"></i></div>
             <div class="modal-body">
-                <div class="form-group" id="fNameDiv"><label>First Name*</label><input type="text" id="mFName" placeholder="First Name" required></div>
-                <div class="form-group"><label>User Name*</label><input type="text" id="mUName" placeholder="Username" required></div>
+                <div class="form-group" id="fNameDiv"><label>First Name*</label><input type="text" id="mFName" placeholder="Enter First Name" required></div>
+                <div class="form-group"><label>User Name*</label><input type="text" id="mUName" placeholder="Enter Username" required></div>
                 <div class="form-group" id="passDiv"><label>Password*</label><input type="password" id="mPass" placeholder="Password" required></div>
                 <div class="form-group" id="cPassDiv"><label>Confirm Password*</label><input type="password" id="mCPass" placeholder="Confirm" required></div>
                 <div class="form-group" id="roleDiv"><label>Role*</label><select id="mRole" required></select></div>
                 <div class="form-group"><label>No. Of Login*</label><input type="number" id="mLogins" value="1" min="1" required></div>
-                <div class="form-group full-row" id="depoDiv"><label>Initial Deposit (Chips)*</label><input type="number" id="mDeposit" placeholder="0.00" required></div>
+                <div class="form-group full-row" id="depoDiv"><label>Deposit (Chips)*</label><input type="number" id="mDeposit" placeholder="Enter Amount" required></div>
             </div>
             <div class="modal-footer">
                 <button class="btn" style="background:var(--neon-r); padding: 10px 25px; border-radius:6px; font-weight:bold;" onclick="closeModal()">Cancel</button>
@@ -124,20 +120,19 @@
 
     <div class="modal" id="msModal">
         <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header"><h3>Advanced Market Settings</h3><i class="fas fa-times-circle" style="color:red; cursor:pointer; font-size:20px;" onclick="closeModal()"></i></div>
+            <div class="modal-header"><h3>Market Setting</h3><i class="fas fa-times-circle" style="color:red; cursor:pointer; font-size:20px;" onclick="closeModal()"></i></div>
             <div class="modal-body" style="grid-template-columns: 1fr;">
                 <div style="background:#0b0e14; padding:15px; border-radius:8px; border:1px solid var(--primary);">
-                    <p style="color:var(--accent); font-weight:bold; margin-bottom:12px;">Active Games & Markets:</p>
+                    <p style="color:var(--accent); font-weight:bold; margin-bottom:12px;">Active Markets:</p>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                        <label><input type="checkbox" checked> Cricket (Match Odds)</label>
-                        <label><input type="checkbox" checked> Cricket (Toss)</label>
-                        <label><input type="checkbox" checked> Football (Match Odd)</label>
-                        <label><input type="checkbox" checked> Football (Over/Under)</label>
+                        <label><input type="checkbox" checked> Cricket (Odd, Toss)</label>
+                        <label><input type="checkbox" checked> Football (Half, Goal)</label>
+                        <label><input type="checkbox" checked> Tennis</label>
                         <label><input type="checkbox" checked> Casino Games</label>
-                        <label><input type="checkbox" checked> Jackpot Markets</label>
+                        <label><input type="checkbox" checked> Jackpot</label>
                     </div>
                 </div>
-                <button class="btn" style="background:var(--primary); padding:12px; border-radius:6px; font-weight:bold;" onclick="closeModal()">Save Configuration</button>
+                <button class="btn" style="background:var(--primary); padding:12px; font-weight:bold; border-radius:6px;" onclick="closeModal()">Save Configuration</button>
             </div>
         </div>
     </div>
@@ -163,8 +158,8 @@
         <div id="page-user" class="page active">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
                 <div style="position:relative; width: 300px;">
-                    <i class="fas fa-search" style="position:absolute; left:12px; top:10px; color:#888;"></i>
-                    <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User..." style="width:100%; padding:8px 10px 8px 35px; border-radius:6px; background:#12161f; border:1px solid #333; color:white;">
+                    <i class="fas fa-search" style="position:absolute; left:12px; top:12px; color:#888;"></i>
+                    <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User Here..." style="width:100%; padding:10px 10px 10px 35px; border-radius:6px; background:#12161f; border:1px solid #333; color:white;">
                 </div>
                 <button id="addBtn" class="btn" style="font-size:22px; padding: 2px 15px; background: var(--primary); border-radius:6px; box-shadow: 0 0 10px rgba(0,80,157,0.4);" onclick="openModal()">+</button>
             </div>
@@ -250,7 +245,7 @@
 
         function openEdit(id, uname, fname, logins) {
             editUserId = id;
-            document.getElementById('mTitle').innerText = "Edit User Data";
+            document.getElementById('mTitle').innerText = "Edit User (Name & Login)";
             document.getElementById('mUName').value = uname;
             document.getElementById('mFName').value = fname || "";
             document.getElementById('mLogins').value = logins;
@@ -278,10 +273,10 @@
                     document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
                     document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
 
-                    // FIXED: Client restriction logic
+                    // Client bug fix
                     if(user.role === 'Client') document.getElementById('addBtn').style.display = 'none';
 
-                    // SECURITY: Force Password Flag (SuperAdmin is exempt)
+                    // Security Force Password logic
                     if(user.force_password_change === 1 && user.role !== 'SuperAdmin') {
                         document.getElementById('passChangeModal').style.display = 'flex';
                     }
@@ -297,7 +292,9 @@
             try {
                 const res = await fetch('/api/my-users', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({parentId:user.id, role: user.role})});
                 const d = await res.json();
-                tbody.innerHTML = d.users.map(u => `
+                tbody.innerHTML = d.users.map(u => {
+                    const isOnline = u.status === 'Online';
+                    return `
                     <tr>
                         <td><i class="fas fa-arrow-circle-right" style="color:var(--neon-r); font-size:18px;"></i></td>
                         <td style="text-align:left; padding-left:15px;">
@@ -307,21 +304,21 @@
                         <td style="color:var(--neon-g)">${u.exposure}</td>
                         <td style="color:#aaa">0</td>
                         <td style="color:var(--accent); font-weight:bold;">${u.balance}</td>
-                        <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                        <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
                         <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
-                        <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                        <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
                         <td>
-                            <button class="act-btn btn-edit" title="Edit Name/Logins" onclick="openEdit(${u.id},'${u.username}','${u.first_name}',${u.max_logins})"><i class="fas fa-edit"></i></button>
+                            <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}','${u.first_name}',${u.max_logins})"><i class="fas fa-edit"></i></button>
                             <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
                             <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
                             <button class="act-btn btn-mode" title="Gaming Modes">MODE</button>
                             <button class="act-btn btn-ms" title="Market Config" onclick="document.getElementById('msModal').style.display='flex'">MS</button>
                             <button class="act-btn btn-key" title="Change Pass" onclick="resetKey(${u.id})"><i class="fas fa-key"></i></button>
-                            ${user.role === 'SuperAdmin' ? `<button class="act-btn btn-del" title="Delete User" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>` : ''}
+                            ${user.role === 'SuperAdmin' ? `<button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>` : ''}
                         </td>
                     </tr>
-                `).join('');
-            } catch(e) { tbody.innerHTML = '<tr><td colspan="9" style="color:red">Connection Error</td></tr>'; }
+                `; }).join('');
+            } catch(e) { tbody.innerHTML = '<tr><td colspan="9" style="color:red">Error loading users</td></tr>'; }
         }
 
         async function submitUser() {
@@ -335,8 +332,7 @@
                 creatorId: user.id
             };
             
-            // Validate all fields are required
-            if(!data.fName || !data.uName || (!editUserId && !data.pass) || !data.role || !data.logins || !data.deposit) return alert("Error: All fields are required!");
+            if(!data.fName || !data.uName || (!editUserId && !data.pass) || !data.role || !data.logins || !data.deposit) return alert("All fields are required!");
 
             const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
             if(editUserId) data.id = editUserId;
@@ -351,10 +347,9 @@
             const newP = document.getElementById('newSecurePass').value;
             const confP = document.getElementById('confirmSecurePass').value;
 
-            if(!oldP || !newP) return alert("Fill all password fields!");
+            if(!oldP || !newP || !confP) return alert("All fields are required!");
             if(newP !== confP) return alert("New passwords do not match!");
             
-            // Verify old password before change
             const res = await fetch('/api/change-password-secure', {
                 method:'POST',
                 headers:{'Content-Type':'application/json'},
@@ -362,7 +357,7 @@
             });
             const d = await res.json();
             if(d.success) {
-                alert("Security Verified! Welcome to the Dashboard.");
+                alert("Security Verified!");
                 location.reload();
             } else { alert(d.message); }
         }
@@ -375,8 +370,8 @@
         }
 
         async function deleteUser(id, bal) {
-            if(bal > 0) return alert("Error: User still has chips! Withdraw first.");
-            if(!confirm("Are you sure? This user will be deleted permanently.")) return;
+            if(bal > 0) return alert("Withdraw all chips before deleting!");
+            if(!confirm("Delete user permanently?")) return;
             await fetch('/api/delete-user', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
             init();
         }
@@ -385,7 +380,7 @@
             const newP = prompt("Enter new master password for user:");
             if(!newP) return;
             await fetch('/api/update-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:id, newPass: newP})});
-            alert("Master Password Updated.");
+            alert("Updated.");
         }
 
         function filterUsers() {
@@ -405,7 +400,7 @@
         }
 
         async function takeBack(id) {
-            if(!confirm("Take back all chips? INR Saved balance will stay safe.")) return;
+            if(!confirm("Take back all chips? INR Safe.")) return;
             const res = await fetch('/api/take-back-chips', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({adminId:user.id, userId:id})});
             if(res.ok) { alert("Recovered!"); init(); }
         }
@@ -425,7 +420,7 @@
         }
 
         async function bet(amt) {
-            if(user.exposure < amt) return alert("Exposure low!");
+            if(user.exposure < amt) return alert("Low exposure!");
             const win = Math.random() > 0.5;
             await fetch('/api/place-bet', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, betAmount:amt, isWin:win})});
             alert(win ? "WON!" : "LOST!"); init();
