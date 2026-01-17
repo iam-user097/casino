@@ -76,6 +76,34 @@
         .win-box { border-color: var(--neon-g); color: var(--neon-g); box-shadow: 0 0 10px rgba(57, 255, 20, 0.2); }
         .lose-box { border-color: var(--neon-r); color: var(--neon-r); box-shadow: 0 0 10px rgba(255, 49, 49, 0.2); }
 
+        /* Bet Page Specifics */
+.bet-header-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.stat-box { background: #12161f; padding: 15px; border-radius: 10px; border: 1px solid var(--primary); text-align: center; }
+.stat-box span { font-size: 10px; text-transform: uppercase; color: #888; }
+
+.market-container { background: #12161f; border-radius: 8px; border: 1px solid #1a202c; }
+.market-title { background: var(--primary); padding: 8px 15px; font-weight: bold; font-size: 12px; }
+
+.event-card { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #1a202c; animation: fadeIn 0.5s; }
+.event-info { display: flex; flex-direction: column; gap: 4px; }
+.event-name { font-weight: bold; font-size: 13px; color: var(--accent); }
+.event-time { font-size: 10px; color: #39ff14; }
+
+.odds-grid { display: grid; grid-template-columns: repeat(2, 50px); gap: 4px; }
+.odds-box { height: 35px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; cursor: pointer; border-radius: 4px; transition: 0.1s; }
+.odds-box.back { background: #72bbef; color: #000; }
+.odds-box.lay { background: #faa9ba; color: #000; }
+.odds-box:active { transform: scale(0.9); }
+
+/* Bet Slip Popup */
+.bet-slip-overlay { position: fixed; bottom: -100%; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 4000; transition: 0.3s ease; display: flex; align-items: flex-end; }
+.bet-slip-overlay.active { bottom: 0; }
+.bet-slip-content { background: #12161f; width: 100%; border-radius: 20px 20px 0 0; border-top: 3px solid var(--accent); padding: 20px; }
+.slip-header { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; }
+.quick-stakes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px 0; }
+.quick-stakes button { background: #0b0e14; border: 1px solid #333; color: white; padding: 10px; border-radius: 6px; }
+.place-bet-btn { width: 100%; background: var(--accent); color: #000; padding: 15px; border-radius: 8px; font-weight: bold; border: none; font-size: 16px; }
+
         @media(max-width:768px) { 
             .sidebar { position:fixed; left:0; height:100%; transform: translateX(-100%); } 
             .sidebar.show { transform: translateX(0); box-shadow:10px 0 30px rgba(0,0,0,0.8); } 
@@ -189,23 +217,58 @@
         </div>
 
         <div id="page-bet" class="page">
-            <div class="account-card">
-                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">BETTING EXPOSURE</p>
-                <h1 style="color:var(--neon-g); font-size:45px; text-shadow: 0 0 15px var(--neon-g);">🪙 <span id="bet-exp">0</span></h1>
-                <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
-                    <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 150px; background:#0b0e14; color:white; border:1px solid #333; padding:8px; border-radius:4px;">
-                    <button onclick="addExp()" class="btn" style="background: var(--accent); color: black; font-weight:bold; padding:8px 15px; border-radius:4px;">Deposit</button>
+    <div class="bet-header-stats">
+        <div class="stat-box">
+            <span>Wallet</span>
+            <h2 id="wallet-val">₹ 0.00</h2>
+        </div>
+        <div class="stat-box">
+            <span>Exposure</span>
+            <h2 id="exposure-val" class="text-neon-r">0.00</h2>
+        </div>
+    </div>
+
+    <div class="market-container">
+        <div class="market-title">CRICKET - IN PLAY</div>
+        
+        <div id="live-events-list">
+            <div class="event-card">
+                <div class="event-info">
+                    <span class="event-name">India U19 v Bangladesh U19</span>
+                    <span class="event-time">In-Play | 17 Jan, 01:00 PM</span>
                 </div>
-            </div>
-            <div class="card" style="text-align:center; background:#12161f; border:1px solid #1a202c; padding:20px; border-radius:12px;">
-                <h4 style="margin-bottom:20px; color:var(--accent)">Place Quick Bet</h4>
-                <div style="display:flex; justify-content:center; gap:25px;">
-                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(100)">100</button>
-                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(500)">500</button>
-                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(1000)">1000</button>
+                <div class="odds-grid">
+                    <div class="odds-box back" onclick="openBetSlip('India U19', 1.33, 'back')">1.33</div>
+                    <div class="odds-box lay" onclick="openBetSlip('India U19', 1.34, 'lay')">1.34</div>
+                    <div class="odds-box back" onclick="openBetSlip('Bangladesh U19', 3.90, 'back')">3.90</div>
+                    <div class="odds-box lay" onclick="openBetSlip('Bangladesh U19', 4.00, 'lay')">4.00</div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<div id="betSlip" class="bet-slip-overlay">
+    <div class="bet-slip-content">
+        <div class="slip-header">
+            <span id="slip-team-name">Team Name</span>
+            <i class="fas fa-times" onclick="closeBetSlip()"></i>
+        </div>
+        <div class="slip-body">
+            <div class="input-row">
+                <div class="val-box">Odds: <strong id="slip-odds">1.00</strong></div>
+                <input type="number" id="betAmount" value="100" min="100" placeholder="Min 100">
+            </div>
+            <div class="quick-stakes">
+                <button onclick="setStake(100)">100</button>
+                <button onclick="setStake(500)">500</button>
+                <button onclick="setStake(1000)">1000</button>
+                <button onclick="setStake(5000)">5000</button>
+            </div>
+            <button class="place-bet-btn" onclick="executeBet()">Place Bet</button>
+        </div>
+    </div>
+</div>
 
         <div id="page-history" class="page">
             <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px;">
@@ -460,8 +523,72 @@
             document.getElementById('overlay').classList.toggle('show');
         }
 
+        let activeBetData = null;
+
+function openBetSlip(team, odds, type) {
+    activeBetData = { team, odds, type };
+    document.getElementById('slip-team-name').innerText = `${team} (${type.toUpperCase()})`;
+    document.getElementById('slip-odds').innerText = odds;
+    document.getElementById('betSlip').classList.add('active');
+}
+
+function closeBetSlip() {
+    document.getElementById('betSlip').classList.remove('active');
+}
+
+function setStake(amt) {
+    document.getElementById('betAmount').value = amt;
+}
+
+async function executeBet() {
+    const amt = parseInt(document.getElementById('betAmount').value);
+    if(amt < 100) return alert("Minimum bet is 100");
+    if(user.balance < amt) return alert("Insufficient Balance");
+
+    // Animation trigger
+    const btn = document.querySelector('.place-bet-btn');
+    btn.innerText = "Processing...";
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/place-bet', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                userId: user.id,
+                betAmount: amt,
+                team: activeBetData.team,
+                odds: activeBetData.odds,
+                type: activeBetData.type
+            })
+        });
+        
+        const d = await res.json();
+        if(d.success) {
+            closeBetSlip();
+            // Perfectly update Wallet & Exposure locally before full init()
+            user.balance -= amt;
+            user.exposure += amt;
+            updateDisplay(); 
+            init(); // Full refresh from DB
+        }
+        alert(d.message);
+    } catch (e) {
+        alert("Bet Failed: Check Connection");
+    } finally {
+        btn.innerText = "Place Bet";
+        btn.disabled = false;
+    }
+}
+
+function updateDisplay() {
+    document.getElementById('wallet-val').innerText = `₹ ${user.balance.toLocaleString()}`;
+    document.getElementById('exposure-val').innerText = user.exposure.toLocaleString();
+}
+
         function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
         init();
     </script>
 </body>
 </html>
+
