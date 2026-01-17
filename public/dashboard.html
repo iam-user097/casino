@@ -549,11 +549,35 @@
         }
 
         async function bet(amt) {
-            if(user.exposure < amt) return alert("Low exposure!");
-            const win = Math.random() > 0.5;
-            await fetch('/api/place-bet', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, betAmount:amt, isWin:win})});
-            alert(win ? "WON!" : "LOST!"); init();
+    if (user.balance < amt) {
+        alert("❌ Insufficient balance!");
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/place-bet', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                userId: user.id,
+                amount: amt,
+                odds: 2.0   // quick bet default odds
+            })
+        });
+
+        const d = await res.json();
+        if (!d.success) {
+            alert(d.message || "Bet failed");
+            return;
         }
+
+        alert(d.result === 'WIN' ? "🎉 WON!" : "❌ LOST!");
+        init();
+
+    } catch(e) {
+        alert("⚠️ Server error");
+    }
+}
 
         function setupRoles() {
             const roles = ['Admin','SuperMaster','Master','Agent','Client'];
@@ -581,3 +605,4 @@
     </script>
 </body>
 </html>
+
