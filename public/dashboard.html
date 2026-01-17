@@ -189,24 +189,48 @@
         </div>
 
         <div id="page-bet" class="page">
-            <div class="account-card">
-                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">BETTING EXPOSURE</p>
-                <h1 style="color:var(--neon-g); font-size:45px; text-shadow: 0 0 15px var(--neon-g);">🪙 <span id="bet-exp">0</span></h1>
-                <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
-                    <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 150px; background:#0b0e14; color:white; border:1px solid #333; padding:8px; border-radius:4px;">
-                    <button onclick="addExp()" class="btn" style="background: var(--accent); color: black; font-weight:bold; padding:8px 15px; border-radius:4px;">Deposit</button>
-                </div>
-            </div>
-            <div class="card" style="text-align:center; background:#12161f; border:1px solid #1a202c; padding:20px; border-radius:12px;">
-                <h4 style="margin-bottom:20px; color:var(--accent)">Place Quick Bet</h4>
-                <div style="display:flex; justify-content:center; gap:25px;">
-                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(100)">100</button>
-                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(500)">500</button>
-                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(1000)">1000</button>
-                </div>
-            </div>
+    <div class="account-card">
+        <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">BETTING EXPOSURE</p>
+        <h1 style="color:var(--neon-g); font-size:45px; text-shadow: 0 0 15px var(--neon-g);">🪙 <span id="bet-exp">0</span></h1>
+        <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
+            <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 150px; background:#0b0e14; color:white; border:1px solid #333; padding:8px; border-radius:4px;">
+            <button onclick="addExp()" class="btn" style="background: var(--accent); color: black; font-weight:bold; padding:8px 15px; border-radius:4px;">Deposit</button>
         </div>
+    </div>
 
+    <!-- Quick Bet Section -->
+    <div class="card" style="text-align:center; background:#12161f; border:1px solid #1a202c; padding:20px; border-radius:12px;">
+        <h4 style="margin-bottom:20px; color:var(--accent)">Place Quick Bet</h4>
+        <div style="display:flex; justify-content:center; gap:25px;">
+            <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(100)">100</button>
+            <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(500)">500</button>
+            <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(1000)">1000</button>
+        </div>
+    </div>
+
+    <!-- LIVE CRICKET BETTING -->
+    <div class="card" style="background:#12161f; border:1px solid var(--primary); border-radius:12px; padding:20px; margin-top:20px;">
+        <h4 style="margin-bottom:15px; color:var(--accent); text-align:center;">Cricket Live Betting</h4>
+        <div style="display:grid; grid-template-columns: repeat(6,1fr); gap:10px; text-align:center; margin-bottom:15px;">
+            <!-- Team 1 -->
+            <div class="neon-box win-box" onclick="placeCricketBet('team1')">Team 1 Bet 1</div>
+            <div class="neon-box win-box" onclick="placeCricketBet('team1')">Team 1 Bet 2</div>
+            <!-- Empty -->
+            <div class="neon-box" style="border-color:#333; background:#0b0e14;"></div>
+            <div class="neon-box" style="border-color:#333; background:#0b0e14;"></div>
+            <!-- Team 2 -->
+            <div class="neon-box lose-box" onclick="placeCricketBet('team2')">Team 2 Bet 1</div>
+            <div class="neon-box lose-box" onclick="placeCricketBet('team2')">Team 2 Bet 2</div>
+        </div>
+        <div style="display:flex; justify-content:space-around; margin-top:10px; font-size:13px; color:#aaa; text-align:center;">
+            <div>Batting: <span id="battingTeam">Team 1</span></div>
+            <div>Bowling: <span id="bowlingTeam">Team 2</span></div>
+            <div>Total Overs: <span id="totalOvers">20</span></div>
+            <div>Total Runs: <span id="totalRuns">0</span></div>
+            <div>Toss Winner: <span id="tossWinner">Team 1</span></div>
+        </div>
+    </div>
+</div>
         <div id="page-history" class="page">
             <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px;">
                 <h3 style="color:var(--accent); margin-bottom:15px;"><i class="fas fa-history"></i> Transaction Log</h3>
@@ -459,6 +483,34 @@
             document.getElementById('sidebar').classList.toggle('show');
             document.getElementById('overlay').classList.toggle('show');
         }
+
+        // LIVE CRICKET BETTING LOGIC
+    let cricketBalance = user.exposure || 0;
+
+    function placeCricketBet(team) {
+        const amt = prompt(`Enter bet amount for ${team} (min 100)`); 
+        if(!amt || isNaN(amt) || amt < 100) return alert("Min bet 100 required!");
+        if(amt > cricketBalance) return alert("Insufficient exposure!");
+        const isWin = Math.random() > 0.5; // simulate win/loss
+        fetch('/api/place-bet', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({userId:user.id, betAmount:parseFloat(amt), isWin})
+        }).then(res => res.json()).then(d => {
+            alert(isWin ? "Congratulations! You WON!" : "Sorry! You LOST!");
+            init(); // reload balances & exposure
+        }).catch(err => alert("Bet failed!"));
+    }
+
+    // Optional: simulate live match updates
+    setInterval(() => {
+        const runs = Math.floor(Math.random()*200);
+        const overs = (Math.random()*20).toFixed(1);
+        document.getElementById('totalRuns').innerText = runs;
+        document.getElementById('totalOvers').innerText = overs;
+        document.getElementById('battingTeam').innerText = Math.random()>0.5?'Team 1':'Team 2';
+        document.getElementById('bowlingTeam').innerText = document.getElementById('battingTeam').innerText==='Team 1'?'Team 2':'Team 1';
+    }, 5000);
 
         function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
         init();
