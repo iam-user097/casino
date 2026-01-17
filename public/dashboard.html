@@ -104,6 +104,43 @@
 .quick-stakes button { background: #0b0e14; border: 1px solid #333; color: white; padding: 10px; border-radius: 6px; }
 .place-bet-btn { width: 100%; background: var(--accent); color: #000; padding: 15px; border-radius: 8px; font-weight: bold; border: none; font-size: 16px; }
 
+/* Odds Flash Animation */
+@keyframes flash-green {
+    0% { background-color: #72bbef; }
+    50% { background-color: #39ff14; transform: scale(1.05); }
+    100% { background-color: #72bbef; }
+}
+
+@keyframes flash-red {
+    0% { background-color: #faa9ba; }
+    50% { background-color: #ff3131; transform: scale(1.05); }
+    100% { background-color: #faa9ba; }
+}
+
+.odds-up { animation: flash-green 0.5s ease; }
+.odds-down { animation: flash-red 0.5s ease; }
+
+/* Result Toast Notification */
+.result-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 8px;
+    color: black;
+    font-weight: bold;
+    z-index: 5000;
+    animation: slideInRight 0.3s ease-out;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+.toast-win { background: var(--neon-g); border-left: 5px solid #000; }
+.toast-loss { background: var(--neon-r); border-left: 5px solid #000; }
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
         @media(max-width:768px) { 
             .sidebar { position:fixed; left:0; height:100%; transform: translateX(-100%); } 
             .sidebar.show { transform: translateX(0); box-shadow:10px 0 30px rgba(0,0,0,0.8); } 
@@ -303,6 +340,16 @@
     let editUserId = null;
     let activeBetData = null;
 
+    // Commission Configuration (Updated as requested)
+    const COMMISSION_RATES = {
+        'SuperAdmin': 0.10,
+        'Admin': 0.08,
+        'SuperMaster': 0.06,
+        'Master': 0.05,
+        'Agent': 0.04,
+        'Client': 0.00
+    };
+
     // --- 2. INITIALIZATION & DATA SYNC ---
     async function init() {
         try {
@@ -316,158 +363,160 @@
             if (d.success) {
                 user = d.data;
                 sessionStorage.setItem('currentUser', JSON.stringify(user));
-                
-                // Sync all UI Displays
                 updateAllUISlots();
                 
-                // Security Check
                 if (user.force_password_change === 1 && user.role !== 'SuperAdmin') {
                     document.getElementById('passChangeModal').style.display = 'flex';
                 }
             }
-        } catch (e) {
-            console.error("Initialization failed:", e);
-        }
+        } catch (e) { console.error("Initialization failed:", e); }
         
-        // Load conditional components
         if (user.role !== 'Client') {
             loadUsers();
-            document.getElementById('addBtn').style.display = 'block';
+            if(document.getElementById('addBtn')) document.getElementById('addBtn').style.display = 'block';
         } else {
             if(document.getElementById('addBtn')) document.getElementById('addBtn').style.display = 'none';
         }
         
         setupRoles();
         loadHistory();
+        startOddsSimulation(); 
     }
 
-    /**
-     * Updates every balance, exposure, and chip display on the page
-     * to ensure no 'undefined' values are shown.
-     */
     function updateAllUISlots() {
-        const balance = user.balance || 0;
-        const exposure = user.exposure || 0;
-        const inr = user.inr_balance || 0;
+        // Safe check to prevent "undefined" or NaN in UI
+        const balance = Number(user.balance || 0);
+        const exposure = Number(user.exposure || 0);
+        const inr = Number(user.inr_balance || 0);
 
-        // Header
-        const headerBal = document.getElementById('headerBal');
-        if (headerBal) headerBal.innerText = `🪙 ${Number(balance).toLocaleString()}`;
+        if (document.getElementById('headerBal')) document.getElementById('headerBal').innerText = `🪙 ${balance.toLocaleString()}`;
+        if (document.getElementById('wallet-val')) document.getElementById('wallet-val').innerText = `₹ ${balance.toLocaleString()}`;
+        if (document.getElementById('exposure-val')) document.getElementById('exposure-val').innerText = `-${exposure.toLocaleString()}`;
+        if (document.getElementById('bet-exp')) document.getElementById('bet-exp').innerText = exposure.toLocaleString();
 
-        // Betting Tab (The new feature)
-        const wallVal = document.getElementById('wallet-val');
-        const expVal = document.getElementById('exposure-val');
-        const betExp = document.getElementById('bet-exp');
-        if (wallVal) wallVal.innerText = `₹ ${Number(balance).toLocaleString()}`;
-        if (expVal) expVal.innerText = Number(exposure).toLocaleString();
-        if (betExp) betExp.innerText = Number(exposure).toLocaleString();
-
-        // Account Tab
-        const inrEl = document.getElementById('inr');
-        const chipsEl = document.getElementById('chips');
-        const winsEl = document.getElementById('wins');
-        const loseEl = document.getElementById('lose');
-        if (inrEl) inrEl.innerText = Number(inr).toLocaleString();
-        if (chipsEl) chipsEl.innerText = Number(balance).toLocaleString();
-        if (winsEl) winsEl.innerText = (user.total_wins || 0).toLocaleString();
-        if (loseEl) loseEl.innerText = (user.total_losses || 0).toLocaleString();
+        if (document.getElementById('inr')) document.getElementById('inr').innerText = inr.toLocaleString();
+        if (document.getElementById('chips')) document.getElementById('chips').innerText = balance.toLocaleString();
+        if (document.getElementById('wins')) document.getElementById('wins').innerText = (user.total_wins || 0).toLocaleString();
+        if (document.getElementById('lose')) document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
     }
 
-    // --- 3. LIVE BETTING LOGIC (PERFECTION) ---
+    // --- 3. LIVE BETTING & COMMISSION LOGIC ---
+
+    function startOddsSimulation() {
+        setInterval(() => {
+            const backBtn = document.querySelector('.odds-buttons button:nth-child(1)');
+            const layBtn = document.querySelector('.odds-buttons button:nth-child(2)');
+            if (!backBtn || !layBtn) return;
+
+            const oldVal = parseFloat(backBtn.innerText);
+            const change = (Math.random() * 0.04 - 0.02);
+            const newVal = Math.max(1.01, oldVal + change).toFixed(2);
+
+            backBtn.innerText = newVal;
+            layBtn.innerText = (parseFloat(newVal) + 0.01).toFixed(2);
+
+            backBtn.classList.remove('odds-up', 'odds-down');
+            void backBtn.offsetWidth; 
+            backBtn.classList.add(change >= 0 ? 'odds-up' : 'odds-down');
+        }, 4000);
+    }
 
     function openBetSlip(team, odds, type = 'back') {
-        activeBetData = { team, odds, type };
-        
-        // Update Slip UI
+        activeBetData = { team, odds: parseFloat(odds), type };
         const slipTeam = document.getElementById('slipTeam') || document.getElementById('slip-team-name');
         const slipOdds = document.getElementById('slipOdds') || document.getElementById('slip-odds');
         
         if (slipTeam) slipTeam.innerText = `${team} (${type.toUpperCase()})`;
-        if (slipOdds) slipOdds.innerText = odds.toFixed(2);
+        if (slipOdds) slipOdds.innerText = parseFloat(odds).toFixed(2);
         
         document.getElementById('betAmount').value = 100;
-        
-        // Show Slip (Flex for mobile bottom-alignment)
-        const slip = document.getElementById('betSlip');
-        slip.style.display = 'flex';
-        slip.classList.add('active'); 
+        document.getElementById('betSlip').style.display = 'flex';
     }
 
-    function closeBetSlip() {
-        const slip = document.getElementById('betSlip');
-        slip.style.display = 'none';
-        slip.classList.remove('active');
-    }
-
-    function setStake(amt) {
-        document.getElementById('betAmount').value = amt;
-    }
+    function closeBetSlip() { document.getElementById('betSlip').style.display = 'none'; }
+    function setStake(amt) { document.getElementById('betAmount').value = amt; }
 
     async function confirmBet() {
         const amt = parseInt(document.getElementById('betAmount').value);
         if (isNaN(amt) || amt < 100) return alert("Minimum bet is 100");
-        if (user.balance < amt) return alert("Insufficient Balance");
+        if (Number(user.balance) < amt) return alert("Insufficient Balance");
 
-        // UI Loading State
         const btn = document.querySelector('#betSlip button[onclick="confirmBet()"]') || document.querySelector('.place-bet-btn');
         const originalText = btn.innerText;
-        btn.innerText = "PROCESSING...";
+        btn.innerText = "PROCESSING..."; // Updated to match your image
         btn.disabled = true;
 
         try {
             const res = await fetch('/api/place-bet', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user.id,
-                    betAmount: amt,
-                    team: activeBetData.team,
-                    odds: activeBetData.odds,
-                    type: activeBetData.type
-                })
+                body: JSON.stringify({ userId: user.id, betAmount: amt, team: activeBetData.team, odds: activeBetData.odds })
             });
-
             const d = await res.json();
+
             if (d.success) {
                 closeBetSlip();
-                // Instant local update for "perfection" feel
-                user.balance -= amt;
-                user.exposure += amt;
+                showResultToast("Bet Placed! Waiting for result...", "win");
+                
+                // Local temporary deduction
+                user.balance = Number(user.balance) - amt;
+                user.exposure = Number(user.exposure) + amt;
                 updateAllUISlots();
-                init(); // Refresh data from server
+
+                // 6 Second Delay before simulated resolution
+                setTimeout(() => resolveBetSimulated(amt, activeBetData.odds), 6000);
+            } else {
+                // FIXED: Safety check to prevent "undefined" alert
+                alert(d.message || "Error: Transaction could not be completed.");
             }
-            alert(d.message);
-        } catch (e) {
-            alert("Connection Error. Bet not placed.");
-        } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
+        } catch (e) { 
+            alert("Connection Error. Please check your internet."); 
+        } finally { 
+            btn.innerText = originalText; 
+            btn.disabled = false; 
         }
     }
 
-    // --- 4. USER MANAGEMENT LOGIC ---
+    async function resolveBetSimulated(amt, odds) {
+        const isWin = Math.random() > 0.5;
+        const netProfit = amt * (odds - 1);
 
-    function openModal() {
-        editUserId = null;
-        document.getElementById('mTitle').innerText = "Add New User";
-        ['passDiv', 'cPassDiv', 'roleDiv', 'depoDiv'].forEach(id => document.getElementById(id).style.display = 'flex');
-        document.getElementById('userModal').style.display = 'flex';
+        if (isWin) {
+            user.balance = Number(user.balance) + amt + netProfit;
+            user.exposure = Number(user.exposure) - amt;
+            showResultToast(`WON! +₹${netProfit.toFixed(2)}`, "win");
+            distributeCommissions(netProfit);
+        } else {
+            user.exposure = Number(user.exposure) - amt;
+            showResultToast(`LOST! -₹${amt}`, "loss");
+        }
+        updateAllUISlots();
+        init(); // Refresh data from server
     }
 
-    function openEdit(id, uname, fname, logins) {
-        editUserId = id;
-        document.getElementById('mTitle').innerText = "Edit User";
-        document.getElementById('mUName').value = uname;
-        document.getElementById('mFName').value = fname || "";
-        document.getElementById('mLogins').value = logins;
-        ['passDiv', 'cPassDiv', 'roleDiv', 'depoDiv'].forEach(id => document.getElementById(id).style.display = 'none');
-        document.getElementById('userModal').style.display = 'flex';
+    function distributeCommissions(profit) {
+        Object.entries(COMMISSION_RATES).forEach(([role, rate]) => {
+            if (rate > 0) {
+                const comm = profit * rate;
+                fetch('/api/distribute-commission', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role, amount: comm, fromId: user.id })
+                }).catch(e => console.error("Comm Error"));
+            }
+        });
     }
 
-    function closeModal() {
-        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    function showResultToast(msg, type) {
+        const toast = document.createElement('div');
+        toast.className = `result-toast toast-${type}`;
+        toast.style.cssText = `position:fixed; top:20px; right:20px; padding:15px; border-radius:8px; z-index:9999; font-weight:bold; background:${type==='win'?'#39ff14':'#ff3131'}; color:#000; box-shadow: 0 0 10px rgba(0,0,0,0.5);`;
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
     }
 
+    // --- 4. USER MANAGEMENT ---
     async function loadUsers() {
         const tbody = document.querySelector('#userTable tbody');
         if(!tbody) return;
@@ -491,30 +540,14 @@
                         <button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}','${u.first_name}',${u.max_logins})"><i class="fas fa-edit"></i></button>
                         <button class="act-btn btn-d" onclick="give(${u.id},'${u.username}')">D</button>
                         <button class="act-btn btn-w" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                        <button class="act-btn btn-ms" onclick="document.getElementById('msModal').style.display='flex'">MS</button>
                         <button class="act-btn btn-del" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
-        } catch (e) { tbody.innerHTML = '<tr><td colspan="9" style="color:red">Error loading</td></tr>'; }
+        } catch (e) { console.error("User load error"); }
     }
 
-    async function give(id, name) {
-        const amt = prompt(`Deposit to ${name}:`);
-        if (!amt || isNaN(amt)) return;
-        const res = await fetch('/api/transfer-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: user.id, receiverId: id, amount: amt }) });
-        alert((await res.json()).message); init();
-    }
-
-    async function withdraw(id, name) {
-        const amt = prompt(`Withdraw from ${name}:`);
-        if (!amt || isNaN(amt)) return;
-        const res = await fetch('/api/withdraw-chips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminId: user.id, userId: id, amount: amt }) });
-        alert((await res.json()).message); init();
-    }
-
-    // --- 5. NAVIGATION & UI HELPERS ---
-
+    // --- 5. NAVIGATION ---
     function nav(id, el) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById('page-' + id).classList.add('active');
@@ -543,13 +576,12 @@
             const res = await fetch('/api/history', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) });
             const d = await res.json();
             const tbody = document.querySelector('#histTable tbody');
-            if(tbody) tbody.innerHTML = d.history.map(h => `<tr><td style="font-size:11px; padding:10px;">${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type}</b></td><td style="color:${h.amount >= 0 ? 'var(--neon-g)' : 'var(--neon-r)'}; font-weight:bold">${h.amount}</td><td style="font-size:12px; color:#aaa">${h.description}</td></tr>`).join('');
+            if(tbody) tbody.innerHTML = d.history.map(h => `<tr><td>${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type}</b></td><td style="color:${h.amount >= 0 ? 'var(--neon-g)' : 'var(--neon-r)'}">${h.amount}</td><td>${h.description}</td></tr>`).join('');
         } catch (e) {}
     }
 
     function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
 
-    // Start App
     init();
 </script>
 </body>
