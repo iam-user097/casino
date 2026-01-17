@@ -85,50 +85,90 @@
             .full-row { grid-column: span 1; }
         }
 
-        /* --- LIVE BETTING GRID --- */
-.market-row {
-    display: flex;
-    align-items: center;
-    background: #fff; /* Match image white background */
-    padding: 10px;
-    margin-bottom: 2px;
-    color: #000; /* Text is black in the image */
-    border-radius: 4px;
+        /* --- MODERN BETTING UI --- */
+:root {
+    --back-color: #72bbef;
+    --lay-color: #faa9ba;
+    --card-bg: #1a1f2b;
 }
 
-.market-name {
-    flex: 1;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+/* Betting Card Styling */
+.market-card {
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
-.odds-container {
+.market-header {
+    padding: 12px;
     display: flex;
-    gap: 4px;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #eee;
+    color: #333;
 }
 
-.odds-box {
-    width: 80px;
-    height: 45px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+.team-info { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+
+/* Responsive Odds Grid */
+.odds-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    background: #f4f4f4;
+}
+
+.odds-item {
+    padding: 10px 5px;
+    text-align: center;
     cursor: pointer;
-    font-weight: bold;
-    border-radius: 4px;
-    transition: opacity 0.2s;
+    transition: all 0.2s ease;
+    border: 0.5px solid #e0e0e0;
 }
 
-.odds-box:hover { opacity: 0.8; }
+.odds-item:active { transform: scale(0.95); }
+.odds-item.back { background-color: var(--back-color); color: #000; }
+.odds-item.lay { background-color: var(--lay-color); color: #000; }
+.odds-item.empty { background-color: #eee; color: #bbb; cursor: default; }
 
-.back { background: #2cb1ff; color: #000; } /* Light Blue */
-.lay { background: #ffb1c7; color: #000; }  /* Light Pink */
+.odds-val { display: block; font-size: 15px; font-weight: 800; }
 
-.odds-val { font-size: 16px; }
-.odds-size { font-size: 10px; opacity: 0.7; }
+/* Mobile Betting Pop-up (Slip) */
+.bet-slip-overlay {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    padding: 20px;
+    z-index: 4000;
+    box-shadow: 0 -10px 25px rgba(0,0,0,0.5);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.bet-slip-header { display: flex; justify-content: space-between; color: #333; margin-bottom: 15px; }
+.bet-slip-body { display: flex; flex-direction: column; gap: 15px; }
+.stake-input {
+    width: 100%;
+    padding: 15px;
+    font-size: 18px;
+    border-radius: 8px;
+    border: 2px solid var(--primary);
+    background: #f9f9f9;
+    color: #333;
+}
+
+/* Desktop optimization */
+@media (min-width: 768px) {
+    .bet-slip-overlay { width: 400px; left: auto; right: 20px; border-radius: 12px; bottom: 20px; }
+}
 </style>
 </head>
 <body>
@@ -234,51 +274,63 @@
         </div>
 
         <div id="page-bet" class="page">
-    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-        <div class="account-card" style="flex: 1; padding: 15px; margin-bottom: 0;">
-            <p style="color:#aaa; font-size:10px;">EXPOSURE</p>
-            <h2 style="color:var(--neon-r);">🪙 <span id="bet-exp">0</span></h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+        <div class="account-card" style="padding:10px; margin:0;">
+            <small style="color:#aaa; font-size:10px;">EXPOSURE</small>
+            <h3 style="color:var(--neon-r); margin-top:5px;">🪙 <span id="bet-exp-val">0</span></h3>
         </div>
-        <div class="account-card" style="flex: 1; padding: 15px; margin-bottom: 0;">
-            <p style="color:#aaa; font-size:10px;">WALLET BALANCE</p>
-            <h2 style="color:var(--neon-g);">🪙 <span id="wallet-bal">0</span></h2>
+        <div class="account-card" style="padding:10px; margin:0;">
+            <small style="color:#aaa; font-size:10px;">WALLET</small>
+            <h3 style="color:var(--neon-g); margin-top:5px;">🪙 <span id="wallet-bal-val">0</span></h3>
         </div>
     </div>
 
-    <div style="background: #011627; padding: 10px; border: 1px solid var(--primary); border-bottom: none; display: flex; justify-content: flex-end; padding-right: 170px;">
-        <span style="color: var(--accent); font-size: 12px; font-weight: bold;">BACK</span>
-        <span style="color: var(--accent); font-size: 12px; font-weight: bold; margin-left: 55px;">LAY</span>
+    <div style="display:flex; justify-content: flex-end; padding: 5px 10px; gap: 45px;">
+        <small style="color:var(--accent); font-weight:bold;">BACK</small>
+        <small style="color:var(--accent); font-weight:bold; margin-right: 35px;">LAY</small>
     </div>
 
-    <div class="table-container" style="margin-top: 0; background: #e0e0e0; padding: 5px;">
-        
-        <div class="market-row">
-            <div class="market-name">
-                <span style="background: #00509d; color: white; padding: 2px 6px; border-radius: 50%; font-size: 10px;">I</span>
-                <span style="background: #4a90e2; color: white; padding: 2px 6px; border-radius: 50%; font-size: 10px;">B</span>
+    <div class="market-card">
+        <div class="market-header">
+            <div class="team-info">
+                <span style="background:#00509d; color:white; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:10px;">I</span>
+                <span style="background:#4a90e2; color:white; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:10px;">B</span>
                 India U19 v Bangladesh U19
             </div>
-            
-            <div class="odds-container">
-                <div class="odds-box back" onclick="bet(1.41)">
-                    <span class="odds-val">1.41</span>
-                </div>
-                <div class="odds-box lay" onclick="bet(1.42)">
-                    <span class="odds-val">1.42</span>
-                </div>
-                
-                <div class="odds-box" style="background: #eee; color: #999;">-</div>
-                <div class="odds-box" style="background: #eee; color: #999;">-</div>
-
-                <div class="odds-box back" onclick="bet(3.35)">
-                    <span class="odds-val">3.35</span>
-                </div>
-                <div class="odds-box lay" onclick="bet(3.45)">
-                    <span class="odds-val">3.45</span>
-                </div>
-            </div>
+            <i class="fas fa-thumbtack" style="color:#ccc;"></i>
         </div>
         
+        <div class="odds-grid">
+            <div class="odds-item back" onclick="openBetSlip('India U19', 1.41, 'back')"><span class="odds-val">1.41</span></div>
+            <div class="odds-item lay" onclick="openBetSlip('India U19', 1.42, 'lay')"><span class="odds-val">1.42</span></div>
+            <div class="odds-item empty">-</div>
+            <div class="odds-item empty">-</div>
+            <div class="odds-item back" onclick="openBetSlip('Bangladesh U19', 3.35, 'back')"><span class="odds-val">3.35</span></div>
+            <div class="odds-item lay" onclick="openBetSlip('Bangladesh U19', 3.45, 'lay')"><span class="odds-val">3.45</span></div>
+        </div>
+    </div>
+
+    <div id="betSlip" class="bet-slip-overlay">
+        <div class="bet-slip-header">
+            <h3 id="slipTeamName">Team Name</h3>
+            <i class="fas fa-times" onclick="closeBetSlip()" style="cursor:pointer; font-size:20px;"></i>
+        </div>
+        <div class="bet-slip-body">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span id="slipType" style="padding:4px 12px; border-radius:4px; font-weight:bold; font-size:12px;">BACK</span>
+                <span style="font-size: 20px; font-weight:bold; color:#333;">Odds: <span id="slipOdds">0.00</span></span>
+            </div>
+            
+            <input type="number" id="betAmountInput" class="stake-input" placeholder="Stake (Min 100)">
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+                <button onclick="setStake(100)" style="padding:10px; border:1px solid #ddd; border-radius:5px; background:white; color:#333;">+100</button>
+                <button onclick="setStake(500)" style="padding:10px; border:1px solid #ddd; border-radius:5px; background:white; color:#333;">+500</button>
+                <button onclick="setStake(1000)" style="padding:10px; border:1px solid #ddd; border-radius:5px; background:white; color:#333;">+1000</button>
+            </div>
+
+            <button onclick="confirmBet()" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; font-size:16px; cursor:pointer;">PLACE BET</button>
+        </div>
     </div>
 </div>
 
@@ -535,9 +587,70 @@
             document.getElementById('overlay').classList.toggle('show');
         }
 
+        let currentBetData = {};
+
+function openBetSlip(team, odds, type) {
+    currentBetData = { team, odds, type };
+    
+    document.getElementById('slipTeamName').innerText = team;
+    document.getElementById('slipOdds').innerText = odds;
+    document.getElementById('slipType').innerText = type.toUpperCase();
+    document.getElementById('slipType').style.backgroundColor = type === 'back' ? '#72bbef' : '#faa9ba';
+    
+    document.getElementById('betSlip').style.display = 'block';
+    document.getElementById('betAmountInput').value = "";
+    document.getElementById('betAmountInput').focus();
+}
+
+function closeBetSlip() {
+    document.getElementById('betSlip').style.display = 'none';
+}
+
+function setStake(amt) {
+    let input = document.getElementById('betAmountInput');
+    let current = parseInt(input.value) || 0;
+    input.value = current + amt;
+}
+
+async function confirmBet() {
+    const amount = parseInt(document.getElementById('betAmountInput').value);
+    
+    if(!amount || amount < 100) {
+        return alert("Minimum bet amount is 100");
+    }
+    
+    // Check if user has enough balance (Assuming user object exists from your init() function)
+    if(user.balance < amount) {
+        return alert("Insufficient Wallet Balance!");
+    }
+
+    // Call your existing bet function logic or API
+    try {
+        const win = Math.random() > 0.5; // Placeholder logic
+        const res = await fetch('/api/place-bet', {
+            method:'POST', 
+            headers:{'Content-Type':'application/json'}, 
+            body:JSON.stringify({
+                userId: user.id, 
+                betAmount: amount, 
+                team: currentBetData.team,
+                odds: currentBetData.odds,
+                type: currentBetData.type
+            })
+        });
+        
+        alert("Bet Placed Successfully on " + currentBetData.team);
+        closeBetSlip();
+        init(); // Refresh balances
+    } catch(e) {
+        alert("Error placing bet");
+    }
+}
+
         function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
         init();
     </script>
 </body>
 </html>
+
 
