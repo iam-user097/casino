@@ -84,36 +84,7 @@
             .modal-body { grid-template-columns: 1fr; }
             .full-row { grid-column: span 1; }
         }
-       /* ---- LIVE BET MODAL ---- */
-.live-bet-modal{
-display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,0.9);z-index:5000;
-justify-content:center;align-items:center
-}
-.live-bet-box{
-background:#12161f;border:1px solid var(--primary);
-border-radius:14px;width:90%;max-width:420px;
-padding:20px;box-shadow:0 0 30px rgba(0,80,157,.5)
-}
-.live-bet-box h3{color:var(--accent);margin-bottom:10px}
-.live-bet-box p{font-size:13px;color:#aaa;margin-bottom:10px}
-.live-bet-box input{
-width:100%;padding:12px;border-radius:8px;
-background:#0b0e14;border:1px solid #333;color:#fff
-}
-.bet-chip-row{display:flex;gap:10px;margin:15px 0}
-.bet-chip-row button{
-flex:1;padding:10px;border-radius:50px;
-background:transparent;border:1px solid var(--accent);
-color:var(--accent);cursor:pointer
-}
-.bet-chip-row button:hover{background:rgba(255,204,0,.15)}
-.place-live-btn{
-width:100%;padding:12px;margin-top:10px;
-background:var(--neon-g);color:#000;
-font-weight:bold;border-radius:8px;border:none
-}
-</style>
+    </style>
 </head>
 <body>
 
@@ -217,39 +188,15 @@ font-weight:bold;border-radius:8px;border:none
             </div>
         </div>
 
-        <div class="live-card">
-    <div class="live-title">🏏 Cricket</div>
-
-    <div class="match-row">
-        <div class="team">India</div>
-        <div style="color:#aaa;font-size:12px;">VS</div>
-        <div class="team">New Zealand</div>
-    </div>
-
-    <div class="odds-grid">
-        <!-- Team 1 -->
-        <div class="odd-box team1" onclick="placeLiveBet('India',1.31)">1.31</div>
-        <div class="odd-box team1" onclick="placeLiveBet('India',1.32)">1.32</div>
-
-        <!-- Empty space -->
-        <div class="odd-box empty"></div>
-        <div class="odd-box empty"></div>
-
-        <!-- Team 2 -->
-        <div class="odd-box team2" onclick="placeLiveBet('New Zealand',4.10)">4.10</div>
-        <div class="odd-box team2" onclick="placeLiveBet('New Zealand',4.30)">4.30</div>
-    </div>
-
-    <!-- LIVE MATCH INFO -->
-    <div class="live-info">
-        <div>Batting: <span>India</span></div>
-        <div>Bowling: <span>New Zealand</span></div>
-        <div>Overs: <span>12.4</span></div>
-        <div>Runs: <span>98/2</span></div>
-        <div>Toss: <span>India</span></div>
-        <div>Status: <span>LIVE</span></div>
-    </div>
-</div>
+        <div id="page-bet" class="page">
+            <div class="account-card">
+                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">BETTING EXPOSURE</p>
+                <h1 style="color:var(--neon-g); font-size:45px; text-shadow: 0 0 15px var(--neon-g);">🪙 <span id="bet-exp">0</span></h1>
+                <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
+                    <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 150px; background:#0b0e14; color:white; border:1px solid #333; padding:8px; border-radius:4px;">
+                    <button onclick="addExp()" class="btn" style="background: var(--accent); color: black; font-weight:bold; padding:8px 15px; border-radius:4px;">Deposit</button>
+                </div>
+            </div>
             <div class="card" style="text-align:center; background:#12161f; border:1px solid #1a202c; padding:20px; border-radius:12px;">
                 <h4 style="margin-bottom:20px; color:var(--accent)">Place Quick Bet</h4>
                 <div style="display:flex; justify-content:center; gap:25px;">
@@ -486,35 +433,11 @@ font-weight:bold;border-radius:8px;border:none
         }
 
         async function bet(amt) {
-    if (user.balance < amt) {
-        alert("❌ Insufficient balance!");
-        return;
-    }
-
-    try {
-        const res = await fetch('/api/place-bet', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({
-                userId: user.id,
-                amount: amt,
-                odds: 2.0   // quick bet default odds
-            })
-        });
-
-        const d = await res.json();
-        if (!d.success) {
-            alert(d.message || "Bet failed");
-            return;
+            if(user.exposure < amt) return alert("Low exposure!");
+            const win = Math.random() > 0.5;
+            await fetch('/api/place-bet', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, betAmount:amt, isWin:win})});
+            alert(win ? "WON!" : "LOST!"); init();
         }
-
-        alert(d.result === 'WIN' ? "🎉 WON!" : "❌ LOST!");
-        init();
-
-    } catch(e) {
-        alert("⚠️ Server error");
-    }
-}
 
         function setupRoles() {
             const roles = ['Admin','SuperMaster','Master','Agent','Client'];
