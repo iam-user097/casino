@@ -67,14 +67,29 @@
         .full-row { grid-column: span 2; }
         .modal-footer { padding: 20px; background: #011627; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #1a202c; }
 
-        @keyframes zoomIn { from { transform:scale(0.8); opacity:0; } to { transform:scale(1); opacity:1; } }
+        /* Professional Account Details Panel */
+        .acc-list-container { max-width: 450px; margin: 20px auto; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
+        .acc-header-box { background: #fff; padding: 5px; }
+        .acc-data-row { display: flex; justify-content: space-between; padding: 15px 20px; background: #fff; color: #333; border-bottom: 1px solid #eee; font-weight: bold; font-size: 15px; }
+        .acc-link-item { display: flex; align-items: center; gap: 15px; padding: 18px 20px; background: #e0f2f1; color: #000; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; text-decoration: none; font-weight: 500; font-size: 15px; transition: 0.2s; }
+        .acc-link-item:hover { background: #b2dfdb; padding-left: 25px; }
+        .acc-link-item i { width: 25px; font-size: 18px; color: #333; }
 
-        /* Professional Neon Cards */
-        .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:25px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); box-shadow: 0 0 20px rgba(0, 80, 157, 0.3); }
-        .neon-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-        .neon-box { padding:15px; border-radius:12px; font-weight:bold; text-align:center; font-size:14px; text-transform: uppercase; background: #0b0e14; border: 2px solid #333; }
-        .win-box { border-color: var(--neon-g); color: var(--neon-g); box-shadow: 0 0 10px rgba(57, 255, 20, 0.2); }
-        .lose-box { border-color: var(--neon-r); color: var(--neon-r); box-shadow: 0 0 10px rgba(255, 49, 49, 0.2); }
+        /* ===== LIVE CRICKET BETTING STYLING ===== */
+        .live-card { background:#12161f; border:1px solid var(--primary); border-radius:12px; padding:20px; margin-top:20px; box-shadow:0 0 20px rgba(0,80,157,0.25); }
+        .live-title { color:var(--accent); font-size:18px; font-weight:bold; margin-bottom:15px; display: flex; align-items: center; gap: 10px; }
+        .match-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+        .team { font-weight:bold; font-size:16px; color:#fff; width: 40%; }
+        .odds-grid { display:grid; grid-template-columns: repeat(6, 1fr); gap:10px; }
+        .odd-box { background:#0b0e14; border:1px solid #333; padding:12px; border-radius:8px; text-align:center; cursor:pointer; font-weight:bold; font-size:14px; transition: 0.2s; }
+        .odd-box.team1.blue { color:#00c8ff; border-color:#00c8ff; }
+        .odd-box.team1.pink { color:#ff5fa2; border-color:#ff5fa2; }
+        .odd-box.team2.blue { color:#00c8ff; border-color:#00c8ff; }
+        .odd-box.team2.pink { color:#ff5fa2; border-color:#ff5fa2; }
+        .odd-box.empty { cursor:default; background:transparent; border:1px dashed #444; }
+        .odd-box:not(.empty):hover { background:rgba(0,80,157,0.15); transform:scale(1.05); }
+        .live-info { margin-top:20px; padding-top:15px; border-top:1px solid #1a202c; display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; font-size:13px; color:#ccc; }
+        .live-info span { color:var(--accent); font-weight: bold; }
 
         @media(max-width:768px) { 
             .sidebar { position:fixed; left:0; height:100%; transform: translateX(-100%); } 
@@ -83,29 +98,8 @@
             .mobile-toggle { display:block !important; font-size: 22px; color: #fff; margin-right: 15px; }
             .modal-body { grid-template-columns: 1fr; }
             .full-row { grid-column: span 1; }
+            .odds-grid { grid-template-columns: repeat(3, 1fr); }
         }
-
-        /* ===== LIVE CRICKET BETTING STYLING ===== */
-        .live-card { background:#12161f; border:1px solid var(--primary); border-radius:12px; padding:20px; margin-top:20px; box-shadow:0 0 20px rgba(0,80,157,0.25); }
-        .live-title { color:var(--accent); font-size:18px; font-weight:bold; margin-bottom:15px; display: flex; align-items: center; gap: 10px; }
-        .match-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
-        .team { font-weight:bold; font-size:16px; color:#fff; width: 40%; }
-        .odds-grid { display:grid; grid-template-columns: repeat(6, 1fr); gap:10px; }
-        .odd-box { background:#0b0e14; border:1px solid #333; padding:12px; border-radius:8px; text-align:center; cursor:pointer; font-weight:bold; font-size:14px; transition: 0.2s; }
-        .odd-box.team1 { color:#00c8ff; border-color:#00c8ff; }
-        .odd-box.team2 { color:#ff5fa2; border-color:#ff5fa2; }
-        .odd-box.empty { cursor:default; background:transparent; border:1px dashed #444; }
-        .odd-box:not(.empty):hover { background:rgba(0,80,157,0.15); transform:scale(1.05); }
-        .live-info { margin-top:20px; padding-top:15px; border-top:1px solid #1a202c; display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; font-size:13px; color:#ccc; }
-        .live-info span { color:var(--accent); font-weight: bold; }
-
-        /* NEW: Account Tab Styles (Matches image_20ad03) */
-        .acc-list-container { max-width: 450px; margin: 20px auto; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
-        .acc-header-box { background: #fff; padding: 5px; }
-        .acc-data-row { display: flex; justify-content: space-between; padding: 15px 20px; background: #fff; color: #333; border-bottom: 1px solid #eee; font-weight: bold; font-size: 15px; }
-        .acc-link-item { display: flex; align-items: center; gap: 15px; padding: 18px 20px; background: #e0f2f1; color: #000; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; text-decoration: none; font-weight: 500; font-size: 15px; transition: 0.2s; }
-        .acc-link-item:hover { background: #b2dfdb; padding-left: 25px; }
-        .acc-link-item i { width: 25px; font-size: 18px; color: #333; }
     </style>
 </head>
 <body>
@@ -202,7 +196,8 @@
                             <th>Login</th>
                             <th>Lock</th>
                             <th>Active</th>
-                        <tr>
+                            <th>Action</th>
+                        </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
@@ -217,7 +212,7 @@
                     <div style="color:#aaa;font-size:12px;">VS</div>
                     <div class="team" style="text-align: right;">New Zealand</div>
                 </div>
-                <div class="odds-row">
+                <div class="odds-grid">
                     <div class="odd-box team1 blue" onclick="placeLiveBet('India', 1.31)">1.31</div>
                     <div class="odd-box team1 pink" onclick="placeLiveBet('India', 1.32)">1.32</div>
                     <div class="odd-box empty"></div>
@@ -257,11 +252,11 @@
             </div>
         </div>
 
-                <div id="page-account" class="page">
+        <div id="page-account" class="page">
             <div class="acc-list-container">
                 <div class="acc-header-box">
                     <div class="acc-data-row"><span>Chips</span><span id="acc-chips" style="color:var(--neon-g)">0.00</span></div>
-                    <div class="acc-data-row"><span>P & L</span><span id="acc-pl" style="color:var(--neon-r)">0.00</span></div>
+                    <div class="acc-data-row"><span>P & L</span><span id="acc-pl" style="color:var(--neon-r)">-0.00</span></div>
                     <div class="acc-data-row"><span>Exposure</span><span id="acc-exp" style="color:#000">0</span></div>
                 </div>
                 <a class="acc-link-item" onclick="alert('Opening Statement...')"><i class="fas fa-university"></i> Account Statment</a>
@@ -305,11 +300,10 @@
                     sessionStorage.setItem('currentUser', JSON.stringify(user));
                     document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
                     
-                    // NEW: Populate Account tab data
                     document.getElementById('acc-chips').innerText = user.balance.toFixed(2);
-                    const totalProfitLoss = (user.total_wins - user.total_losses) || 0;
-                    document.getElementById('acc-pl').innerText = totalProfitLoss.toFixed(2);
-                    document.getElementById('acc-pl').style.color = totalProfitLoss >= 0 ? 'var(--neon-g)' : 'var(--neon-r)';
+                    const pl = (user.total_wins - user.total_losses) || 0;
+                    document.getElementById('acc-pl').innerText = pl.toFixed(2);
+                    document.getElementById('acc-pl').style.color = pl >= 0 ? 'var(--neon-g)' : 'var(--neon-r)';
                     document.getElementById('acc-exp').innerText = user.exposure || 0;
 
                     if(user.role === 'Client') document.getElementById('addBtn').style.display = 'none';
@@ -355,27 +349,76 @@
             } catch(e) { tbody.innerHTML = '<tr><td colspan="9" style="color:red">Error loading users</td></tr>'; }
         }
 
+        async function submitUser() {
+            const data = {
+                fName: document.getElementById('mFName').value, uName: document.getElementById('mUName').value,
+                pass: document.getElementById('mPass').value, role: document.getElementById('mRole').value,
+                logins: document.getElementById('mLogins').value, deposit: document.getElementById('mDeposit').value, creatorId: user.id
+            };
+            if(!data.fName || !data.uName || (!editUserId && !data.pass) || !data.role || !data.logins || !data.deposit) return alert("All fields are required!");
+            const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
+            if(editUserId) data.id = editUserId;
+            const res = await fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+            const d = await res.json();
+            alert(d.message); if(d.success) { closeModal(); init(); }
+        }
+
+        async function forceUpdatePass() {
+            const oldP = document.getElementById('oldSecurePass').value;
+            const newP = document.getElementById('newSecurePass').value;
+            const confP = document.getElementById('confirmSecurePass').value;
+            if(!oldP || !newP || !confP) return alert("Fill all fields!");
+            if(newP !== confP) return alert("New passwords do not match!");
+            const res = await fetch('/api/change-password-secure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, oldPass: oldP, newPass: newP})});
+            const d = await res.json();
+            if(d.success) location.reload(); else alert(d.message);
+        }
+
+        async function withdraw(id, name) {
+            const amt = prompt(`Withdraw chips from ${name}:`);
+            if(!amt || isNaN(amt)) return;
+            const res = await fetch('/api/withdraw-chips', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({adminId:user.id, userId:id, amount:amt})});
+            alert((await res.json()).message); init();
+        }
+
+        async function deleteUser(id, bal) {
+            if(bal > 0) return alert("Withdraw all chips before deleting!");
+            if(!confirm("Delete user permanently? This will wipe their history and record.")) return;
+            try {
+                const res = await fetch('/api/delete-user', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
+                const d = await res.json();
+                alert(d.message); if(d.success) init(); 
+            } catch(e) { alert("Server Connection Error"); }
+        }
+
+        async function resetKey(id) {
+            const newP = prompt("Enter new master password for user:");
+            if(!newP) return;
+            await fetch('/api/update-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:id, newPass: newP})});
+            alert("Updated.");
+        }
+
         // FIXED: Search Filter now scans row content properly
         function filterUsers() {
             let input = document.getElementById('userSearch').value.toLowerCase();
             let rows = document.querySelectorAll('#userTable tbody tr');
             rows.forEach(row => {
-                let matchFound = false;
+                let match = false;
                 row.querySelectorAll('td').forEach(cell => {
-                    if (cell.innerText.toLowerCase().includes(input)) matchFound = true;
+                    if (cell.innerText.toLowerCase().includes(input)) match = true;
                 });
-                row.style.display = matchFound ? "" : "none";
+                row.style.display = match ? "" : "none";
             });
         }
 
-        // NEW: Handle live betting clicks
+        // NEW: Function for Live Betting boxes
         function placeLiveBet(team, odds) {
-            const amt = prompt(`Place bet for ${team} at ${odds}. Enter Amount:`);
+            const amt = prompt(`Place bet for ${team} at odds ${odds}. Enter Amount:`);
             if(!amt || isNaN(amt)) return;
-            alert(`Bet of ${amt} placed successfully on ${team}`);
+            // logic to call your bet API goes here
+            alert(`Bet of ${amt} placed on ${team}`);
         }
 
-        // Navigation Logic
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active');
