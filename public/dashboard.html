@@ -249,292 +249,265 @@
     </div>
 
     <script>
-let user = JSON.parse(sessionStorage.getItem('currentUser'));
-if(!user) window.location.href = 'login.html';
-let editUserId = null;
+        let user = JSON.parse(sessionStorage.getItem('currentUser'));
+        if(!user) window.location.href = 'login.html';
+        let editUserId = null;
 
-// --- MODALS ---
-function openModal() { 
-    editUserId = null;
-    document.getElementById('mTitle').innerText = "Add New User";
-    document.getElementById('passDiv').style.display = 'flex';
-    document.getElementById('cPassDiv').style.display = 'flex';
-    document.getElementById('roleDiv').style.display = 'flex';
-    document.getElementById('depoDiv').style.display = 'flex';
-    document.getElementById('userModal').style.display = 'flex'; 
-}
+        function openModal() { 
+            editUserId = null;
+            document.getElementById('mTitle').innerText = "Add New User";
+            document.getElementById('passDiv').style.display = 'flex';
+            document.getElementById('cPassDiv').style.display = 'flex';
+            document.getElementById('roleDiv').style.display = 'flex';
+            document.getElementById('depoDiv').style.display = 'flex';
+            document.getElementById('userModal').style.display = 'flex'; 
+        }
 
-function openEdit(id, uname, fname, logins) {
-    editUserId = id;
-    document.getElementById('mTitle').innerText = "Edit User (Name & Logins)";
-    document.getElementById('mUName').value = uname;
-    document.getElementById('mFName').value = fname || "";
-    document.getElementById('mLogins').value = logins;
-    document.getElementById('passDiv').style.display = 'none';
-    document.getElementById('cPassDiv').style.display = 'none';
-    document.getElementById('roleDiv').style.display = 'none';
-    document.getElementById('depoDiv').style.display = 'none';
-    document.getElementById('userModal').style.display = 'flex';
-}
+        function openEdit(id, uname, fname, logins) {
+            editUserId = id;
+            document.getElementById('mTitle').innerText = "Edit User (Name & Logins)";
+            document.getElementById('mUName').value = uname;
+            document.getElementById('mFName').value = fname || "";
+            document.getElementById('mLogins').value = logins;
+            document.getElementById('passDiv').style.display = 'none';
+            document.getElementById('cPassDiv').style.display = 'none';
+            document.getElementById('roleDiv').style.display = 'none';
+            document.getElementById('depoDiv').style.display = 'none';
+            document.getElementById('userModal').style.display = 'flex';
+        }
 
-function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+        function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
-// --- INIT USER DETAILS ---
-async function init() {
-    try {
-        const res = await fetch('/api/user-details', {
-            method:'POST', 
-            headers:{'Content-Type':'application/json'}, 
-            body:JSON.stringify({id:user.id})
-        });
-        const d = await res.json();
-        if(d.success) {
-            user = d.data;
-            sessionStorage.setItem('currentUser', JSON.stringify(user));
+        async function init() {
+            try {
+                const res = await fetch('/api/user-details', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:user.id})});
+                const d = await res.json();
+                if(d.success) {
+                    user = d.data;
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    
+                    document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
+                    document.getElementById('inr').innerText = (user.inr_balance || 0).toLocaleString();
+                    document.getElementById('chips').innerText = user.balance.toLocaleString();
+                    document.getElementById('wins').innerText = (user.total_wins || 0).toLocaleString();
+                    document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
+                    document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
 
-            // Update UI
-            document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
-            document.getElementById('inr').innerText = (user.inr_balance || 0).toLocaleString();
-            document.getElementById('chips').innerText = user.balance.toLocaleString();
-            document.getElementById('wins').innerText = (user.total_wins || 0).toLocaleString();
-            document.getElementById('lose').innerText = (user.total_losses || 0).toLocaleString();
-            document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
+                    if(user.role === 'Client') document.getElementById('addBtn').style.display = 'none';
 
-            if(user.role === 'Client') document.getElementById('addBtn').style.display = 'none';
+                    if(user.force_password_change === 1 && user.role !== 'SuperAdmin') {
+                        document.getElementById('passChangeModal').style.display = 'flex';
+                    }
+                }
+            } catch(e) {}
+            loadUsers();
+            setupRoles();
+            loadHistory();
+        }
 
-            if(user.force_password_change === 1 && user.role !== 'SuperAdmin') {
-                document.getElementById('passChangeModal').style.display = 'flex';
+        async function loadUsers() {
+            const tbody = document.querySelector('#userTable tbody');
+            try {
+                const res = await fetch('/api/my-users', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({parentId:user.id, role: user.role})});
+                const d = await res.json();
+                tbody.innerHTML = d.users.map(u => {
+                    const isOnline = u.status === 'Online';
+                    return `
+                    <tr>
+                        <td><i class="fas fa-arrow-circle-right" style="color:var(--neon-r); font-size:18px;"></i></td>
+                        <td style="text-align:left; padding-left:15px;">
+                            <span style="color:var(--accent); font-weight:bold;">${u.username}</span><br>
+                            <small style="color:var(--primary); font-weight:bold;">( ${u.role.toUpperCase()} )</small>
+                        </td>
+                        <td style="color:var(--neon-g)">${u.exposure}</td>
+                        <td style="color:#aaa">0</td>
+                        <td style="color:var(--accent); font-weight:bold;">${u.balance}</td>
+                        <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
+                        <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                        <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
+                        <td>
+                            <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}','${u.first_name}',${u.max_logins})"><i class="fas fa-edit"></i></button>
+                            <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
+                            <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
+                            <button class="act-btn btn-mode" title="Gaming Modes" onclick="alert('Gaming Modes Loaded')">MODE</button>
+                            <button class="act-btn btn-ms" title="Market Config" onclick="document.getElementById('msModal').style.display='flex'">MS</button>
+                            <button class="act-btn btn-key" title="Change Pass" onclick="resetKey(${u.id})"><i class="fas fa-key"></i></button>
+                            <button class="act-btn btn-del" title="Delete User" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `; }).join('');
+            } catch(e) { tbody.innerHTML = '<tr><td colspan="9" style="color:red">Error loading users</td></tr>'; }
+        }
+
+        async function submitUser() {
+            const data = {
+                fName: document.getElementById('mFName').value,
+                uName: document.getElementById('mUName').value,
+                pass: document.getElementById('mPass').value,
+                role: document.getElementById('mRole').value,
+                logins: document.getElementById('mLogins').value,
+                deposit: document.getElementById('mDeposit').value,
+                creatorId: user.id
+            };
+            
+            if(!data.fName || !data.uName || (!editUserId && !data.pass) || !data.role || !data.logins || !data.deposit) return alert("All fields are required!");
+
+            const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
+            if(editUserId) data.id = editUserId;
+
+            const res = await fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+            const d = await res.json();
+            alert(d.message); if(d.success) { closeModal(); init(); }
+        }
+
+        async function forceUpdatePass() {
+            const oldP = document.getElementById('oldSecurePass').value;
+            const newP = document.getElementById('newSecurePass').value;
+            const confP = document.getElementById('confirmSecurePass').value;
+
+            if(!oldP || !newP || !confP) return alert("All fields are required!");
+            if(newP !== confP) return alert("New passwords do not match!");
+            
+            const res = await fetch('/api/change-password-secure', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({userId:user.id, oldPass: oldP, newPass: newP})
+            });
+            const d = await res.json();
+            if(d.success) {
+                alert("Security Verified!");
+                location.reload();
+            } else { alert(d.message); }
+        }
+
+        async function withdraw(id, name) {
+            const amt = prompt(`Withdraw chips from ${name}:`);
+            if(!amt || isNaN(amt)) return;
+            const res = await fetch('/api/withdraw-chips', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({adminId:user.id, userId:id, amount:amt})});
+            alert((await res.json()).message); init();
+        }
+
+        async function deleteUser(id, bal) {
+            if(bal > 0) return alert("Withdraw all chips before deleting!");
+            if(!confirm("Delete user permanently? This will wipe their history and record.")) return;
+            
+            try {
+                const res = await fetch('/api/delete-user', {
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'}, 
+                    body:JSON.stringify({id})
+                });
+                const d = await res.json();
+                alert(d.message);
+                if(d.success) init(); 
+            } catch(e) {
+                alert("Server Connection Error");
             }
         }
-    } catch(e) { console.error(e); }
 
-    loadUsers();
-    setupRoles();
-    loadHistory();
-}
+        async function resetKey(id) {
+            const newP = prompt("Enter new master password for user:");
+            if(!newP) return;
+            await fetch('/api/update-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:id, newPass: newP})});
+            alert("Updated.");
+        }
 
-// --- LOAD USERS ---
-async function loadUsers() {
-    const tbody = document.querySelector('#userTable tbody');
-    try {
-        const res = await fetch('/api/my-users', {
+        function filterUsers() {
+            let input = document.getElementById('userSearch').value.toLowerCase();
+            document.querySelectorAll('#userTable tbody tr').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
+            });
+        }
+
+        async function loadHistory() {
+            try {
+                const res = await fetch('/api/history', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id})});
+                const d = await res.json();
+                const tbody = document.querySelector('#histTable tbody');
+                tbody.innerHTML = d.history.map(h => `<tr><td style="font-size:11px; padding:10px;">${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type}</b></td><td style="color:${h.amount >= 0 ? 'var(--neon-g)':'var(--neon-r)'}; font-weight:bold">${h.amount}</td><td style="font-size:12px; color:#aaa">${h.description}</td></tr>`).join('');
+            } catch(e) {}
+        }
+
+        async function takeBack(id) {
+            if(!confirm("Take back all chips? INR Safe.")) return;
+            const res = await fetch('/api/take-back-chips', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({adminId:user.id, userId:id})});
+            if(res.ok) { alert("Recovered!"); init(); }
+        }
+
+        async function give(id, name) {
+            const amt = prompt(`Deposit amount for ${name}:`);
+            if(!amt || isNaN(amt)) return;
+            const res = await fetch('/api/transfer-credits', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({senderId:user.id, receiverId:id, amount:amt})});
+            alert((await res.json()).message); init();
+        }
+
+        async function addExp() {
+            const amt = document.getElementById('expInp').value;
+            if(!amt || amt < 1000) return alert("Min 1000 required");
+            await fetch('/api/add-exposure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, amount:amt})});
+            init();
+        }
+
+        async function bet(amt) {
+            if(user.exposure < amt) return alert("Low exposure!");
+            const win = Math.random() > 0.5;
+            await fetch('/api/place-bet', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, betAmount:amt, isWin:win})});
+            alert(win ? "WON!" : "LOST!"); init();
+        }
+
+        function setupRoles() {
+            const roles = ['Admin','SuperMaster','Master','Agent','Client'];
+            const hierarchy = {'SuperAdmin':6,'Admin':5,'SuperMaster':4,'Master':3,'Agent':2,'Client':1};
+            const sel = document.getElementById('mRole');
+            if(sel && sel.options.length === 0) roles.forEach(r => { if(hierarchy[r] < hierarchy[user.role]) sel.innerHTML += `<option value="${r}">${r}</option>`; });
+        }
+
+        function nav(id, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-'+id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+            if(window.innerWidth <= 768) toggleSidebar();
+        }
+
+        function toggleSidebar(e) {
+            if(e) e.stopPropagation();
+            document.getElementById('sidebar').classList.toggle('show');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+
+        // LIVE CRICKET BETTING LOGIC
+    let cricketBalance = user.exposure || 0;
+
+    function placeCricketBet(team) {
+        const amt = prompt(`Enter bet amount for ${team} (min 100)`); 
+        if(!amt || isNaN(amt) || amt < 100) return alert("Min bet 100 required!");
+        if(amt > cricketBalance) return alert("Insufficient exposure!");
+        const isWin = Math.random() > 0.5; // simulate win/loss
+        fetch('/api/place-bet', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({parentId:user.id, role:user.role})
-        });
-        const d = await res.json();
-        tbody.innerHTML = d.users.map(u => {
-            const isOnline = u.status === 'Online';
-            return `
-            <tr>
-                <td><i class="fas fa-arrow-circle-right" style="color:var(--neon-r); font-size:18px;"></i></td>
-                <td style="text-align:left; padding-left:15px;">
-                    <span style="color:var(--accent); font-weight:bold;">${u.username}</span><br>
-                    <small style="color:var(--primary); font-weight:bold;">( ${u.role.toUpperCase()} )</small>
-                </td>
-                <td style="color:var(--neon-g)">${u.exposure}</td>
-                <td style="color:#aaa">0</td>
-                <td style="color:var(--accent); font-weight:bold;">${u.balance}</td>
-                <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
-                <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
-                <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
-                <td>
-                    <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}','${u.first_name}',${u.max_logins})"><i class="fas fa-edit"></i></button>
-                    <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
-                    <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                    <button class="act-btn btn-mode" title="Gaming Modes" onclick="alert('Gaming Modes Loaded')">MODE</button>
-                    <button class="act-btn btn-ms" title="Market Config" onclick="document.getElementById('msModal').style.display='flex'">MS</button>
-                    <button class="act-btn btn-key" title="Change Pass" onclick="resetKey(${u.id})"><i class="fas fa-key"></i></button>
-                    <button class="act-btn btn-del" title="Delete User" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>
-                </td>
-            </tr>
-        `; }).join('');
-    } catch(e) { tbody.innerHTML = '<tr><td colspan="9" style="color:red">Error loading users</td></tr>'; }
-}
-
-// --- USER ACTIONS ---
-async function submitUser() {
-    const data = {
-        fName: document.getElementById('mFName').value,
-        uName: document.getElementById('mUName').value,
-        pass: document.getElementById('mPass').value,
-        role: document.getElementById('mRole').value,
-        logins: document.getElementById('mLogins').value,
-        deposit: document.getElementById('mDeposit').value,
-        creatorId: user.id
-    };
-    
-    if(!data.fName || !data.uName || (!editUserId && !data.pass) || !data.role || !data.logins || !data.deposit) return alert("All fields are required!");
-
-    const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
-    if(editUserId) data.id = editUserId;
-
-    const res = await fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-    const d = await res.json();
-    alert(d.message); if(d.success) { closeModal(); init(); }
-}
-
-async function forceUpdatePass() {
-    const oldP = document.getElementById('oldSecurePass').value;
-    const newP = document.getElementById('newSecurePass').value;
-    const confP = document.getElementById('confirmSecurePass').value;
-
-    if(!oldP || !newP || !confP) return alert("All fields are required!");
-    if(newP !== confP) return alert("New passwords do not match!");
-    
-    const res = await fetch('/api/change-password-secure', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({userId:user.id, oldPass: oldP, newPass: newP})
-    });
-    const d = await res.json();
-    if(d.success) {
-        alert("Security Verified!");
-        location.reload();
-    } else { alert(d.message); }
-}
-
-async function withdraw(id, name) {
-    const amt = prompt(`Withdraw chips from ${name}:`);
-    if(!amt || isNaN(amt)) return;
-    const res = await fetch('/api/withdraw-chips', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({adminId:user.id, userId:id, amount:amt})});
-    alert((await res.json()).message); init();
-}
-
-async function deleteUser(id, bal) {
-    if(bal > 0) return alert("Withdraw all chips before deleting!");
-    if(!confirm("Delete user permanently? This will wipe their history and record.")) return;
-    
-    try {
-        const res = await fetch('/api/delete-user', {
-            method:'POST', 
-            headers:{'Content-Type':'application/json'}, 
-            body:JSON.stringify({id})
-        });
-        const d = await res.json();
-        alert(d.message);
-        if(d.success) init(); 
-    } catch(e) {
-        alert("Server Connection Error");
+            body:JSON.stringify({userId:user.id, betAmount:parseFloat(amt), isWin})
+        }).then(res => res.json()).then(d => {
+            alert(isWin ? "Congratulations! You WON!" : "Sorry! You LOST!");
+            init(); // reload balances & exposure
+        }).catch(err => alert("Bet failed!"));
     }
-}
 
-async function resetKey(id) {
-    const newP = prompt("Enter new master password for user:");
-    if(!newP) return;
-    await fetch('/api/update-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:id, newPass: newP})});
-    alert("Updated.");
-}
+    // Optional: simulate live match updates
+    setInterval(() => {
+        const runs = Math.floor(Math.random()*200);
+        const overs = (Math.random()*20).toFixed(1);
+        document.getElementById('totalRuns').innerText = runs;
+        document.getElementById('totalOvers').innerText = overs;
+        document.getElementById('battingTeam').innerText = Math.random()>0.5?'Team 1':'Team 2';
+        document.getElementById('bowlingTeam').innerText = document.getElementById('battingTeam').innerText==='Team 1'?'Team 2':'Team 1';
+    }, 5000);
 
-async function takeBack(id) {
-    if(!confirm("Take back all chips? INR Safe.")) return;
-    const res = await fetch('/api/take-back-chips', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({adminId:user.id, userId:id})});
-    if(res.ok) { alert("Recovered!"); init(); }
-}
-
-async function give(id, name) {
-    const amt = prompt(`Deposit amount for ${name}:`);
-    if(!amt || isNaN(amt)) return;
-    const res = await fetch('/api/transfer-credits', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({senderId:user.id, receiverId:id, amount:amt})});
-    alert((await res.json()).message); init();
-}
-
-// --- EXPOSURE / BETTING ---
-async function addExp() {
-    const amt = parseFloat(document.getElementById('expInp').value);
-    if(!amt || amt < 1000) return alert("Min 1000 required");
-
-    const res = await fetch('/api/add-exposure', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({userId:user.id, amount:amt})
-    });
-    const d = await res.json();
-    if(d.success) { alert("Exposure added!"); init(); }
-    else alert(d.message || "Failed to add exposure");
-}
-
-async function placeCricketBet(team) {
-    const cricketBalance = user.exposure || 0;
-    const amt = prompt(`Enter bet amount for ${team} (min 100)`); 
-    if(!amt || isNaN(amt) || amt < 100) return alert("Min bet 100 required!");
-    if(amt > cricketBalance) return alert("Insufficient exposure!");
-    const isWin = Math.random() > 0.5;
-
-    const res = await fetch('/api/place-bet', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({userId:user.id, betAmount:parseFloat(amt), isWin})
-    });
-    const d = await res.json();
-    alert(isWin ? "WON!" : "LOST!");
-    init();
-}
-
-// --- LIVE MATCH SIMULATION ---
-setInterval(() => {
-    const runs = Math.floor(Math.random()*200);
-    const overs = (Math.random()*20).toFixed(1);
-    document.getElementById('totalRuns').innerText = runs;
-    document.getElementById('totalOvers').innerText = overs;
-    document.getElementById('battingTeam').innerText = Math.random()>0.5?'Team 1':'Team 2';
-    document.getElementById('bowlingTeam').innerText = document.getElementById('battingTeam').innerText==='Team 1'?'Team 2':'Team 1';
-}, 5000);
-
-// --- HISTORY / FILTER / ROLES ---
-async function loadHistory() {
-    try {
-        const res = await fetch('/api/history', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id})});
-        const d = await res.json();
-        const tbody = document.querySelector('#histTable tbody');
-        tbody.innerHTML = d.history.map(h => `<tr>
-            <td style="font-size:11px; padding:10px;">${new Date(h.created_at).toLocaleString()}</td>
-            <td><b>${h.type}</b></td>
-            <td style="color:${h.amount >= 0 ? 'var(--neon-g)':'var(--neon-r)'}; font-weight:bold">${h.amount}</td>
-            <td style="font-size:12px; color:#aaa">${h.description}</td>
-        </tr>`).join('');
-    } catch(e) {}
-}
-
-function filterUsers() {
-    let input = document.getElementById('userSearch').value.toLowerCase();
-    document.querySelectorAll('#userTable tbody tr').forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
-    });
-}
-
-function setupRoles() {
-    const roles = ['Admin','SuperMaster','Master','Agent','Client'];
-    const hierarchy = {'SuperAdmin':6,'Admin':5,'SuperMaster':4,'Master':3,'Agent':2,'Client':1};
-    const sel = document.getElementById('mRole');
-    if(sel && sel.options.length === 0) 
-        roles.forEach(r => { if(hierarchy[r] < hierarchy[user.role]) sel.innerHTML += `<option value="${r}">${r}</option>`; });
-}
-
-// --- NAV / LOGOUT ---
-function nav(id, el) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-'+id).classList.add('active');
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    el.classList.add('active');
-    if(window.innerWidth <= 768) toggleSidebar();
-}
-
-function toggleSidebar(e) {
-    if(e) e.stopPropagation();
-    document.getElementById('sidebar').classList.toggle('show');
-    document.getElementById('overlay').classList.toggle('show');
-}
-
-const box = event.target;
-box.style.boxShadow = isWin ? '0 0 15px var(--neon-g)' : '0 0 15px var(--neon-r)';
-setTimeout(() => box.style.boxShadow = '', 1000);
-        
-function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
-
-// --- INIT DASHBOARD ---
-init();
-</script>
+        function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+        init();
+    </script>
 </body>
 </html>
+
 
