@@ -165,6 +165,49 @@
     color: #333;
 }
 
+/* --- LIVE ANIMATIONS --- */
+@keyframes flashGreen {
+    0% { background-color: var(--back-color); }
+    50% { background-color: #00ff00; }
+    100% { background-color: var(--back-color); }
+}
+
+@keyframes flashRed {
+    0% { background-color: var(--lay-color); }
+    50% { background-color: #ff0000; }
+    100% { background-color: var(--lay-color); }
+}
+
+.up { animation: flashGreen 0.8s ease; }
+.down { animation: flashRed 0.8s ease; }
+
+/* In-Play Badge */
+.live-badge {
+    background: #27ae60;
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.live-dot {
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
 /* Desktop optimization */
 @media (min-width: 768px) {
     .bet-slip-overlay { width: 400px; left: auto; right: 20px; border-radius: 12px; bottom: 20px; }
@@ -291,14 +334,33 @@
     </div>
 
     <div class="market-card">
-        <div class="market-header">
-            <div class="team-info">
-                <span style="background:#00509d; color:white; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:10px;">I</span>
-                <span style="background:#4a90e2; color:white; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:10px;">B</span>
-                India U19 v Bangladesh U19
-            </div>
-            <i class="fas fa-thumbtack" style="color:#ccc;"></i>
+    <div class="market-header">
+        <div class="team-info">
+            <div class="live-badge"><div class="live-dot"></div> IN-PLAY</div>
+            India U19 v Bangladesh U19
         </div>
+        <span style="font-size: 12px; color: #666;">Match Odds</span>
+    </div>
+    
+    <div class="odds-grid">
+        <div id="odds-1-back" class="odds-item back" onclick="openBetSlip('India U19', this.innerText, 'back')">
+            <span class="odds-val">1.41</span>
+        </div>
+        <div id="odds-1-lay" class="odds-item lay" onclick="openBetSlip('India U19', this.innerText, 'lay')">
+            <span class="odds-val">1.42</span>
+        </div>
+
+        <div class="odds-item empty">-</div>
+        <div class="odds-item empty">-</div>
+
+        <div id="odds-2-back" class="odds-item back" onclick="openBetSlip('Bangladesh U19', this.innerText, 'back')">
+            <span class="odds-val">3.35</span>
+        </div>
+        <div id="odds-2-lay" class="odds-item lay" onclick="openBetSlip('Bangladesh U19', this.innerText, 'lay')">
+            <span class="odds-val">3.45</span>
+        </div>
+    </div>
+</div>
         
         <div class="odds-grid">
             <div class="odds-item back" onclick="openBetSlip('India U19', 1.41, 'back')"><span class="odds-val">1.41</span></div>
@@ -647,10 +709,49 @@ async function confirmBet() {
     }
 }
 
+        // Function to simulate live odds changing
+function updateLiveOdds(elementId, isUp) {
+    const el = document.getElementById(elementId);
+    const valSpan = el.querySelector('.odds-val');
+    let currentOdds = parseFloat(valSpan.innerText);
+    
+    // Logic: small random increase/decrease
+    let change = (Math.random() * 0.1).toFixed(2);
+    let newOdds = isUp ? (currentOdds + parseFloat(change)) : (currentOdds - parseFloat(change));
+    
+    if(newOdds < 1.01) newOdds = 1.10; // Prevent odds from going to 0
+    
+    valSpan.innerText = newOdds.toFixed(2);
+    
+    // Apply animation class
+    const animClass = isUp ? 'up' : 'down';
+    el.classList.add(animClass);
+    setTimeout(() => el.classList.remove(animClass), 800);
+}
+
+// Automatically change odds every 5 seconds to look "Live"
+setInterval(() => {
+    const randomId = ['odds-1-back', 'odds-1-lay', 'odds-2-back', 'odds-2-lay'][Math.floor(Math.random()*4)];
+    updateLiveOdds(randomId, Math.random() > 0.5);
+}, 5000);
+
+// Modify your confirmBet function to trigger an odds change when someone bets
+async function confirmBet() {
+    const amount = parseInt(document.getElementById('betAmountInput').value);
+    if(!amount || amount < 100) return alert("Min 100 required");
+
+    // Simulate the odds "reacting" to a new bet
+    updateLiveOdds('odds-1-back', true); 
+    
+    alert("Bet Placed! Odds have updated.");
+    closeBetSlip();
+}
+
         function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
         init();
     </script>
 </body>
 </html>
+
 
 
