@@ -84,7 +84,52 @@
             .modal-body { grid-template-columns: 1fr; }
             .full-row { grid-column: span 1; }
         }
-    </style>
+
+        /* --- LIVE BETTING GRID --- */
+.market-row {
+    display: flex;
+    align-items: center;
+    background: #fff; /* Match image white background */
+    padding: 10px;
+    margin-bottom: 2px;
+    color: #000; /* Text is black in the image */
+    border-radius: 4px;
+}
+
+.market-name {
+    flex: 1;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.odds-container {
+    display: flex;
+    gap: 4px;
+}
+
+.odds-box {
+    width: 80px;
+    height: 45px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 4px;
+    transition: opacity 0.2s;
+}
+
+.odds-box:hover { opacity: 0.8; }
+
+.back { background: #2cb1ff; color: #000; } /* Light Blue */
+.lay { background: #ffb1c7; color: #000; }  /* Light Pink */
+
+.odds-val { font-size: 16px; }
+.odds-size { font-size: 10px; opacity: 0.7; }
+</style>
 </head>
 <body>
 
@@ -189,23 +234,53 @@
         </div>
 
         <div id="page-bet" class="page">
-            <div class="account-card">
-                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">BETTING EXPOSURE</p>
-                <h1 style="color:var(--neon-g); font-size:45px; text-shadow: 0 0 15px var(--neon-g);">🪙 <span id="bet-exp">0</span></h1>
-                <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
-                    <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 150px; background:#0b0e14; color:white; border:1px solid #333; padding:8px; border-radius:4px;">
-                    <button onclick="addExp()" class="btn" style="background: var(--accent); color: black; font-weight:bold; padding:8px 15px; border-radius:4px;">Deposit</button>
-                </div>
+    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+        <div class="account-card" style="flex: 1; padding: 15px; margin-bottom: 0;">
+            <p style="color:#aaa; font-size:10px;">EXPOSURE</p>
+            <h2 style="color:var(--neon-r);">🪙 <span id="bet-exp">0</span></h2>
+        </div>
+        <div class="account-card" style="flex: 1; padding: 15px; margin-bottom: 0;">
+            <p style="color:#aaa; font-size:10px;">WALLET BALANCE</p>
+            <h2 style="color:var(--neon-g);">🪙 <span id="wallet-bal">0</span></h2>
+        </div>
+    </div>
+
+    <div style="background: #011627; padding: 10px; border: 1px solid var(--primary); border-bottom: none; display: flex; justify-content: flex-end; padding-right: 170px;">
+        <span style="color: var(--accent); font-size: 12px; font-weight: bold;">BACK</span>
+        <span style="color: var(--accent); font-size: 12px; font-weight: bold; margin-left: 55px;">LAY</span>
+    </div>
+
+    <div class="table-container" style="margin-top: 0; background: #e0e0e0; padding: 5px;">
+        
+        <div class="market-row">
+            <div class="market-name">
+                <span style="background: #00509d; color: white; padding: 2px 6px; border-radius: 50%; font-size: 10px;">I</span>
+                <span style="background: #4a90e2; color: white; padding: 2px 6px; border-radius: 50%; font-size: 10px;">B</span>
+                India U19 v Bangladesh U19
             </div>
-            <div class="card" style="text-align:center; background:#12161f; border:1px solid #1a202c; padding:20px; border-radius:12px;">
-                <h4 style="margin-bottom:20px; color:var(--accent)">Place Quick Bet</h4>
-                <div style="display:flex; justify-content:center; gap:25px;">
-                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(100)">100</button>
-                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(500)">500</button>
-                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(1000)">1000</button>
+            
+            <div class="odds-container">
+                <div class="odds-box back" onclick="bet(1.41)">
+                    <span class="odds-val">1.41</span>
+                </div>
+                <div class="odds-box lay" onclick="bet(1.42)">
+                    <span class="odds-val">1.42</span>
+                </div>
+                
+                <div class="odds-box" style="background: #eee; color: #999;">-</div>
+                <div class="odds-box" style="background: #eee; color: #999;">-</div>
+
+                <div class="odds-box back" onclick="bet(3.35)">
+                    <span class="odds-val">3.35</span>
+                </div>
+                <div class="odds-box lay" onclick="bet(3.45)">
+                    <span class="odds-val">3.45</span>
                 </div>
             </div>
         </div>
+        
+    </div>
+</div>
 
         <div id="page-history" class="page">
             <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px;">
@@ -465,3 +540,4 @@
     </script>
 </body>
 </html>
+
