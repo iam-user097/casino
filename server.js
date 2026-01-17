@@ -161,68 +161,42 @@ app.post('/api/add-exposure', (req, res) => {
 });
 
 app.post('/api/place-bet', (req, res) => {
-    const { userId, amount, odds } = req.body;
-    const betAmt = parseFloat(amount);
-    const betOdds = parseFloat(odds);
-
-    if (!userId || betAmt <= 0 || betOdds < 1) {
-        return res.json({ success: false, message: 'Invalid bet data' });
-    }
-
-    // Server decides outcome (50/50 demo logic)
-    const isWin = Math.random() >= 0.5;
+    const { userId, betAmount, isWin } = req.body;
+    const amt = parseFloat(betAmount);
+    const rates = { 'SuperAdmin': 0.08, 'Admin': 0.06, 'SuperMaster': 0.05, 'Master': 0.04, 'Agent': 0.02 };
 
     db.getConnection((err, conn) => {
-        if (err) return res.json({ success: false });
-
-        conn.beginTransaction(err => {
-            if (err) {
-                conn.release();
-                return res.json({ success: false });
+        conn.beginTransaction(() => {
+            if (isWin) {
+                const profit = amt; 
+                conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, inr_balance = inr_balance + ?, total_wins = total_wins + ? WHERE id = ?', 
+                [amt, amt + profit, profit, profit, userId]);
+                logTx(userId, 'Win', profit, `Bet Win: Chips & INR updated`);
+                const spread = (childId) => {
+                    conn.query('SELECT parent_id FROM users WHERE id = ?', [childId], (err, res) => {
+                        if (res[0]?.parent_id) {
+                            const pid = res[0].parent_id;
+                            conn.query('SELECT id, role FROM users WHERE id = ?', [pid], (err, pData) => {
+                                const parent = pData[0];
+                                const comm = profit * (rates[parent.role] || 0);
+                                if (comm > 0) {
+                                    conn.query('UPDATE users SET balance = balance + ?, inr_balance = inr_balance + ? WHERE id = ?', [comm, comm, parent.id]);
+                                    logTx(parent.id, 'Commission', comm, `Commission from downline win`);
+                                }
+                                if (parent.role !== 'SuperAdmin') spread(parent.id);
+                                else conn.commit(() => { conn.release(); });
+                            });
+                        } else { conn.commit(() => { conn.release(); }); }
+                    });
+                };
+                spread(userId);
+                res.json({ success: true });
+            } else {
+                conn.query('UPDATE users SET exposure = exposure - ?, total_losses = total_losses + ? WHERE id = ?', [amt, amt, userId], () => {
+                    logTx(userId, 'Loss', -amt, 'Bet Loss');
+                    conn.commit(() => { res.json({ success: true }); conn.release(); });
+                });
             }
-
-            // 1️⃣ Deduct bet amount
-            conn.query(
-                'UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?',
-                [betAmt, userId, betAmt],
-                (err, r) => {
-                    if (err || r.affectedRows === 0) {
-                        return conn.rollback(() => {
-                            conn.release();
-                            res.json({ success: false, message: 'Insufficient balance' });
-                        });
-                    }
-
-                    if (isWin) {
-                        const winAmount = betAmt * betOdds;
-                        const profit = winAmount - betAmt;
-
-                        conn.query(
-                            'UPDATE users SET balance = balance + ?, total_wins = total_wins + 1 WHERE id = ?',
-                            [winAmount, userId],
-                            () => {
-                                logTx(userId, 'Bet Win', profit, `Won @ odds ${betOdds}`);
-                                conn.commit(() => {
-                                    conn.release();
-                                    res.json({ success: true, result: 'WIN', winAmount });
-                                });
-                            }
-                        );
-                    } else {
-                        conn.query(
-                            'UPDATE users SET total_losses = total_losses + 1 WHERE id = ?',
-                            [userId],
-                            () => {
-                                logTx(userId, 'Bet Loss', -betAmt, `Lost @ odds ${betOdds}`);
-                                conn.commit(() => {
-                                    conn.release();
-                                    res.json({ success: true, result: 'LOSS' });
-                                });
-                            }
-                        );
-                    }
-                }
-            );
         });
     });
 });
@@ -280,4 +254,3 @@ app.post('/api/create-user-advanced', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server Online`));
-
