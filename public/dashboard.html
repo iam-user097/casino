@@ -130,8 +130,7 @@
     height: 48px; 
     border: none; 
     border-radius: 4px; 
-    display: flex; 
-    flex-direction: column; 
+    display: flex;  
     align-items: center; 
     justify-content: center; 
     cursor: pointer; 
@@ -158,9 +157,27 @@
 .odds-val { font-weight: bold; font-size: 14px; }
 .odds-vol { font-size: 9px; opacity: 0.8; }
 
-/* POP ANIMATION */
-@keyframes livePop { 0% { transform: scale(1); } 50% { transform: scale(1.15); filter: brightness(1.5); } 100% { transform: scale(1); } }
-.pop-active { animation: livePop 0.4s ease; }
+/* --- UPDATED COLOR POP ANIMATION --- */
+
+/* Keyframes for the Neon Flash Effect */
+@keyframes colorPop {
+    0% { filter: brightness(1); box-shadow: none; }
+    50% { filter: brightness(1.8); box-shadow: 0 0 20px var(--accent); }
+    100% { filter: brightness(1); box-shadow: none; }
+}
+
+/* The class triggered by JavaScript */
+.pop-active { 
+    animation: colorPop 0.5s ease-in-out; 
+    position: relative;
+    z-index: 10;
+}
+
+/* Ensure buttons have smooth transitions for all properties */
+.odds-btn { 
+    transition: all 0.3s ease;
+    flex-direction: column; /* Restored column view for Val/Vol text */
+}
 
 /* BET SLIP POPUP */
 .bet-popup-slip { position: fixed; bottom: 20px; right: 20px; width: 300px; background: #011627; border: 2px solid var(--accent); border-radius: 12px; z-index: 5000; display: none; box-shadow: 0 0 30px rgba(0,0,0,0.8); animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -437,58 +454,50 @@
         loadUsers(); setupRoles(); loadHistory();
     }
 
-    async function loadHistory() {
+    // --- 1. LIVELY TRANSACTION HISTORY ---
+async function loadHistory() {
     const tbody = document.querySelector('#histTable tbody');
-    if(!tbody) return;
+    if (!tbody) return;
     try {
         const res = await fetch('/api/history', {
-            method:'POST', 
-            headers:{'Content-Type':'application/json'}, 
-            body:JSON.stringify({userId: user.id})
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id })
         });
         const d = await res.json();
-        
+
         if (d.history && d.history.length > 0) {
-            tbody.innerHTML = d.history.map(h => `
+            tbody.innerHTML = d.history.map(h => {
+                const isWin = h.amount >= 0;
+                return `
                 <tr>
-                    <td style="font-size:11px; padding:10px;">${new Date(h.created_at).toLocaleString()}</td>
-                    <td><b style="color:var(--accent)">${h.type.toUpperCase()}</b></td>
-                    <td style="color:${h.amount >= 0 ? 'var(--neon-g)':'var(--neon-r)'}; font-weight:bold">
-                        ${h.amount >= 0 ? '+' : ''}${h.amount.toLocaleString()}
+                    <td style="font-size:11px; padding:12px; border-bottom:1px solid #1a202c;">
+                        ${new Date(h.created_at).toLocaleString()}
                     </td>
-                    <td style="font-size:12px; color:#aaa">${h.description}</td>
-                </tr>`).join('');
+                    <td style="border-bottom:1px solid #1a202c;">
+                        <b style="color:var(--accent)">${h.type.toUpperCase()}</b>
+                    </td>
+                    <td style="color:${isWin ? 'var(--neon-g)' : 'var(--neon-r)'}; font-weight:bold; border-bottom:1px solid #1a202c;">
+                        ${isWin ? '+' : ''}${parseFloat(h.amount).toLocaleString()}
+                    </td>
+                    <td style="font-size:12px; color:#aaa; text-align:left; border-bottom:1px solid #1a202c;">
+                        ${h.description}
+                    </td>
+                </tr>`;
+            }).join('');
         } else {
-            tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; color:#666;">No recent transactions found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="padding:30px; color:#666;">No transactions found</td></tr>';
         }
-    } catch(e) {
-        console.error("History Load Error:", e);
+    } catch (e) {
+        console.error("History Sync Error:", e);
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--neon-r)">History Sync Failed</td></tr>';
     }
 }
 
-    // --- USER MANAGEMENT ---
-    async function submitUser() {
-        const data = {
-            fName: document.getElementById('mFName').value,
-            uName: document.getElementById('mUName').value,
-            pass: document.getElementById('mPass').value,
-            role: document.getElementById('mRole').value,
-            logins: document.getElementById('mLogins').value,
-            deposit: document.getElementById('mDeposit').value,
-            creatorId: user.id
-        };
-        const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
-        const res = await fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...data, id: editUserId})});
-        const d = await res.json();
-        
-        // Fixed Alert Message
-        alert(d.message || (d.success ? "Success!" : "Failed"));
-        if(d.success) { closeModal(); init(); }
-    }
-
-    // --- RESTORED FULL TABLE LOGIC ---
+// --- 2. USER MANAGEMENT & DYNAMIC TABLE ---
 async function loadUsers() {
     const tbody = document.querySelector('#userTable tbody');
+    if (!tbody) return;
     try {
         const res = await fetch('/api/my-users', {
             method: 'POST',
@@ -496,19 +505,19 @@ async function loadUsers() {
             body: JSON.stringify({ parentId: user.id, role: user.role })
         });
         const d = await res.json();
-        
+
         tbody.innerHTML = d.users.map(u => {
             const isOnline = u.status === 'Online';
             return `
-            <tr>
+            <tr id="user-row-${u.id}">
                 <td><i class="fas fa-arrow-circle-right" style="color:var(--neon-r); font-size:18px;"></i></td>
                 <td style="text-align:left; padding-left:15px;">
                     <span style="color:var(--accent); font-weight:bold;">${u.username}</span><br>
                     <small style="color:var(--primary); font-weight:bold;">( ${u.role.toUpperCase()} )</small>
                 </td>
-                <td style="color:var(--neon-g)">${u.exposure}</td>
+                <td style="color:var(--neon-g)">${parseFloat(u.exposure || 0).toLocaleString()}</td>
                 <td style="color:#aaa">0</td>
-                <td style="color:var(--accent); font-weight:bold;">${u.balance}</td>
+                <td style="color:var(--accent); font-weight:bold;">${parseFloat(u.balance).toLocaleString()}</td>
                 
                 <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
                 <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
@@ -524,49 +533,76 @@ async function loadUsers() {
                 </td>
             </tr>`;
         }).join('');
-    } catch (e) { 
-        tbody.innerHTML = '<tr><td colspan="9" style="color:red">Error loading users</td></tr>'; 
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="9" style="color:red">Error loading users</td></tr>';
     }
 }
 
-// --- DEPOSIT & WITHDRAW BUTTON FUNCTIONS ---
-
+// --- 3. CHIP TRANSFERS (D & W) ---
 async function give(id, name) {
     const amt = prompt(`Enter number of chips to Deposit for ${name}:`);
-    if(!amt || isNaN(amt) || parseFloat(amt) <= 0) return;
+    if (!amt || isNaN(amt) || parseFloat(amt) <= 0) return;
 
     const res = await fetch('/api/transfer-credits', {
-        method:'POST', 
-        headers:{'Content-Type':'application/json'}, 
-        body:JSON.stringify({
-            senderId: user.id, 
-            receiverId: id, 
-            amount: parseFloat(amt)
-        })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) })
     });
     const d = await res.json();
-    alert(d.message || "Deposit Processed");
-    init(); // Lively refresh header and table
+    
+    // Trigger Color Pop on the row to show update
+    const row = document.getElementById(`user-row-${id}`);
+    if(row) row.style.background = "rgba(57, 255, 20, 0.1)";
+    
+    alert(d.message || "Deposit Successful");
+    setTimeout(() => { if(row) row.style.background = "transparent"; }, 1000);
+    init(); 
 }
 
 async function withdraw(id, name) {
     const amt = prompt(`Enter number of chips to Withdraw from ${name}:`);
-    if(!amt || isNaN(amt) || parseFloat(amt) <= 0) return;
+    if (!amt || isNaN(amt) || parseFloat(amt) <= 0) return;
 
     const res = await fetch('/api/withdraw-chips', {
-        method:'POST', 
-        headers:{'Content-Type':'application/json'}, 
-        body:JSON.stringify({
-            adminId: user.id, 
-            userId: id, 
-            amount: parseFloat(amt)
-        })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) })
     });
     const d = await res.json();
-    alert(d.message || "Withdrawal Processed");
-    init(); // Lively refresh header and table
+    
+    const row = document.getElementById(`user-row-${id}`);
+    if(row) row.style.background = "rgba(255, 49, 49, 0.1)";
+
+    alert(d.message || "Withdrawal Successful");
+    setTimeout(() => { if(row) row.style.background = "transparent"; }, 1000);
+    init();
 }
 
+// --- 4. NEW USER SUBMISSION ---
+async function submitUser() {
+    const data = {
+        fName: document.getElementById('mFName').value,
+        uName: document.getElementById('mUName').value,
+        pass: document.getElementById('mPass').value,
+        role: document.getElementById('mRole').value,
+        logins: document.getElementById('mLogins').value,
+        deposit: document.getElementById('mDeposit').value,
+        creatorId: user.id
+    };
+    
+    if(!data.uName || (!editUserId && !data.pass)) return alert("Username and Password are required!");
+
+    const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
+    const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, id: editUserId })
+    });
+    const d = await res.json();
+
+    alert(d.message || (d.success ? "Successfully Processed!" : "Failed"));
+    if (d.success) { closeModal(); init(); }
+}
 // --- LIVELY SEARCH FUNCTIONALITY ---
 function filterUsers() {
     const input = document.getElementById('userSearch').value.toLowerCase();
@@ -589,13 +625,22 @@ function filterUsers() {
         init();
     }
 
-    function openSlip(team, odds, type) {
-        activeOdds = odds;
-        document.getElementById('slipTeam').innerText = team + " (" + type + ")";
-        document.getElementById('slipOdds').innerText = odds;
-        document.getElementById('betSlip').style.display = 'block';
-        updateRsValue();
+    function openSlip(team, odds, type, btnId) {
+    activeOdds = odds;
+
+    // --- TRIGGER COLOR POP ANIMATION ---
+    const btn = document.getElementById(btnId);
+    if(btn) {
+        btn.classList.add('pop-active');
+        // Remove the class after animation finishes so it can be triggered again
+        setTimeout(() => btn.classList.remove('pop-active'), 500);
     }
+
+    document.getElementById('slipTeam').innerText = team + " (" + type + ")";
+    document.getElementById('slipOdds').innerText = odds;
+    document.getElementById('betSlip').style.display = 'block';
+    updateRsValue();
+}
     function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
     function updateRsValue() {
         const chips = document.getElementById('betAmountInput').value || 0;
@@ -659,6 +704,7 @@ function filterUsers() {
 </script>
 </body>
 </html>
+
 
 
 
