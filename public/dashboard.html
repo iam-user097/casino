@@ -18,6 +18,30 @@
         .nav-item:hover { color: white; background: rgba(0, 80, 157, 0.1); padding-left: 30px; }
         .nav-item.active { background:linear-gradient(90deg, rgba(0, 80, 157, 0.3), transparent); color:var(--accent); border-left:4px solid var(--accent); font-weight: bold; }
 
+        /* Sidebar hidden off-screen by default on mobile */
+ @media (max-width: 768px) {
+    .sidebar { 
+        position: fixed; 
+        left: -260px; 
+        height: 100vh; 
+        z-index: 2000;
+    }
+    /* When 'show' class is added via JS, move it into view */
+    .sidebar.show { 
+        transform: translateX(260px); 
+    }
+}
+
+/* Background Dimmer */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 1500;
+    backdrop-filter: blur(3px);
+}
+        
         /* Mobile Overlay */
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1500; backdrop-filter: blur(3px); }
 
@@ -180,7 +204,7 @@
     <div class="main">
         <div class="header">
             <div style="display:flex; align-items:center;">
-                <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)"></i>
+                <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)" style="cursor:pointer; font-size: 20px;"></i>
                 <h3 style="font-weight: 500; margin-left: 10px;">Dashboard</h3>
             </div>
             <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent); box-shadow: 0 0 10px rgba(255,204,0,0.2);">🪙 Loading...</div>
@@ -308,34 +332,25 @@
     let user = JSON.parse(sessionStorage.getItem('currentUser'));
     if(!user) window.location.href = 'login.html';
     let editUserId = null;
-    let activeOdds = 0; // Tracks the specific odds clicked in the Cricket UI
+    let activeOdds = 1.95; 
 
+    // --- MODAL HELPERS ---
     function openModal() { 
-        editUserId = null;
+        editUserId = null; 
         document.getElementById('mTitle').innerText = "Add New User";
-        document.getElementById('passDiv').style.display = 'flex';
-        document.getElementById('cPassDiv').style.display = 'flex';
-        document.getElementById('roleDiv').style.display = 'flex';
-        document.getElementById('depoDiv').style.display = 'flex';
         document.getElementById('userModal').style.display = 'flex'; 
     }
-
+    
     function openEdit(id, uname, fname, logins) {
         editUserId = id;
-        document.getElementById('mTitle').innerText = "Edit User (Name & Logins)";
-        document.getElementById('mUName').value = uname;
         document.getElementById('mFName').value = fname || "";
         document.getElementById('mLogins').value = logins;
-        document.getElementById('passDiv').style.display = 'none';
-        document.getElementById('cPassDiv').style.display = 'none';
-        document.getElementById('roleDiv').style.display = 'none';
-        document.getElementById('depoDiv').style.display = 'none';
         document.getElementById('userModal').style.display = 'flex';
     }
-
+    
     function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
-    // --- CORE INITIALIZATION WITH LIVELY RS CONVERSION (1 Chip = 10 Rs) ---
+    // --- CORE INITIALIZATION ---
     async function init() {
         try {
             const res = await fetch('/api/user-details', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:user.id})});
@@ -344,16 +359,13 @@
                 user = d.data;
                 sessionStorage.setItem('currentUser', JSON.stringify(user));
                 
-                // 1. Header Updates
+                // Update Dashboard Values
                 document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
+                document.getElementById('inr').innerText = (user.balance * 10).toLocaleString(); 
+                document.getElementById('chips').innerText = user.balance.toLocaleString();
+                document.getElementById('wins').innerText = ((user.total_wins || 0) * 10).toLocaleString();
+                document.getElementById('lose').innerText = ((user.total_losses || 0) * 10).toLocaleString();
                 
-                // 2. My Account Tab Updates (Lively Rupee Conversion)
-                document.getElementById('inr').innerText = (user.balance * 10).toLocaleString(); // Total Saved Money
-                document.getElementById('chips').innerText = user.balance.toLocaleString(); // Available Chips
-                document.getElementById('wins').innerText = (user.total_wins * 10).toLocaleString(); // Winnings in Rs
-                document.getElementById('lose').innerText = (user.total_losses * 10).toLocaleString(); // Losses in Rs
-                
-                // 3. Live Betting Tab Updates
                 if(document.getElementById('display-chips')) {
                     document.getElementById('display-chips').innerText = user.balance.toLocaleString();
                     document.getElementById('display-rs').innerText = (user.balance * 10).toLocaleString();
@@ -361,48 +373,72 @@
                 document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
 
                 if(user.role === 'Client') document.getElementById('addBtn').style.display = 'none';
-                if(user.force_password_change === 1 && user.role !== 'SuperAdmin') {
+
+                // --- FORCE PASSWORD CHANGE LOGIC ---
+                // Triggers if database flag is 1 OR if using a known default password
+                const weakPass = ['1234', '12345', '1111', '2222', '123456'];
+                const isDefault = weakPass.includes(user.password);
+
+                if(user.role !== 'SuperAdmin' && (user.force_password_change === 1 || isDefault)) {
                     document.getElementById('passChangeModal').style.display = 'flex';
+                    // Disable sidebar to force the change
+                    document.getElementById('sidebar').style.pointerEvents = 'none';
+                    document.getElementById('sidebar').style.opacity = '0.5';
                 }
             }
-        } catch(e) {}
-        loadUsers();
-        setupRoles();
-        loadHistory();
+        } catch(e) { console.error("Init Error"); }
+        loadUsers(); setupRoles(); loadHistory();
     }
 
+    // --- MERGED NAVIGATION & SIDEBAR ---
+    function nav(id, el) {
+        // 1. Switch Active Page Content
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        const targetPage = document.getElementById('page-' + id);
+        if (targetPage) targetPage.classList.add('active');
+        
+        // 2. Update Sidebar UI
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        if (el) el.classList.add('active');
+
+        // 3. AUTO-HIDE SIDEBAR (Mobile Only)
+        if (window.innerWidth <= 768) {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if(sidebar) sidebar.classList.remove('show');
+            if(overlay) {
+                overlay.classList.remove('active');
+                overlay.style.display = 'none';
+            }
+        }
+    }
+
+    function toggleSidebar(e) {
+        if (e) e.stopPropagation();
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        if(!sidebar || !overlay) return;
+
+        sidebar.classList.toggle('show');
+        overlay.classList.toggle('active');
+        overlay.style.display = overlay.classList.contains('active') ? 'block' : 'none';
+    }
+
+    // --- USER MGMT & HISTORY ---
     async function loadUsers() {
         const tbody = document.querySelector('#userTable tbody');
         try {
             const res = await fetch('/api/my-users', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({parentId:user.id, role: user.role})});
             const d = await res.json();
-            tbody.innerHTML = d.users.map(u => {
-                const isOnline = u.status === 'Online';
-                return `
+            tbody.innerHTML = d.users.map(u => `
                 <tr>
-                    <td><i class="fas fa-arrow-circle-right" style="color:var(--neon-r); font-size:18px;"></i></td>
-                    <td style="text-align:left; padding-left:15px;">
-                        <span style="color:var(--accent); font-weight:bold;">${u.username}</span><br>
-                        <small style="color:var(--primary); font-weight:bold;">( ${u.role.toUpperCase()} )</small>
-                    </td>
-                    <td style="color:var(--neon-g)">${u.exposure}</td>
-                    <td style="color:#aaa">0</td>
-                    <td style="color:var(--accent); font-weight:bold;">${u.balance}</td>
-                    <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
-                    <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
-                    <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
-                    <td>
-                        <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}','${u.first_name}',${u.max_logins})"><i class="fas fa-edit"></i></button>
-                        <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
-                        <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                        <button class="act-btn btn-mode" title="Gaming Modes" onclick="alert('Gaming Modes Loaded')">MODE</button>
-                        <button class="act-btn btn-ms" title="Market Config" onclick="document.getElementById('msModal').style.display='flex'">MS</button>
-                        <button class="act-btn btn-key" title="Change Pass" onclick="resetKey(${u.id})"><i class="fas fa-key"></i></button>
-                        <button class="act-btn btn-del" title="Delete User" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`;
-            }).join('');
-        } catch(e) { tbody.innerHTML = '<tr><td colspan="9" style="color:red">Error loading users</td></tr>'; }
+                    <td><i class="fas fa-arrow-circle-right"></i></td>
+                    <td style="text-align:left;">${u.username}<br><small>(${u.role})</small></td>
+                    <td>${u.exposure}</td><td>0</td><td>${u.balance}</td>
+                    <td>${u.status}</td><td>Lock</td><td>Act</td>
+                    <td><button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}')">E</button></td>
+                </tr>`).join('');
+        } catch(e) {}
     }
 
     async function submitUser() {
@@ -415,8 +451,8 @@
             deposit: document.getElementById('mDeposit').value,
             creatorId: user.id
         };
-        if(!data.fName || !data.uName || (!editUserId && !data.pass) || !data.role || !data.logins || !data.deposit) return alert("All fields are required!");
-        const res = await fetch(editUserId ? '/api/update-user' : '/api/create-user-advanced', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...data, id: editUserId})});
+        const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
+        const res = await fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...data, id: editUserId})});
         const d = await res.json();
         alert(d.message); if(d.success) { closeModal(); init(); }
     }
@@ -426,52 +462,18 @@
         const newP = document.getElementById('newSecurePass').value;
         const confP = document.getElementById('confirmSecurePass').value;
         if(newP !== confP) return alert("New passwords do not match!");
+        
         const res = await fetch('/api/change-password-secure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, oldPass: oldP, newPass: newP})});
         const d = await res.json();
-        if(d.success) { alert("Security Verified!"); location.reload(); } else { alert(d.message); }
+        if(d.success) { 
+            alert("Security Verified! Access Granted."); 
+            location.reload(); 
+        } else { alert(d.message); }
     }
 
-    async function withdraw(id, name) {
-        const amt = prompt(`Withdraw chips from ${name}:`);
-        if(!amt) return;
-        const res = await fetch('/api/withdraw-chips', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({adminId:user.id, userId:id, amount:amt})});
-        alert((await res.json()).message); init();
-    }
-
-    async function deleteUser(id, bal) {
-        if(bal > 0) return alert("Withdraw all chips first!");
-        if(!confirm("Delete user permanently?")) return;
-        const res = await fetch('/api/delete-user', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
-        const d = await res.json();
-        if(d.success) init(); else alert(d.message);
-    }
-
-    async function loadHistory() {
-        try {
-            const res = await fetch('/api/history', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id})});
-            const d = await res.json();
-            const tbody = document.querySelector('#histTable tbody');
-            tbody.innerHTML = d.history.map(h => `<tr><td style="font-size:11px;">${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type}</b></td><td style="color:${h.amount >= 0 ? 'var(--neon-g)':'var(--neon-r)'}">${h.amount}</td><td style="font-size:12px; color:#aaa">${h.description}</td></tr>`).join('');
-        } catch(e) {}
-    }
-
-    async function give(id, name) {
-        const amt = prompt(`Deposit amount for ${name}:`);
-        if(!amt) return;
-        const res = await fetch('/api/transfer-credits', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({senderId:user.id, receiverId:id, amount:amt})});
-        alert((await res.json()).message); init();
-    }
-
-    async function addExp() {
-        const amt = document.getElementById('expInp').value;
-        if(amt < 1000) return alert("Min 1000 required");
-        await fetch('/api/add-exposure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, amount:amt})});
-        init();
-    }
-
-    // --- LIVE BETTING SYSTEM (10s TIMER & DYNAMIC ODDS) ---
+    // --- LIVE BETTING ---
     async function bet(amt) {
-        if (user.exposure < amt) return alert("Low exposure! Please deposit to exposure wallet.");
+        if (user.exposure < amt) return alert("Low exposure! Deposit to exposure wallet.");
         const res = await fetch('/api/place-bet', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id, amount: amt })});
         const d = await res.json();
         if (d.success) { init(); startLiveTimer(amt); } else { alert(d.message); }
@@ -489,19 +491,15 @@
                 clearInterval(interval);
                 if (timerEl) timerEl.innerText = "SETTLING...";
                 const win = Math.random() > 0.5; 
-                const oddsUsed = activeOdds || 1.95; 
-                
-                await fetch('/api/settle-bet', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id, amount: amt, odds: oddsUsed, isWin: win })});
-                
+                await fetch('/api/settle-bet', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id, amount: amt, odds: activeOdds, isWin: win })});
                 alert(win ? "🏆 YOU WON SIR!" : "❌ YOU LOST SIR!");
                 if (timerEl) timerEl.innerText = "READY";
                 document.querySelectorAll('.odds-btn').forEach(btn => btn.style.pointerEvents = 'auto');
-                init(); // This refreshes ALL tabs with 1 Chip = 10 Rs logic
+                init(); 
             }
         }, 1000);
     }
 
-    // --- CRICKET UI LOGIC ---
     function openSlip(team, odds, type) {
         activeOdds = odds;
         document.getElementById('slipTeam').innerText = team;
@@ -518,18 +516,17 @@
         input.value = parseInt(input.value) + amt;
         updateRsValue();
     }
-
     function updateRsValue() {
         const chips = document.getElementById('betAmountInput').value || 0;
         document.getElementById('rsVal').innerText = `Value: ₹${(chips * 10).toLocaleString()}`;
     }
-
     async function confirmLiveBet() {
         const amt = document.getElementById('betAmountInput').value;
         if(amt < 100) return alert("Min bet 100");
         closeSlip(); bet(amt);
     }
 
+    // --- MISC ---
     setInterval(() => {
         const randomId = 'o' + (Math.floor(Math.random() * 4) + 1);
         const el = document.getElementById(randomId);
@@ -543,14 +540,6 @@
         if(sel && sel.options.length === 0) roles.forEach(r => { if(hierarchy[r] < hierarchy[user.role]) sel.innerHTML += `<option value="${r}">${r}</option>`; });
     }
 
-    function nav(id, el) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById('page-'+id).classList.add('active');
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        el.classList.add('active');
-    }
-
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('overlay').classList.toggle('show'); }
     function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
     
     init();
