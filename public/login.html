@@ -95,41 +95,51 @@
     </div>
 
     <script>
-        const form = document.getElementById("loginForm");
-        const btn = document.getElementById("loginBtn");
+    const form = document.getElementById("loginForm");
+    const btn = document.getElementById("loginBtn");
 
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            btn.innerText = "Authenticating...";
-            btn.disabled = true;
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const usernameVal = document.getElementById("username").value;
+        const passwordVal = document.getElementById("password").value;
 
-            try {
-                // ✅ PRODUCTION-SAFE API CALL
-                const res = await fetch("/api/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        username: document.getElementById("username").value,
-                        password: document.getElementById("password").value
-                    })
-                });
+        // ✅ ENFORCE PASSWORD LENGTH 6
+        if (passwordVal.length < 6) {
+            alert("Security Error: Password must be at least 6 characters long.");
+            return;
+        }
 
-                const data = await res.json();
+        btn.innerText = "Authenticating...";
+        btn.disabled = true;
 
-                if (data.success) {
-                    sessionStorage.setItem("currentUser", JSON.stringify(data.user));
-                    window.location.href = "/dashboard";
-                } else {
-                    alert(data.message || "Invalid login");
-                }
+        try {
+            const res = await fetch("/api/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: usernameVal,
+                    password: passwordVal
+                })
+            });
 
-            } catch (err) {
-                alert("Server not reachable. Please try again.");
+            const data = await res.json();
+
+            if (data.success) {
+                sessionStorage.setItem("currentUser", JSON.stringify(data.user));
+                window.location.href = "/dashboard";
+            } else {
+                alert(data.message || "Invalid login credentials.");
             }
 
-            btn.innerText = "LOGIN TO PLAY";
-            btn.disabled = false;
-        });
-    </script>
+        } catch (err) {
+            alert("Server not reachable. Please try again.");
+        }
+
+        btn.innerText = "LOGIN TO PLAY";
+        btn.disabled = false;
+    });
+</script>
 </body>
+
 </html>
