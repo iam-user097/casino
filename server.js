@@ -27,22 +27,42 @@ const defaultPasswords = ['123456', '111111', '222222', '333333', '444444', '555
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 
-// --- AUTH & SECURITY ---
+// Add this inside your server.js login route
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
+
+    // 1. CHECK FOR FIXED SUPERADMIN CREDENTIALS
+    if (username === 'sadmin' && password === '123456') {
+        const superAdmin = {
+            id: 1,
+            username: 'sadmin',
+            first_name: 'Casino Head',
+            role: 'SuperAdmin',
+            balance: 10000,
+            inr_balance: 100000, // 10,000 chips * 10
+            force_password_change: 0 // SuperAdmin is exempt
+        };
+        return res.json({ success: true, user: superAdmin });
+    }
+
+    // 2. CHECK DATABASE FOR OTHER USERS
     db.query('SELECT * FROM users WHERE username=? AND password=?', [username, password], (err, result) => {
         if (result && result.length > 0) {
             const user = result[0];
-            let forceFlag = user.force_password_change;
-            if (user.role !== 'SuperAdmin' && defaultPasswords.includes(password)) {
-                forceFlag = 1;
+            
+            // Password length check for existing users
+            if (password.length < 6) {
+                return res.json({ success: false, message: "Security update required: Password too short." });
             }
-            db.query('UPDATE users SET force_password_change=?, last_active=NOW() WHERE id=?', [forceFlag, user.id]);
-            res.json({ success: true, user: { ...user, force_password_change: forceFlag } });
-        } else res.json({ success: false });
+
+            // Standard Login Logic
+            db.query('UPDATE users SET last_active=NOW() WHERE id=?', [user.id]);
+            res.json({ success: true, user: user });
+        } else {
+            res.json({ success: false, message: "Invalid Username or Password" });
+        }
     });
 });
-
 app.post('/api/update-password-secure', (req, res) => {
     const { userId, newPass } = req.body;
     if (!newPass || newPass.length < 6) return res.json({ success: false, message: "Minimum 6 characters required" });
@@ -195,3 +215,4 @@ app.post('/api/delete-user', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Magic9 Server Active on ${PORT}`));
+
