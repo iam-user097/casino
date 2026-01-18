@@ -433,23 +433,60 @@
         if(d.success) { closeModal(); init(); }
     }
 
-    async function loadUsers() {
-        const tbody = document.querySelector('#userTable tbody');
-        const res = await fetch('/api/my-users', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({parentId:user.id, role: user.role})});
+    // --- RESTORED FULL TABLE LOGIC ---
+async function loadUsers() {
+    const tbody = document.querySelector('#userTable tbody');
+    try {
+        const res = await fetch('/api/my-users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ parentId: user.id, role: user.role })
+        });
         const d = await res.json();
-        tbody.innerHTML = (d.users || []).map(u => `
+        
+        tbody.innerHTML = d.users.map(u => {
+            const isOnline = u.status === 'Online';
+            return `
             <tr>
-                <td><i class="fas fa-arrow-circle-right"></i></td>
-                <td>${u.username}</td>
-                <td>${u.exposure}</td>
-                <td>0</td>
-                <td>${u.balance}</td>
-                <td>${u.status || 'Offline'}</td>
-                <td>Lock</td>
-                <td>Act</td>
-                <td><button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}')">E</button></td>
-            </tr>`).join('');
+                <td><i class="fas fa-arrow-circle-right" style="color:var(--neon-r); font-size:18px;"></i></td>
+                <td style="text-align:left; padding-left:15px;">
+                    <span style="color:var(--accent); font-weight:bold;">${u.username}</span><br>
+                    <small style="color:var(--primary); font-weight:bold;">( ${u.role.toUpperCase()} )</small>
+                </td>
+                <td style="color:var(--neon-g)">${u.exposure}</td>
+                <td style="color:#aaa">0</td>
+                <td style="color:var(--accent); font-weight:bold;">${u.balance}</td>
+                
+                <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
+                <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                
+                <td>
+                    <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}')"><i class="fas fa-edit"></i></button>
+                    <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
+                    <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
+                    <button class="act-btn btn-mode" title="Gaming Modes" onclick="alert('Modes Loaded')">MODE</button>
+                    <button class="act-btn btn-ms" title="Market Config" onclick="document.getElementById('msModal').style.display='flex'">MS</button>
+                    <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch (e) { 
+        tbody.innerHTML = '<tr><td colspan="9" style="color:red">Error loading users</td></tr>'; 
     }
+}
+
+// --- LIVELY SEARCH FUNCTIONALITY ---
+function filterUsers() {
+    const input = document.getElementById('userSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#userTable tbody tr');
+
+    rows.forEach(row => {
+        // Search matches against Username (second column)
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? "" : "none";
+    });
+}
 
     // --- EXPOSURE & BETTING ---
     async function addExp() {
@@ -531,5 +568,6 @@
 </script>
 </body>
 </html>
+
 
 
