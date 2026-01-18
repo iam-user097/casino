@@ -334,21 +334,31 @@
     let editUserId = null;
     let activeOdds = 1.95; 
 
+    // --- MODAL HELPERS ---
     function openModal() { 
         editUserId = null; 
         document.getElementById('mTitle').innerText = "Add New User";
+        document.getElementById('passDiv').style.display = 'flex';
+        document.getElementById('cPassDiv').style.display = 'flex';
+        document.getElementById('roleDiv').style.display = 'flex';
+        document.getElementById('depoDiv').style.display = 'flex';
         document.getElementById('userModal').style.display = 'flex'; 
     }
     
-    function openEdit(id, uname, fname, logins) {
+    function openEdit(id, uname) {
         editUserId = id;
-        document.getElementById('mFName').value = fname || "";
-        document.getElementById('mLogins').value = logins;
+        document.getElementById('mTitle').innerText = "Edit User (Name & Logins)";
+        document.getElementById('mUName').value = uname;
+        document.getElementById('passDiv').style.display = 'none';
+        document.getElementById('cPassDiv').style.display = 'none';
+        document.getElementById('roleDiv').style.display = 'none';
+        document.getElementById('depoDiv').style.display = 'none';
         document.getElementById('userModal').style.display = 'flex';
     }
     
     function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
+    // --- CORE INITIALIZATION ---
     async function init() {
         try {
             const res = await fetch('/api/user-details', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:user.id})});
@@ -357,36 +367,53 @@
                 user = d.data;
                 sessionStorage.setItem('currentUser', JSON.stringify(user));
                 
+                // My Account & Header Updates
                 document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
                 document.getElementById('inr').innerText = (user.balance * 10).toLocaleString(); 
                 document.getElementById('chips').innerText = user.balance.toLocaleString();
                 document.getElementById('wins').innerText = ((user.total_wins || 0) * 10).toLocaleString();
                 document.getElementById('lose').innerText = ((user.total_losses || 0) * 10).toLocaleString();
                 
+                // Betting Tab Updates
                 if(document.getElementById('display-chips')) {
                     document.getElementById('display-chips').innerText = user.balance.toLocaleString();
                     document.getElementById('display-rs').innerText = (user.balance * 10).toLocaleString();
                 }
-                
-                // LIVELY EXPOSURE UPDATE
                 if(document.getElementById('bet-exp')) {
                     document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
                 }
 
                 if(user.role === 'Client') document.getElementById('addBtn').style.display = 'none';
 
+                // Security Check
                 const weakPass = ['1234', '12345', '1111', '2222'];
                 if(user.role !== 'SuperAdmin' && (user.force_password_change === 1 || weakPass.includes(user.password))) {
                     document.getElementById('passChangeModal').style.display = 'flex';
                     document.getElementById('sidebar').style.pointerEvents = 'none';
-                    document.getElementById('sidebar').style.opacity = '0.5';
                 }
             }
-        } catch(e) { console.error("Init Error"); }
+        } catch(e) {}
         loadUsers(); setupRoles(); loadHistory();
     }
 
-    // FIXED: SUCCESS MESSAGE LOGIC
+    // --- HISTORY LOGIC (LIVELY FETCH) ---
+    async function loadHistory() {
+        const tbody = document.querySelector('#histTable tbody');
+        if(!tbody) return;
+        try {
+            const res = await fetch('/api/history', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id})});
+            const d = await res.json();
+            tbody.innerHTML = d.history.map(h => `
+                <tr>
+                    <td style="font-size:11px;">${new Date(h.created_at).toLocaleString()}</td>
+                    <td><b>${h.type}</b></td>
+                    <td style="color:${h.amount >= 0 ? 'var(--neon-g)':'var(--neon-r)'}">${h.amount}</td>
+                    <td style="font-size:12px; color:#aaa">${h.description}</td>
+                </tr>`).join('');
+        } catch(e) { tbody.innerHTML = '<tr><td colspan="4">No history found</td></tr>'; }
+    }
+
+    // --- USER MANAGEMENT ---
     async function submitUser() {
         const data = {
             fName: document.getElementById('mFName').value,
@@ -401,28 +428,79 @@
         const res = await fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...data, id: editUserId})});
         const d = await res.json();
         
-        // Fix for the 'undefined' alert issue
-        const msg = d.message || (d.success ? "User Created Successfully!" : "Operation Failed");
-        alert(msg); 
-        
+        // Fixed Alert Message
+        alert(d.message || (d.success ? "Success!" : "Failed"));
         if(d.success) { closeModal(); init(); }
     }
 
-    // ADDED: EXPOSURE DEPOSIT LOGIC
+    async function loadUsers() {
+        const tbody = document.querySelector('#userTable tbody');
+        const res = await fetch('/api/my-users', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({parentId:user.id, role: user.role})});
+        const d = await res.json();
+        tbody.innerHTML = (d.users || []).map(u => `
+            <tr>
+                <td><i class="fas fa-arrow-circle-right"></i></td>
+                <td>${u.username}</td>
+                <td>${u.exposure}</td>
+                <td>0</td>
+                <td>${u.balance}</td>
+                <td>${u.status || 'Offline'}</td>
+                <td>Lock</td>
+                <td>Act</td>
+                <td><button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}')">E</button></td>
+            </tr>`).join('');
+    }
+
+    // --- EXPOSURE & BETTING ---
     async function addExp() {
         const amt = document.getElementById('expInp').value;
-        if(!amt || amt < 1000) return alert("Minimum 1000 chips required for exposure");
-        
-        const res = await fetch('/api/add-exposure', {
-            method:'POST', 
-            headers:{'Content-Type':'application/json'}, 
-            body:JSON.stringify({userId:user.id, amount:amt})
-        });
+        if(!amt || amt < 1000) return alert("Min 1000 chips required");
+        const res = await fetch('/api/add-exposure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, amount:amt})});
         const d = await res.json();
-        alert(d.message || "Exposure Updated!");
-        document.getElementById('expInp').value = "";
+        alert(d.message || "Updated");
         init();
     }
+
+    function openSlip(team, odds, type) {
+        activeOdds = odds;
+        document.getElementById('slipTeam').innerText = team + " (" + type + ")";
+        document.getElementById('slipOdds').innerText = odds;
+        document.getElementById('betSlip').style.display = 'block';
+        updateRsValue();
+    }
+    function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
+    function updateRsValue() {
+        const chips = document.getElementById('betAmountInput').value || 0;
+        document.getElementById('rsVal').innerText = `Value: ₹${(chips * 10).toLocaleString()}`;
+    }
+    async function confirmLiveBet() {
+        const amt = document.getElementById('betAmountInput').value;
+        if(amt < 100) return alert("Min bet 100");
+        closeSlip(); bet(amt);
+    }
+    async function bet(amt) {
+        if (user.exposure < amt) return alert("Low exposure! Deposit to wallet.");
+        const res = await fetch('/api/place-bet', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id, amount: amt })});
+        const d = await res.json();
+        if (d.success) { init(); startLiveTimer(amt); } else { alert(d.message); }
+    }
+    function startLiveTimer(amt) {
+        let sec = 10;
+        const timerEl = document.getElementById('match-timer');
+        const interval = setInterval(async () => {
+            sec--;
+            if (timerEl) timerEl.innerText = `SETTLING: ${sec}s`;
+            if (sec <= 0) {
+                clearInterval(interval);
+                const win = Math.random() > 0.5; 
+                await fetch('/api/settle-bet', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id, amount: amt, odds: activeOdds, isWin: win })});
+                alert(win ? "🏆 WON!" : "❌ LOST!");
+                if(timerEl) timerEl.innerText = "READY";
+                init(); 
+            }
+        }, 1000);
+    }
+
 
     function nav(id, el) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -447,64 +525,11 @@
         overlay.classList.toggle('active');
         overlay.style.display = overlay.classList.contains('active') ? 'block' : 'none';
     }
-
-    // ... (rest of your cricket UI functions: openSlip, bet, startLiveTimer, etc. remain the same)
-    
-    function openSlip(team, odds, type) {
-        activeOdds = odds;
-        document.getElementById('slipTeam').innerText = team;
-        document.getElementById('slipOdds').innerText = odds;
-        document.getElementById('slipType').innerText = type;
-        document.getElementById('slipType').style.color = type === 'BACK' ? '#00aaff' : '#ff7eb9';
-        document.getElementById('betSlip').style.display = 'block';
-        updateRsValue();
-    }
-    function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
-    function updateRsValue() {
-        const chips = document.getElementById('betAmountInput').value || 0;
-        document.getElementById('rsVal').innerText = `Value: ₹${(chips * 10).toLocaleString()}`;
-    }
-    async function confirmLiveBet() {
-        const amt = document.getElementById('betAmountInput').value;
-        if(amt < 100) return alert("Min bet 100");
-        closeSlip(); bet(amt);
-    }
-    async function bet(amt) {
-        if (user.exposure < amt) return alert("Low exposure! Deposit chips into exposure wallet first.");
-        const res = await fetch('/api/place-bet', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id, amount: amt })});
-        const d = await res.json();
-        if (d.success) { init(); startLiveTimer(amt); } else { alert(d.message); }
-    }
-    function startLiveTimer(amt) {
-        let sec = 10;
-        const timerEl = document.getElementById('match-timer');
-        document.querySelectorAll('.odds-btn').forEach(btn => btn.style.pointerEvents = 'none'); 
-        const interval = setInterval(async () => {
-            sec--;
-            if (timerEl) timerEl.innerText = `RESULT IN: ${sec}s`;
-            if (sec <= 0) {
-                clearInterval(interval);
-                if (timerEl) timerEl.innerText = "SETTLING...";
-                const win = Math.random() > 0.5; 
-                await fetch('/api/settle-bet', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id, amount: amt, odds: activeOdds, isWin: win })});
-                alert(win ? "🏆 CONGRATS SIR! YOU WON!" : "❌ SORRY SIR! YOU LOST!");
-                if (timerEl) timerEl.innerText = "READY";
-                document.querySelectorAll('.odds-btn').forEach(btn => btn.style.pointerEvents = 'auto');
-                init(); 
-            }
-        }, 1000);
-    }
-
-    async function loadUsers() {
-        const tbody = document.querySelector('#userTable tbody');
-        const res = await fetch('/api/my-users', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({parentId:user.id, role: user.role})});
-        const d = await res.json();
-        tbody.innerHTML = d.users.map(u => `<tr><td><i class="fas fa-arrow-circle-right"></i></td><td>${u.username}</td><td>${u.exposure}</td><td>0</td><td>${u.balance}</td><td>${u.status}</td><td>Lock</td><td>Act</td><td><button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}')">E</button></td></tr>`).join('');
-    }
-    
+        
     function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
     init();
 </script>
 </body>
 </html>
+
 
