@@ -34,12 +34,9 @@ app.post('/api/login', (req, res) => {
         if (result && result.length > 0) {
             const user = result[0];
             let forceFlag = user.force_password_change;
-
-            // Trigger force change if not SuperAdmin and using a default password
             if (user.role !== 'SuperAdmin' && defaultPasswords.includes(password)) {
                 forceFlag = 1;
             }
-            
             db.query('UPDATE users SET force_password_change=?, last_active=NOW() WHERE id=?', [forceFlag, user.id]);
             res.json({ success: true, user: { ...user, force_password_change: forceFlag } });
         } else res.json({ success: false });
@@ -49,7 +46,6 @@ app.post('/api/login', (req, res) => {
 app.post('/api/update-password-secure', (req, res) => {
     const { userId, newPass } = req.body;
     if (!newPass || newPass.length < 6) return res.json({ success: false, message: "Minimum 6 characters required" });
-    
     db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err) => {
         res.json({ success: !err, message: err ? "Database error" : "Success" });
     });
@@ -76,7 +72,6 @@ app.post('/api/create-user-advanced', (req, res) => {
     const { uName, pass, role, deposit, commission, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
     const comm = parseFloat(commission) || 0;
-    // New users with default passwords are set to force change immediately
     const force = defaultPasswords.includes(pass) ? 1 : 0;
 
     db.getConnection((err, conn) => {
@@ -107,18 +102,17 @@ app.post('/api/settle-bet', async (req, res) => {
     try {
         await conn.query('START TRANSACTION');
         const [userRows] = await conn.query('SELECT username FROM users WHERE id = ?', [userId]);
+        if (!userRows.length) throw new Error("User not found");
         const clientName = userRows[0].username;
 
         if (isWin) {
             await conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, total_wins = total_wins + 1 WHERE id = ?', [amt, amt + profit, userId]);
             await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Win', profit, `Live Bet Won (Odds: ${odds})`]);
 
-            // Upward Commission Loop
             let currentId = userId;
             while (true) {
                 const [pRows] = await conn.query('SELECT parent_id FROM users WHERE id = ?', [currentId]);
                 if (!pRows[0]?.parent_id) break;
-
                 const pid = pRows[0].parent_id;
                 const [pData] = await conn.query('SELECT id, role, commission_percentage FROM users WHERE id = ?', [pid]);
                 
@@ -141,11 +135,11 @@ app.post('/api/settle-bet', async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         await conn.query('ROLLBACK');
-        res.json({ success: false });
+        res.json({ success: false, error: err.message });
     }
 });
 
-// --- REPORTS & HISTORY ---
+// --- REPORTS ---
 app.post('/api/commission-summary', (req, res) => {
     const sql = `SELECT SUBSTRING_INDEX(description, 'from ', -1) as downline_name, SUM(amount) as total_earned FROM transactions WHERE user_id = ? AND type = 'Comm-Income' GROUP BY downline_name`;
     db.query(sql, [req.body.userId], (err, r) => res.json({ success: !err, summary: r || [] }));
@@ -155,7 +149,7 @@ app.post('/api/history', (req, res) => {
     db.query('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 50', [req.body.userId], (_, r) => res.json({ success: true, history: r || [] }));
 });
 
-// --- CHIP MOVEMENTS ---
+// --- MOVEMENTS ---
 app.post('/api/transfer-credits', (req, res) => {
     const { senderId, receiverId, amount } = req.body;
     const amt = parseFloat(amount);
@@ -175,21 +169,29 @@ app.post('/api/withdraw-chips', (req, res) => {
     const amt = parseFloat(amount);
     db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amt, userId, amt], (err, r) => {
         if (r && r.affectedRows > 0) {
-            db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amt, adminId]);
-            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Withdrawal', -amt, `Recovered (₹${amt*10})`]);
-            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [adminId, 'Clawback', amt, `From ID: ${userId} (₹${amt*10})`]);
-            res.json({ success: true, message: 'Withdrawal Success' });
+            db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amt, adminId], () => {
+                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Withdrawal', -amt, `Recovered (₹${amt*10})`]);
+                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [adminId, 'Clawback', amt, `From ID: ${userId} (₹${amt*10})`]);
+                res.json({ success: true, message: 'Withdrawal Success' });
+            });
         } else res.json({ success: false, message: 'Insufficient User Balance' });
     });
 });
 
+// FIXED DELETE USER (Clears transactions first)
 app.post('/api/delete-user', (req, res) => {
     const { id } = req.body;
-    db.query('DELETE FROM users WHERE id = ? AND balance = 0', [id], (err, r) => {
-        if (r && r.affectedRows > 0) res.json({ success: true });
-        else res.json({ success: false, message: "User must have 0 balance" });
+    db.query('SELECT balance FROM users WHERE id = ?', [id], (e, r) => {
+        if (r && r[0]?.balance > 0) return res.json({ success: false, message: "User must have 0 balance to delete" });
+        
+        db.query('DELETE FROM transactions WHERE user_id = ?', [id], () => {
+            db.query('DELETE FROM users WHERE id = ?', [id], (err) => {
+                if (err) res.json({ success: false, message: "Cannot delete user with active downlines" });
+                else res.json({ success: true });
+            });
+        });
     });
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server Is Active on ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Magic9 Server Active on ${PORT}`));
