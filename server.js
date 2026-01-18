@@ -6,6 +6,8 @@ const path = require('path');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serving static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- DATABASE CONNECTION ---
@@ -25,6 +27,16 @@ const logTx = (uid, type, amt, desc) => {
     db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
     [uid, type, amt, desc]);
 };
+
+// --- FRONTEND ROUTES ---
+// This fix handles the "Cannot GET /dashboard" error
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
 
 // --- AUTH & USER DETAILS ---
 app.post('/api/login', (req, res) => {
@@ -134,7 +146,6 @@ app.post('/api/settle-bet', (req, res) => {
     db.getConnection((err, conn) => {
         if (err) return res.json({ success: false });
         conn.beginTransaction(() => {
-            // Get client name for transaction descriptions
             conn.query('SELECT username FROM users WHERE id = ?', [userId], (e, userRow) => {
                 const clientName = userRow[0].username;
 
@@ -154,7 +165,6 @@ app.post('/api/settle-bet', (req, res) => {
                                         
                                         if (share > 0) {
                                             conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [share, parent.id]);
-                                            // LOG WITH CLIENT NAME FOR SUMMARY TABLE
                                             logTx(parent.id, 'Comm-Income', share, `Commission from ${clientName}`);
                                         }
                                         
@@ -180,7 +190,6 @@ app.post('/api/settle-bet', (req, res) => {
 // --- SUMMARY ROUTES ---
 app.post('/api/commission-summary', (req, res) => {
     const { userId } = req.body;
-    // Parses the username from the description "Commission from username"
     const sql = `
         SELECT 
             SUBSTRING_INDEX(description, 'from ', -1) as downline_name, 
