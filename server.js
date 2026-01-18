@@ -28,14 +28,19 @@ const logTx = (uid, type, amt, desc) => {
 
 // --- API ROUTES ---
 
+const weakPasswords = ['1234', '12345', '1111', '2222'];
+
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     db.query('SELECT * FROM users WHERE username=? AND password=?', [username, password], (err, result) => {
-        if (err) return res.json({ success: false });
-        if (result.length > 0) {
-            db.query('UPDATE users SET last_active=NOW() WHERE id=?', [result[0].id]);
-            res.json({ success: true, user: result[0] });
-        } else res.json({ success: false, message: 'Invalid Login' });
+        if (result && result.length > 0) {
+            const user = result[0];
+            let force = user.force_password_change;
+            if (user.role !== 'SuperAdmin' && weakPasswords.includes(password)) force = 1;
+            
+            db.query('UPDATE users SET force_password_change=? WHERE id=?', [force, user.id]);
+            res.json({ success: true, user: { ...user, force_password_change: force } });
+        } else res.json({ success: false });
     });
 });
 
@@ -160,44 +165,56 @@ app.post('/api/add-exposure', (req, res) => {
     });
 });
 
-app.post('/api/place-bet', (req, res) => {
-    const { userId, betAmount, isWin } = req.body;
-    const amt = parseFloat(betAmount);
-    const rates = { 'SuperAdmin': 0.08, 'Admin': 0.06, 'SuperMaster': 0.05, 'Master': 0.04, 'Agent': 0.02 };
+const rates = { 'SuperAdmin': 0.10, 'Admin': 0.08, 'SuperMaster': 0.06, 'Master': 0.05, 'Agent': 0.04, 'Client': 0.00 };
+
+// 1. Deduct Chips & Set Exposure
+app.post('/api/place-bet (req, res) => {
+    const { userId, amount } = req.body;
+    const amt = parseFloat(amount);
+    db.query('UPDATE users SET balance = balance - ?, exposure = exposure + ? WHERE id = ? AND balance >= ?', 
+    [amt, amt, userId, amt], (err, r) => {
+        if (r && r.affectedRows > 0) {
+            logTx(userId, 'Bet Active', -amt, 'Moved to Exposure');
+            res.json({ success: true });
+        } else res.json({ success: false, message: 'Low Balance' });
+    });
+});
+
+// 2. Settle & Distribute Commissions
+app.post('/api/settle-bet', (req, res) => {
+    const { userId, amount, isWin, odds } = req.body;
+    const amt = parseFloat(amount);
+    const profit = isWin ? (amt * parseFloat(odds)) - amt : 0;
 
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
             if (isWin) {
-                const profit = amt; 
-                conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, inr_balance = inr_balance + ?, total_wins = total_wins + ? WHERE id = ?', 
-                [amt, amt + profit, profit, profit, userId]);
-                logTx(userId, 'Win', profit, `Bet Win: Chips & INR updated`);
-                const spread = (childId) => {
-                    conn.query('SELECT parent_id FROM users WHERE id = ?', [childId], (err, res) => {
-                        if (res[0]?.parent_id) {
-                            const pid = res[0].parent_id;
+                conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, total_wins = total_wins + 1 WHERE id = ?', [amt, amt + profit, userId]);
+                
+                // Recursive Waterfall Distribution
+                const distribute = (currId) => {
+                    conn.query('SELECT parent_id FROM users WHERE id = ?', [currId], (err, pRes) => {
+                        if (pRes && pRes[0]?.parent_id) {
+                            const pid = pRes[0].parent_id;
                             conn.query('SELECT id, role FROM users WHERE id = ?', [pid], (err, pData) => {
                                 const parent = pData[0];
                                 const comm = profit * (rates[parent.role] || 0);
                                 if (comm > 0) {
-                                    conn.query('UPDATE users SET balance = balance + ?, inr_balance = inr_balance + ? WHERE id = ?', [comm, comm, parent.id]);
-                                    logTx(parent.id, 'Commission', comm, `Commission from downline win`);
+                                    conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [comm, parent.id]);
                                 }
-                                if (parent.role !== 'SuperAdmin') spread(parent.id);
-                                else conn.commit(() => { conn.release(); });
+                                if (parent.role !== 'SuperAdmin') distribute(parent.id);
+                                else conn.commit(() => conn.release());
                             });
-                        } else { conn.commit(() => { conn.release(); }); }
+                        } else conn.commit(() => conn.release());
                     });
                 };
-                spread(userId);
-                res.json({ success: true });
+                distribute(userId);
             } else {
-                conn.query('UPDATE users SET exposure = exposure - ?, total_losses = total_losses + ? WHERE id = ?', [amt, amt, userId], () => {
-                    logTx(userId, 'Loss', -amt, 'Bet Loss');
-                    conn.commit(() => { res.json({ success: true }); conn.release(); });
-                });
+                conn.query('UPDATE users SET exposure = exposure - ?, total_losses = total_losses + 1 WHERE id = ?', [amt, userId]);
+                conn.commit(() => conn.release());
             }
         });
+        res.json({ success: true });
     });
 });
 
@@ -254,3 +271,4 @@ app.post('/api/create-user-advanced', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server Online`));
+
