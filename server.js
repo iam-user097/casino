@@ -20,22 +20,38 @@ const db = mysql.createPool({
     queueLimit: 0
 });
 
-// Helper: Standardized Transaction Logger (Always use inside a connection)
-const logTxConn = (conn, uid, type, amt, desc) => {
-    return conn.promise().query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [uid, type, amt, desc]);
-};
+// --- SECURITY CONFIG ---
+const defaultPasswords = ['123456', '111111', '222222', '333333', '444444', '555555', '666666', '654321', '012345', '543210'];
 
-// --- ROUTES ---
+// --- FRONTEND ROUTES ---
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 
+// --- AUTH & SECURITY ---
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     db.query('SELECT * FROM users WHERE username=? AND password=?', [username, password], (err, result) => {
         if (result && result.length > 0) {
-            db.query('UPDATE users SET last_active=NOW() WHERE id=?', [result[0].id]);
-            res.json({ success: true, user: result[0] });
+            const user = result[0];
+            let forceFlag = user.force_password_change;
+
+            // Trigger force change if not SuperAdmin and using a default password
+            if (user.role !== 'SuperAdmin' && defaultPasswords.includes(password)) {
+                forceFlag = 1;
+            }
+            
+            db.query('UPDATE users SET force_password_change=?, last_active=NOW() WHERE id=?', [forceFlag, user.id]);
+            res.json({ success: true, user: { ...user, force_password_change: forceFlag } });
         } else res.json({ success: false });
+    });
+});
+
+app.post('/api/update-password-secure', (req, res) => {
+    const { userId, newPass } = req.body;
+    if (!newPass || newPass.length < 6) return res.json({ success: false, message: "Minimum 6 characters required" });
+    
+    db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err) => {
+        res.json({ success: !err, message: err ? "Database error" : "Success" });
     });
 });
 
@@ -45,9 +61,10 @@ app.post('/api/user-details', (req, res) => {
     });
 });
 
+// --- MANAGEMENT ---
 app.post('/api/my-users', (req, res) => {
     const { parentId, role } = req.body;
-    let query = `SELECT id, username, role, balance, exposure, commission_percentage,
+    let query = `SELECT id, username, role, balance, exposure, commission_percentage, force_password_change,
                 CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
                 FROM users`;
     let params = [];
@@ -55,36 +72,22 @@ app.post('/api/my-users', (req, res) => {
     db.query(query, params, (_, r) => res.json({ users: r || [] }));
 });
 
-app.post('/api/delete-user', (req, res) => {
-    const { id } = req.body;
-    db.getConnection((err, conn) => {
-        if (err) return res.json({ success: false, message: 'Connection Error' });
-        conn.beginTransaction(() => {
-            conn.query('SELECT balance FROM users WHERE id = ?', [id], (e, r) => {
-                if (r && r[0]?.balance > 0) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'Withdraw chips first!' }); });
-                conn.query('DELETE FROM transactions WHERE user_id = ?', [id], () => {
-                    conn.query('DELETE FROM users WHERE id = ?', [id], (usrErr) => {
-                        if (usrErr) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'User has downlines' }); });
-                        conn.commit(() => { conn.release(); res.json({ success: true }); });
-                    });
-                });
-            });
-        });
-    });
-});
-
 app.post('/api/create-user-advanced', (req, res) => {
     const { uName, pass, role, deposit, commission, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
     const comm = parseFloat(commission) || 0;
+    // New users with default passwords are set to force change immediately
+    const force = defaultPasswords.includes(pass) ? 1 : 0;
+
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
-            const sql = `INSERT INTO users(username, password, role, parent_id, balance, commission_percentage) VALUES(?,?,?,?,?,?)`;
-            conn.query(sql, [uName, pass, role, creatorId, depAmt, comm], (err) => {
+            const sql = `INSERT INTO users(username, password, role, parent_id, balance, commission_percentage, force_password_change) VALUES(?,?,?,?,?,?,?)`;
+            conn.query(sql, [uName, pass, role, creatorId, depAmt, comm, force], (err) => {
                 if (err) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'Username exists' }); });
                 if (depAmt > 0) {
                     conn.query('UPDATE users SET balance = balance - ? WHERE id = ?', [depAmt, creatorId], () => {
-                        conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [creatorId, 'Setup', -depAmt, `Setup: ${uName}`], () => {
+                        conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
+                        [creatorId, 'Setup', -depAmt, `Setup: ${uName} (Value: ₹${depAmt*10})`], () => {
                             conn.commit(() => { conn.release(); res.json({ success: true }); });
                         });
                     });
@@ -99,8 +102,8 @@ app.post('/api/settle-bet', async (req, res) => {
     const { userId, amount, isWin, odds } = req.body;
     const amt = parseFloat(amount);
     const profit = isWin ? (amt * parseFloat(odds)) - amt : 0;
-
     const conn = db.promise();
+
     try {
         await conn.query('START TRANSACTION');
         const [userRows] = await conn.query('SELECT username FROM users WHERE id = ?', [userId]);
@@ -123,7 +126,8 @@ app.post('/api/settle-bet', async (req, res) => {
                     const share = profit * (pData[0].commission_percentage / 100);
                     if (share > 0) {
                         await conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [share, pid]);
-                        await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [pid, 'Comm-Income', share, `Commission from ${clientName}`]);
+                        await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
+                        [pid, 'Comm-Income', share, `Commission from ${clientName}`]);
                     }
                     if (pData[0].role === 'SuperAdmin') break;
                     currentId = pid;
@@ -133,15 +137,15 @@ app.post('/api/settle-bet', async (req, res) => {
             await conn.query('UPDATE users SET exposure = exposure - ?, total_losses = total_losses + 1 WHERE id = ?', [amt, userId]);
             await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Loss', -amt, 'Live Bet Lost']);
         }
-
         await conn.query('COMMIT');
         res.json({ success: true });
     } catch (err) {
         await conn.query('ROLLBACK');
-        res.json({ success: false, error: err.message });
+        res.json({ success: false });
     }
 });
 
+// --- REPORTS & HISTORY ---
 app.post('/api/commission-summary', (req, res) => {
     const sql = `SELECT SUBSTRING_INDEX(description, 'from ', -1) as downline_name, SUM(amount) as total_earned FROM transactions WHERE user_id = ? AND type = 'Comm-Income' GROUP BY downline_name`;
     db.query(sql, [req.body.userId], (err, r) => res.json({ success: !err, summary: r || [] }));
@@ -151,20 +155,41 @@ app.post('/api/history', (req, res) => {
     db.query('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 50', [req.body.userId], (_, r) => res.json({ success: true, history: r || [] }));
 });
 
-// --- CORE LOGIC (DEPOSITS/WITHDRAWALS) ---
+// --- CHIP MOVEMENTS ---
 app.post('/api/transfer-credits', (req, res) => {
     const { senderId, receiverId, amount } = req.body;
     const amt = parseFloat(amount);
     db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amt, senderId, amt], (err, r) => {
         if (r && r.affectedRows > 0) {
             db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amt, receiverId], () => {
-                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [senderId, 'Sent', -amt, `To ID: ${receiverId}`]);
-                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [receiverId, 'Received', amt, `From ID: ${senderId}`]);
+                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [senderId, 'Sent', -amt, `To ID: ${receiverId} (₹${amt*10})`]);
+                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [receiverId, 'Received', amt, `From ID: ${senderId} (₹${amt*10})`]);
                 res.json({ success: true, message: 'Transfer Success' });
             });
         } else res.json({ success: false, message: 'Insufficient Balance' });
     });
 });
 
+app.post('/api/withdraw-chips', (req, res) => {
+    const { adminId, userId, amount } = req.body;
+    const amt = parseFloat(amount);
+    db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amt, userId, amt], (err, r) => {
+        if (r && r.affectedRows > 0) {
+            db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amt, adminId]);
+            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Withdrawal', -amt, `Recovered (₹${amt*10})`]);
+            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [adminId, 'Clawback', amt, `From ID: ${userId} (₹${amt*10})`]);
+            res.json({ success: true, message: 'Withdrawal Success' });
+        } else res.json({ success: false, message: 'Insufficient User Balance' });
+    });
+});
+
+app.post('/api/delete-user', (req, res) => {
+    const { id } = req.body;
+    db.query('DELETE FROM users WHERE id = ? AND balance = 0', [id], (err, r) => {
+        if (r && r.affectedRows > 0) res.json({ success: true });
+        else res.json({ success: false, message: "User must have 0 balance" });
+    });
+});
+
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Magic9 Server Live on ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server Is Active on ${PORT}`));
