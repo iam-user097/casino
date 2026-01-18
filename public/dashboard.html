@@ -100,21 +100,62 @@
         .win-box { border-color: var(--neon-g); color: var(--neon-g); box-shadow: 0 0 10px rgba(57, 255, 20, 0.2); }
         .lose-box { border-color: var(--neon-r); color: var(--neon-r); box-shadow: 0 0 10px rgba(255, 49, 49, 0.2); }
 
-        /* NEW CRICKET STYLE LAYOUT */
+        /* --- UPDATED MOBILE-FIRST CRICKET LAYOUT --- */
 .match-list-card { background: #12161f; border: 1px solid var(--primary); border-radius: 8px; margin-top: 15px; overflow: hidden; }
 .match-header-row { background: #011627; padding: 10px 15px; display: flex; justify-content: space-between; border-bottom: 2px solid var(--primary); font-size: 12px; font-weight: bold; color: var(--accent); }
-.match-entry { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #1a202c; transition: 0.2s; }
-.match-entry:hover { background: rgba(0, 80, 157, 0.05); }
-.team-meta { flex: 1; }
-.team-title { font-weight: bold; font-size: 14px; color: white; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+
+/* Mobile Default: Stacked Layout */
+.match-entry { 
+    display: flex; 
+    flex-direction: column; 
+    padding: 15px; 
+    border-bottom: 1px solid #1a202c; 
+    gap: 12px; 
+}
+
+.team-meta { width: 100%; }
+.team-title { font-weight: bold; font-size: 15px; color: white; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
 .status-tag { color: var(--neon-g); font-size: 11px; font-weight: bold; text-transform: uppercase; }
 
-.odds-grid { display: flex; gap: 4px; }
-.odds-btn { width: 55px; height: 42px; border: none; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; position: relative; }
+/* Responsive 4-Column Grid for Buttons */
+.odds-grid { 
+    display: grid; 
+    grid-template-columns: repeat(4, 1fr); 
+    gap: 6px; 
+    width: 100%; 
+}
+
+.odds-btn { 
+    width: 100%; 
+    height: 48px; 
+    border: none; 
+    border-radius: 4px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    transition: transform 0.1s; 
+}
+
+/* Desktop View: Side-by-Side Layout */
+@media (min-width: 769px) {
+    .match-entry { 
+        flex-direction: row; 
+        justify-content: space-between; 
+        align-items: center; 
+    }
+    .team-meta { flex: 1; }
+    .odds-grid { 
+        width: auto; 
+        grid-template-columns: repeat(4, 60px); 
+    }
+}
+
 .odds-btn:active { transform: scale(0.9); }
 .back-btn { background: #00aaff; color: black; }
 .lay-btn { background: #ff7eb9; color: black; }
-.odds-val { font-weight: bold; font-size: 13px; }
+.odds-val { font-weight: bold; font-size: 14px; }
 .odds-vol { font-size: 9px; opacity: 0.8; }
 
 /* POP ANIMATION */
@@ -396,22 +437,34 @@
         loadUsers(); setupRoles(); loadHistory();
     }
 
-    // --- HISTORY LOGIC (LIVELY FETCH) ---
     async function loadHistory() {
-        const tbody = document.querySelector('#histTable tbody');
-        if(!tbody) return;
-        try {
-            const res = await fetch('/api/history', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id})});
-            const d = await res.json();
+    const tbody = document.querySelector('#histTable tbody');
+    if(!tbody) return;
+    try {
+        const res = await fetch('/api/history', {
+            method:'POST', 
+            headers:{'Content-Type':'application/json'}, 
+            body:JSON.stringify({userId: user.id})
+        });
+        const d = await res.json();
+        
+        if (d.history && d.history.length > 0) {
             tbody.innerHTML = d.history.map(h => `
                 <tr>
-                    <td style="font-size:11px;">${new Date(h.created_at).toLocaleString()}</td>
-                    <td><b>${h.type}</b></td>
-                    <td style="color:${h.amount >= 0 ? 'var(--neon-g)':'var(--neon-r)'}">${h.amount}</td>
+                    <td style="font-size:11px; padding:10px;">${new Date(h.created_at).toLocaleString()}</td>
+                    <td><b style="color:var(--accent)">${h.type.toUpperCase()}</b></td>
+                    <td style="color:${h.amount >= 0 ? 'var(--neon-g)':'var(--neon-r)'}; font-weight:bold">
+                        ${h.amount >= 0 ? '+' : ''}${h.amount.toLocaleString()}
+                    </td>
                     <td style="font-size:12px; color:#aaa">${h.description}</td>
                 </tr>`).join('');
-        } catch(e) { tbody.innerHTML = '<tr><td colspan="4">No history found</td></tr>'; }
+        } else {
+            tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; color:#666;">No recent transactions found</td></tr>';
+        }
+    } catch(e) {
+        console.error("History Load Error:", e);
     }
+}
 
     // --- USER MANAGEMENT ---
     async function submitUser() {
@@ -474,6 +527,44 @@ async function loadUsers() {
     } catch (e) { 
         tbody.innerHTML = '<tr><td colspan="9" style="color:red">Error loading users</td></tr>'; 
     }
+}
+
+// --- DEPOSIT & WITHDRAW BUTTON FUNCTIONS ---
+
+async function give(id, name) {
+    const amt = prompt(`Enter number of chips to Deposit for ${name}:`);
+    if(!amt || isNaN(amt) || parseFloat(amt) <= 0) return;
+
+    const res = await fetch('/api/transfer-credits', {
+        method:'POST', 
+        headers:{'Content-Type':'application/json'}, 
+        body:JSON.stringify({
+            senderId: user.id, 
+            receiverId: id, 
+            amount: parseFloat(amt)
+        })
+    });
+    const d = await res.json();
+    alert(d.message || "Deposit Processed");
+    init(); // Lively refresh header and table
+}
+
+async function withdraw(id, name) {
+    const amt = prompt(`Enter number of chips to Withdraw from ${name}:`);
+    if(!amt || isNaN(amt) || parseFloat(amt) <= 0) return;
+
+    const res = await fetch('/api/withdraw-chips', {
+        method:'POST', 
+        headers:{'Content-Type':'application/json'}, 
+        body:JSON.stringify({
+            adminId: user.id, 
+            userId: id, 
+            amount: parseFloat(amt)
+        })
+    });
+    const d = await res.json();
+    alert(d.message || "Withdrawal Processed");
+    init(); // Lively refresh header and table
 }
 
 // --- LIVELY SEARCH FUNCTIONALITY ---
@@ -568,6 +659,7 @@ function filterUsers() {
 </script>
 </body>
 </html>
+
 
 
 
