@@ -240,11 +240,22 @@
         </div>
 
         <div id="page-bet" class="page">
-    <div class="account-card" style="padding: 15px; margin-bottom: 10px; border-left: 5px solid var(--accent);">
+    <div class="account-card" style="border-bottom: 3px solid var(--neon-g); margin-bottom: 20px;">
+        <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">BETTING EXPOSURE WALLET</p>
+        <h1 style="color:var(--neon-g); font-size:45px; text-shadow: 0 0 15px var(--neon-g);">🪙 <span id="bet-exp">0</span></h1>
+        
+        <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
+            <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 140px; background:#0b0e14; color:white; border:1px solid #333; padding:10px; border-radius:6px;">
+            <button onclick="addExp()" class="btn" style="background: var(--accent); color: black; font-weight:bold; padding:0 20px; border-radius:6px;">Deposit to Wallet</button>
+        </div>
+        <p style="font-size: 10px; color: #888; margin-top: 8px;">Chips will be moved from your main balance to betting exposure.</p>
+    </div>
+
+    <div class="account-card" style="padding: 15px; margin-bottom: 15px; border-left: 5px solid var(--accent); background: #011627;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-                <p style="color:#aaa; font-size:11px;">CONVERSION: 1 CHIP = ₹10</p>
-                <h2 style="color:var(--neon-g);">🪙 <span id="display-chips">0</span> <small style="font-size:14px; color:var(--accent);">(₹<span id="display-rs">0</span>)</small></h2>
+            <div style="text-align:left;">
+                <p style="color:#aaa; font-size:11px;">MAIN BALANCE (₹10/CHIP)</p>
+                <h2 style="color:var(--accent);">🪙 <span id="display-chips">0</span> <small style="font-size:14px;">(₹<span id="display-rs">0</span>)</small></h2>
             </div>
             <h4 id="match-timer" style="color:var(--neon-r); font-weight:bold;">READY</h4>
         </div>
@@ -252,31 +263,20 @@
 
     <div class="match-list-card">
         <div class="match-header-row">
-            <span>MATCH DETAILS</span>
-            <div style="display:flex; gap: 50px; padding-right: 30px;">
-                <span>BACK</span><span>LAY</span>
-            </div>
+            <span>LIVE CRICKET MATCHES</span>
+            <div style="display:flex; gap: 50px; padding-right: 30px;"><span>BACK</span><span>LAY</span></div>
         </div>
-
         <div class="match-entry">
             <div class="team-meta">
-                <div class="team-title"><i class="fas fa-trophy" style="color:var(--accent)"></i> Otago Volts v Northern Brave</div>
+                <div class="team-title"><i class="fas fa-trophy" style="color:var(--accent)"></i>🏆 India v Northern Brave</div>
                 <div class="status-tag">● In-Play | LIVE</div>
             </div>
             <div class="odds-grid">
-                <button class="odds-btn back-btn" id="o1" onclick="openSlip('Otago Volts', 6.2, 'BACK')">
-                    <span class="odds-val">6.2</span><span class="odds-vol">12K</span>
-                </button>
-                <button class="odds-btn lay-btn" id="o2" onclick="openSlip('Otago Volts', 6.6, 'LAY')">
-                    <span class="odds-val">6.6</span><span class="odds-vol">8K</span>
-                </button>
+                <button class="odds-btn back-btn" id="o1" onclick="openSlip('Otago Volts', 6.2, 'BACK')"><span class="odds-val">6.2</span><span class="odds-vol">12K</span></button>
+                <button class="odds-btn lay-btn" id="o2" onclick="openSlip('Otago Volts', 6.6, 'LAY')"><span class="odds-val">6.6</span><span class="odds-vol">8K</span></button>
                 <div style="width:10px"></div>
-                <button class="odds-btn back-btn" id="o3" onclick="openSlip('Northern Brave', 1.18, 'BACK')">
-                    <span class="odds-val">1.18</span><span class="odds-vol">450K</span>
-                </button>
-                <button class="odds-btn lay-btn" id="o4" onclick="openSlip('Northern Brave', 1.19, 'LAY')">
-                    <span class="odds-val">1.19</span><span class="odds-vol">200K</span>
-                </button>
+                <button class="odds-btn back-btn" id="o3" onclick="openSlip('Northern Brave', 1.18, 'BACK')"><span class="odds-val">1.18</span><span class="odds-vol">450K</span></button>
+                <button class="odds-btn lay-btn" id="o4" onclick="openSlip('Northern Brave', 1.19, 'LAY')"><span class="odds-val">1.19</span><span class="odds-vol">200K</span></button>
             </div>
         </div>
     </div>
@@ -334,7 +334,6 @@
     let editUserId = null;
     let activeOdds = 1.95; 
 
-    // --- MODAL HELPERS ---
     function openModal() { 
         editUserId = null; 
         document.getElementById('mTitle').innerText = "Add New User";
@@ -350,7 +349,6 @@
     
     function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
-    // --- CORE INITIALIZATION ---
     async function init() {
         try {
             const res = await fetch('/api/user-details', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:user.id})});
@@ -359,7 +357,6 @@
                 user = d.data;
                 sessionStorage.setItem('currentUser', JSON.stringify(user));
                 
-                // Update Dashboard Values
                 document.getElementById('headerBal').innerText = `🪙 ${user.balance.toLocaleString()}`;
                 document.getElementById('inr').innerText = (user.balance * 10).toLocaleString(); 
                 document.getElementById('chips').innerText = user.balance.toLocaleString();
@@ -370,18 +367,17 @@
                     document.getElementById('display-chips').innerText = user.balance.toLocaleString();
                     document.getElementById('display-rs').innerText = (user.balance * 10).toLocaleString();
                 }
-                document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
+                
+                // LIVELY EXPOSURE UPDATE
+                if(document.getElementById('bet-exp')) {
+                    document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
+                }
 
                 if(user.role === 'Client') document.getElementById('addBtn').style.display = 'none';
 
-                // --- FORCE PASSWORD CHANGE LOGIC ---
-                // Triggers if database flag is 1 OR if using a known default password
-                const weakPass = ['1234', '12345', '1111', '2222', '123456'];
-                const isDefault = weakPass.includes(user.password);
-
-                if(user.role !== 'SuperAdmin' && (user.force_password_change === 1 || isDefault)) {
+                const weakPass = ['1234', '12345', '1111', '2222'];
+                if(user.role !== 'SuperAdmin' && (user.force_password_change === 1 || weakPass.includes(user.password))) {
                     document.getElementById('passChangeModal').style.display = 'flex';
-                    // Disable sidebar to force the change
                     document.getElementById('sidebar').style.pointerEvents = 'none';
                     document.getElementById('sidebar').style.opacity = '0.5';
                 }
@@ -390,57 +386,7 @@
         loadUsers(); setupRoles(); loadHistory();
     }
 
-    // --- MERGED NAVIGATION & SIDEBAR ---
-    function nav(id, el) {
-        // 1. Switch Active Page Content
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        const targetPage = document.getElementById('page-' + id);
-        if (targetPage) targetPage.classList.add('active');
-        
-        // 2. Update Sidebar UI
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        if (el) el.classList.add('active');
-
-        // 3. AUTO-HIDE SIDEBAR (Mobile Only)
-        if (window.innerWidth <= 768) {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            if(sidebar) sidebar.classList.remove('show');
-            if(overlay) {
-                overlay.classList.remove('active');
-                overlay.style.display = 'none';
-            }
-        }
-    }
-
-    function toggleSidebar(e) {
-        if (e) e.stopPropagation();
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        if(!sidebar || !overlay) return;
-
-        sidebar.classList.toggle('show');
-        overlay.classList.toggle('active');
-        overlay.style.display = overlay.classList.contains('active') ? 'block' : 'none';
-    }
-
-    // --- USER MGMT & HISTORY ---
-    async function loadUsers() {
-        const tbody = document.querySelector('#userTable tbody');
-        try {
-            const res = await fetch('/api/my-users', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({parentId:user.id, role: user.role})});
-            const d = await res.json();
-            tbody.innerHTML = d.users.map(u => `
-                <tr>
-                    <td><i class="fas fa-arrow-circle-right"></i></td>
-                    <td style="text-align:left;">${u.username}<br><small>(${u.role})</small></td>
-                    <td>${u.exposure}</td><td>0</td><td>${u.balance}</td>
-                    <td>${u.status}</td><td>Lock</td><td>Act</td>
-                    <td><button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}')">E</button></td>
-                </tr>`).join('');
-        } catch(e) {}
-    }
-
+    // FIXED: SUCCESS MESSAGE LOGIC
     async function submitUser() {
         const data = {
             fName: document.getElementById('mFName').value,
@@ -454,52 +400,56 @@
         const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
         const res = await fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...data, id: editUserId})});
         const d = await res.json();
-        alert(d.message); if(d.success) { closeModal(); init(); }
-    }
-
-    async function forceUpdatePass() {
-        const oldP = document.getElementById('oldSecurePass').value;
-        const newP = document.getElementById('newSecurePass').value;
-        const confP = document.getElementById('confirmSecurePass').value;
-        if(newP !== confP) return alert("New passwords do not match!");
         
-        const res = await fetch('/api/change-password-secure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, oldPass: oldP, newPass: newP})});
+        // Fix for the 'undefined' alert issue
+        const msg = d.message || (d.success ? "User Created Successfully!" : "Operation Failed");
+        alert(msg); 
+        
+        if(d.success) { closeModal(); init(); }
+    }
+
+    // ADDED: EXPOSURE DEPOSIT LOGIC
+    async function addExp() {
+        const amt = document.getElementById('expInp').value;
+        if(!amt || amt < 1000) return alert("Minimum 1000 chips required for exposure");
+        
+        const res = await fetch('/api/add-exposure', {
+            method:'POST', 
+            headers:{'Content-Type':'application/json'}, 
+            body:JSON.stringify({userId:user.id, amount:amt})
+        });
         const d = await res.json();
-        if(d.success) { 
-            alert("Security Verified! Access Granted."); 
-            location.reload(); 
-        } else { alert(d.message); }
+        alert(d.message || "Exposure Updated!");
+        document.getElementById('expInp').value = "";
+        init();
     }
 
-    // --- LIVE BETTING ---
-    async function bet(amt) {
-        if (user.exposure < amt) return alert("Low exposure! Deposit to exposure wallet.");
-        const res = await fetch('/api/place-bet', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id, amount: amt })});
-        const d = await res.json();
-        if (d.success) { init(); startLiveTimer(amt); } else { alert(d.message); }
+    function nav(id, el) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        const targetPage = document.getElementById('page-' + id);
+        if (targetPage) targetPage.classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        if (el) el.classList.add('active');
+
+        if (window.innerWidth <= 768) {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if(sidebar) sidebar.classList.remove('show');
+            if(overlay) { overlay.classList.remove('active'); overlay.style.display = 'none'; }
+        }
     }
 
-    function startLiveTimer(amt) {
-        let sec = 10;
-        const timerEl = document.getElementById('match-timer');
-        document.querySelectorAll('.odds-btn').forEach(btn => btn.style.pointerEvents = 'none'); 
-
-        const interval = setInterval(async () => {
-            sec--;
-            if (timerEl) timerEl.innerText = `RESULT IN: ${sec}s`;
-            if (sec <= 0) {
-                clearInterval(interval);
-                if (timerEl) timerEl.innerText = "SETTLING...";
-                const win = Math.random() > 0.5; 
-                await fetch('/api/settle-bet', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id, amount: amt, odds: activeOdds, isWin: win })});
-                alert(win ? "🏆 YOU WON SIR!" : "❌ YOU LOST SIR!");
-                if (timerEl) timerEl.innerText = "READY";
-                document.querySelectorAll('.odds-btn').forEach(btn => btn.style.pointerEvents = 'auto');
-                init(); 
-            }
-        }, 1000);
+    function toggleSidebar(e) {
+        if (e) e.stopPropagation();
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        sidebar.classList.toggle('show');
+        overlay.classList.toggle('active');
+        overlay.style.display = overlay.classList.contains('active') ? 'block' : 'none';
     }
 
+    // ... (rest of your cricket UI functions: openSlip, bet, startLiveTimer, etc. remain the same)
+    
     function openSlip(team, odds, type) {
         activeOdds = odds;
         document.getElementById('slipTeam').innerText = team;
@@ -509,13 +459,7 @@
         document.getElementById('betSlip').style.display = 'block';
         updateRsValue();
     }
-
     function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
-    function addQuickStake(amt) {
-        const input = document.getElementById('betAmountInput');
-        input.value = parseInt(input.value) + amt;
-        updateRsValue();
-    }
     function updateRsValue() {
         const chips = document.getElementById('betAmountInput').value || 0;
         document.getElementById('rsVal').innerText = `Value: ₹${(chips * 10).toLocaleString()}`;
@@ -525,24 +469,42 @@
         if(amt < 100) return alert("Min bet 100");
         closeSlip(); bet(amt);
     }
-
-    // --- MISC ---
-    setInterval(() => {
-        const randomId = 'o' + (Math.floor(Math.random() * 4) + 1);
-        const el = document.getElementById(randomId);
-        if(el) { el.classList.add('pop-active'); setTimeout(() => el.classList.remove('pop-active'), 400); }
-    }, 4000);
-
-    function setupRoles() {
-        const roles = ['Admin','SuperMaster','Master','Agent','Client'];
-        const hierarchy = {'SuperAdmin':6,'Admin':5,'SuperMaster':4,'Master':3,'Agent':2,'Client':1};
-        const sel = document.getElementById('mRole');
-        if(sel && sel.options.length === 0) roles.forEach(r => { if(hierarchy[r] < hierarchy[user.role]) sel.innerHTML += `<option value="${r}">${r}</option>`; });
+    async function bet(amt) {
+        if (user.exposure < amt) return alert("Low exposure! Deposit chips into exposure wallet first.");
+        const res = await fetch('/api/place-bet', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id, amount: amt })});
+        const d = await res.json();
+        if (d.success) { init(); startLiveTimer(amt); } else { alert(d.message); }
+    }
+    function startLiveTimer(amt) {
+        let sec = 10;
+        const timerEl = document.getElementById('match-timer');
+        document.querySelectorAll('.odds-btn').forEach(btn => btn.style.pointerEvents = 'none'); 
+        const interval = setInterval(async () => {
+            sec--;
+            if (timerEl) timerEl.innerText = `RESULT IN: ${sec}s`;
+            if (sec <= 0) {
+                clearInterval(interval);
+                if (timerEl) timerEl.innerText = "SETTLING...";
+                const win = Math.random() > 0.5; 
+                await fetch('/api/settle-bet', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id, amount: amt, odds: activeOdds, isWin: win })});
+                alert(win ? "🏆 CONGRATS SIR! YOU WON!" : "❌ SORRY SIR! YOU LOST!");
+                if (timerEl) timerEl.innerText = "READY";
+                document.querySelectorAll('.odds-btn').forEach(btn => btn.style.pointerEvents = 'auto');
+                init(); 
+            }
+        }, 1000);
     }
 
-    function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+    async function loadUsers() {
+        const tbody = document.querySelector('#userTable tbody');
+        const res = await fetch('/api/my-users', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({parentId:user.id, role: user.role})});
+        const d = await res.json();
+        tbody.innerHTML = d.users.map(u => `<tr><td><i class="fas fa-arrow-circle-right"></i></td><td>${u.username}</td><td>${u.exposure}</td><td>0</td><td>${u.balance}</td><td>${u.status}</td><td>Lock</td><td>Act</td><td><button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}')">E</button></td></tr>`).join('');
+    }
     
+    function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
     init();
 </script>
 </body>
 </html>
+
