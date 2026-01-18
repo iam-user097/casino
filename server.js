@@ -31,18 +31,15 @@ app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
 
-    // Fixed: Now fetching sadmin directly from DB for parent_id consistency
     db.query('SELECT * FROM users WHERE username=? AND password=?', [username, password], (err, result) => {
         if (result && result.length > 0) {
             const user = result[0];
             let forceFlag = user.force_password_change;
 
-            // Trigger force change if not SuperAdmin and using a default password
             if (user.role !== 'SuperAdmin' && defaultPasswords.includes(password)) {
                 forceFlag = 1;
             }
             
-            // Standardizing the response object
             const userData = {
                 ...user,
                 inr_balance: user.balance * 10,
@@ -76,15 +73,12 @@ app.post('/api/user-details', (req, res) => {
 app.post('/api/my-users', (req, res) => {
     const { parentId, role } = req.body;
     
-    // Base query: EXCLUDE the logged-in user from their own list
     let query = `SELECT id, username, role, balance, exposure, commission_percentage, force_password_change,
                 CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
                 FROM users WHERE id != ?`;
     
     let params = [parentId];
 
-    // If role is SuperAdmin, they see all users in the system
-    // Otherwise, users see only their direct creations (downlines)
     if (role !== 'SuperAdmin') {
         query += ` AND parent_id = ?`;
         params.push(parentId);
@@ -95,7 +89,6 @@ app.post('/api/my-users', (req, res) => {
 
         let allUsers = r || [];
 
-        // If an Admin/Master/Agent is logged in, show the SuperAdmin (Head) at the top as a fixed row
         if (role !== 'SuperAdmin') {
             db.query("SELECT id, username, role, balance, 0 as exposure, commission_percentage, 'Online' as status, 0 as force_password_change FROM users WHERE role = 'SuperAdmin' LIMIT 1", (err, saResult) => {
                 if (saResult && saResult.length > 0) {
@@ -133,7 +126,7 @@ app.post('/api/create-user-advanced', (req, res) => {
     });
 });
 
-// --- SETTLEMENT ENGINE ---
+// --- SETTLEMENT ENGINE (PRECISION COMMISSION) ---
 app.post('/api/settle-bet', async (req, res) => {
     const { userId, amount, isWin, odds } = req.body;
     const amt = parseFloat(amount);
@@ -150,14 +143,17 @@ app.post('/api/settle-bet', async (req, res) => {
             await conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, total_wins = total_wins + 1 WHERE id = ?', [amt, amt + profit, userId]);
             await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Win', profit, `Live Bet Won (Odds: ${odds})`]);
 
-            let currentId = userId;
+            // Upward Recursive Distribution
+            let currentUserId = userId;
             while (true) {
-                const [pRows] = await conn.query('SELECT parent_id FROM users WHERE id = ?', [currentId]);
+                const [pRows] = await conn.query('SELECT parent_id FROM users WHERE id = ?', [currentUserId]);
                 if (!pRows[0]?.parent_id) break;
+
                 const pid = pRows[0].parent_id;
                 const [pData] = await conn.query('SELECT id, role, commission_percentage FROM users WHERE id = ?', [pid]);
                 
                 if (pData[0]) {
+                    // Logic: Each parent earns based on their SET percentage of the CLIENT'S profit
                     const share = profit * (pData[0].commission_percentage / 100);
                     if (share > 0) {
                         await conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [share, pid]);
@@ -165,7 +161,7 @@ app.post('/api/settle-bet', async (req, res) => {
                         [pid, 'Comm-Income', share, `Commission from ${clientName}`]);
                     }
                     if (pData[0].role === 'SuperAdmin') break;
-                    currentId = pid;
+                    currentUserId = pid;
                 } else break;
             }
         } else {
@@ -180,7 +176,7 @@ app.post('/api/settle-bet', async (req, res) => {
     }
 });
 
-// --- REPORTS ---
+// --- REPORTS & HISTORY ---
 app.post('/api/commission-summary', (req, res) => {
     const sql = `SELECT SUBSTRING_INDEX(description, 'from ', -1) as downline_name, SUM(amount) as total_earned FROM transactions WHERE user_id = ? AND type = 'Comm-Income' GROUP BY downline_name`;
     db.query(sql, [req.body.userId], (err, r) => res.json({ success: !err, summary: r || [] }));
@@ -233,4 +229,4 @@ app.post('/api/delete-user', (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Magic9 Global Server Active on ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Magic9 Global Active on ${PORT}`));
