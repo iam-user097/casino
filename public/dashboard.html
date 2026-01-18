@@ -432,12 +432,60 @@
             init();
         }
 
-        async function bet(amt) {
-            if(user.exposure < amt) return alert("Low exposure!");
-            const win = Math.random() > 0.5;
-            await fetch('/api/place-bet', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:user.id, betAmount:amt, isWin:win})});
-            alert(win ? "WON!" : "LOST!"); init();
+        // --- UPDATED LIVE BETTING WITH 10s SETTLEMENT ---
+async function bet(amt) {
+    if (user.exposure < amt) return alert("Low exposure! Please deposit to exposure wallet.");
+    
+    // 1. Initial deduction and setup
+    const res = await fetch('/api/place-bet', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ userId: user.id, amount: amt })
+    });
+    
+    const d = await res.json();
+    if (d.success) {
+        init(); // Update header balance immediately
+        startLiveTimer(amt); // Start the 10-second countdown
+    } else {
+        alert(d.message);
+    }
+}
+
+function startLiveTimer(amt) {
+    let sec = 10;
+    const timerEl = document.getElementById('match-timer'); // Ensure this ID exists in your HTML
+    
+    // Disable betting buttons during countdown to prevent spam
+    document.querySelectorAll('.chip-btn').forEach(btn => btn.disabled = true);
+
+    const interval = setInterval(async () => {
+        sec--;
+        if (timerEl) timerEl.innerText = `Result in: ${sec}s`;
+        
+        if (sec <= 0) {
+            clearInterval(interval);
+            if (timerEl) timerEl.innerText = "Settling...";
+            
+            // 2. Settlement logic after 10 seconds
+            const win = Math.random() > 0.5; 
+            const odds = 1.95; // You can make this dynamic later
+            
+            await fetch('/api/settle-bet', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ userId: user.id, amount: amt, odds: odds, isWin: win })
+            });
+            
+            alert(win ? "🏆 CONGRATS Sir! YOU WON!" : "❌ SORRY Sir! YOU LOST!");
+            if (timerEl) timerEl.innerText = "Ready for Next Bet";
+            
+            // Re-enable buttons and refresh all data
+            document.querySelectorAll('.chip-btn').forEach(btn => btn.disabled = false);
+            init(); 
         }
+    }, 1000);
+}
 
         function setupRoles() {
             const roles = ['Admin','SuperMaster','Master','Agent','Client'];
@@ -465,3 +513,4 @@
     </script>
 </body>
 </html>
+
