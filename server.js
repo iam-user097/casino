@@ -77,17 +77,50 @@ app.post('/api/user-details', (req, res) => {
     });
 });
 
-// --- MANAGEMENT ---
 app.post('/api/my-users', (req, res) => {
     const { parentId, role } = req.body;
+    
+    // Base query: Select users but EXCLUDE the one currently logged in (parentId)
+    // Also exclude the hardcoded 'sadmin' from general database results to prevent duplicates
     let query = `SELECT id, username, role, balance, exposure, commission_percentage, force_password_change,
                 CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
-                FROM users`;
-    let params = [];
-    if (role !== 'SuperAdmin') { query += ` WHERE parent_id = ?`; params.push(parentId); }
-    db.query(query, params, (_, r) => res.json({ users: r || [] }));
-});
+                FROM users WHERE id != ? AND username != 'sadmin'`;
+    
+    let params = [parentId];
 
+    // Logic: 
+    // SuperAdmin (sadmin) sees everyone (except themselves).
+    // Other roles (Admin, Master, etc.) see ONLY the users they created (downlines).
+    if (role !== 'SuperAdmin') {
+        query += ` AND parent_id = ?`;
+        params.push(parentId);
+    }
+
+    db.query(query, params, (err, r) => {
+        if (err) return res.json({ users: [] });
+
+        let allUsers = r || [];
+
+        // If a lower-level user (Admin, Master, etc.) is logged in, 
+        // we manually show them the SuperAdmin at the top for reference, 
+        // but only if they are not the SuperAdmin themselves.
+        if (role !== 'SuperAdmin') {
+            const superAdminReference = {
+                id: 1,
+                username: 'sadmin',
+                role: 'SuperAdmin',
+                balance: 10000,
+                exposure: 0,
+                commission_percentage: 0,
+                status: 'Online',
+                force_password_change: 0
+            };
+            allUsers.unshift(superAdminReference);
+        }
+
+        res.json({ users: allUsers });
+    });
+});
 app.post('/api/create-user-advanced', (req, res) => {
     const { uName, pass, role, deposit, commission, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
@@ -215,4 +248,5 @@ app.post('/api/delete-user', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Magic9 Server Active on ${PORT}`));
+
 
