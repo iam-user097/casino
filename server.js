@@ -15,10 +15,12 @@ const db = mysql.createPool({
     password: process.env.DB_PASSWORD || "Magic@097",
     database: process.env.DB_NAME || "u178691095_magic9_db",
     port: 3306,
-    connectionLimit: 10
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
-// Helper: Log Transaction with 1:10 logic
+// Helper: Log Transaction
 const logTx = (uid, type, amt, desc) => {
     db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
     [uid, type, amt, desc]);
@@ -62,9 +64,10 @@ app.post('/api/create-user-advanced', (req, res) => {
     const comm = parseFloat(commission) || 0;
 
     db.getConnection((err, conn) => {
+        if (err) return res.json({ success: false, message: "DB Connection Error" });
         conn.beginTransaction(() => {
             const sql = `INSERT INTO users(username, password, role, parent_id, balance, commission_percentage) VALUES(?,?,?,?,?,?)`;
-            conn.query(sql, [uName, pass, role, creatorId, depAmt, comm], (err, result) => {
+            conn.query(sql, [uName, pass, role, creatorId, depAmt, comm], (err) => {
                 if (err) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'Username exists' }); });
                 
                 if (depAmt > 0) {
@@ -111,7 +114,7 @@ app.post('/api/place-bet', (req, res) => {
     const { userId, amount } = req.body;
     const amt = parseFloat(amount);
     db.query('SELECT role, balance FROM users WHERE id = ?', [userId], (e, r) => {
-        if (r[0].role !== 'Client') return res.json({ success: false, message: 'Only Clients can bet' });
+        if (!r || r[0].role !== 'Client') return res.json({ success: false, message: 'Only Clients can bet' });
         
         db.query('UPDATE users SET balance = balance - ?, exposure = exposure + ? WHERE id = ? AND balance >= ?', 
         [amt, amt, userId, amt], (err, r2) => {
@@ -129,48 +132,69 @@ app.post('/api/settle-bet', (req, res) => {
     const profit = isWin ? (amt * parseFloat(odds)) - amt : 0;
 
     db.getConnection((err, conn) => {
+        if (err) return res.json({ success: false });
         conn.beginTransaction(() => {
-            if (isWin) {
-                // 1. Pay Client
-                conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, total_wins = total_wins + 1 WHERE id = ?', 
-                [amt, amt + profit, userId]);
-                logTx(userId, 'Win', profit, `Live Bet Won (Odds: ${odds})`);
+            // Get client name for transaction descriptions
+            conn.query('SELECT username FROM users WHERE id = ?', [userId], (e, userRow) => {
+                const clientName = userRow[0].username;
 
-                // 2. Recursive Commission Distribution
-                const distribute = (currentId) => {
-                    conn.query('SELECT parent_id FROM users WHERE id = ?', [currentId], (e, pRes) => {
-                        if (pRes && pRes[0]?.parent_id) {
-                            const pid = pRes[0].parent_id;
-                            conn.query('SELECT id, role, commission_percentage FROM users WHERE id = ?', [pid], (e, pData) => {
-                                if (pData && pData[0]) {
-                                    const parent = pData[0];
-                                    const share = profit * (parent.commission_percentage / 100);
-                                    
-                                    if (share > 0) {
-                                        conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [share, parent.id]);
-                                        logTx(parent.id, 'Comm-Income', share, `Downline Profit Share (${parent.role})`);
-                                    }
-                                    
-                                    if (parent.role !== 'SuperAdmin') distribute(parent.id);
-                                    else conn.commit(() => conn.release());
-                                } else conn.commit(() => conn.release());
-                            });
-                        } else conn.commit(() => conn.release());
-                    });
-                };
-                distribute(userId);
-            } else {
-                // 3. Handle Loss
-                conn.query('UPDATE users SET exposure = exposure - ?, total_losses = total_losses + 1 WHERE id = ?', [amt, userId]);
-                logTx(userId, 'Loss', -amt, 'Live Bet Lost');
-                conn.commit(() => conn.release());
-            }
+                if (isWin) {
+                    conn.query('UPDATE users SET exposure = exposure - ?, balance = balance + ?, total_wins = total_wins + 1 WHERE id = ?', 
+                    [amt, amt + profit, userId]);
+                    logTx(userId, 'Win', profit, `Live Bet Won (Odds: ${odds})`);
+
+                    const distribute = (currentId) => {
+                        conn.query('SELECT parent_id FROM users WHERE id = ?', [currentId], (e, pRes) => {
+                            if (pRes && pRes[0]?.parent_id) {
+                                const pid = pRes[0].parent_id;
+                                conn.query('SELECT id, role, commission_percentage FROM users WHERE id = ?', [pid], (e, pData) => {
+                                    if (pData && pData[0]) {
+                                        const parent = pData[0];
+                                        const share = profit * (parent.commission_percentage / 100);
+                                        
+                                        if (share > 0) {
+                                            conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [share, parent.id]);
+                                            // LOG WITH CLIENT NAME FOR SUMMARY TABLE
+                                            logTx(parent.id, 'Comm-Income', share, `Commission from ${clientName}`);
+                                        }
+                                        
+                                        if (parent.role !== 'SuperAdmin') distribute(parent.id);
+                                        else conn.commit(() => conn.release());
+                                    } else conn.commit(() => conn.release());
+                                });
+                            } else conn.commit(() => conn.release());
+                        });
+                    };
+                    distribute(userId);
+                } else {
+                    conn.query('UPDATE users SET exposure = exposure - ?, total_losses = total_losses + 1 WHERE id = ?', [amt, userId]);
+                    logTx(userId, 'Loss', -amt, 'Live Bet Lost');
+                    conn.commit(() => conn.release());
+                }
+            });
         });
     });
     res.json({ success: true });
 });
 
-// --- GLOBAL HISTORY ---
+// --- SUMMARY ROUTES ---
+app.post('/api/commission-summary', (req, res) => {
+    const { userId } = req.body;
+    // Parses the username from the description "Commission from username"
+    const sql = `
+        SELECT 
+            SUBSTRING_INDEX(description, 'from ', -1) as downline_name, 
+            SUM(amount) as total_earned
+        FROM transactions 
+        WHERE user_id = ? AND type = 'Comm-Income'
+        GROUP BY downline_name
+    `;
+    db.query(sql, [userId], (err, results) => {
+        if (err) return res.json({ success: false });
+        res.json({ success: true, summary: results || [] });
+    });
+});
+
 app.post('/api/history', (req, res) => {
     db.query('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 50', 
     [req.body.userId], (_, r) => res.json({ success: true, history: r || [] }));
