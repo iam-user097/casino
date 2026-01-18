@@ -76,6 +76,33 @@
         .win-box { border-color: var(--neon-g); color: var(--neon-g); box-shadow: 0 0 10px rgba(57, 255, 20, 0.2); }
         .lose-box { border-color: var(--neon-r); color: var(--neon-r); box-shadow: 0 0 10px rgba(255, 49, 49, 0.2); }
 
+        /* NEW CRICKET STYLE LAYOUT */
+.match-list-card { background: #12161f; border: 1px solid var(--primary); border-radius: 8px; margin-top: 15px; overflow: hidden; }
+.match-header-row { background: #011627; padding: 10px 15px; display: flex; justify-content: space-between; border-bottom: 2px solid var(--primary); font-size: 12px; font-weight: bold; color: var(--accent); }
+.match-entry { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #1a202c; transition: 0.2s; }
+.match-entry:hover { background: rgba(0, 80, 157, 0.05); }
+.team-meta { flex: 1; }
+.team-title { font-weight: bold; font-size: 14px; color: white; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.status-tag { color: var(--neon-g); font-size: 11px; font-weight: bold; text-transform: uppercase; }
+
+.odds-grid { display: flex; gap: 4px; }
+.odds-btn { width: 55px; height: 42px; border: none; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; position: relative; }
+.odds-btn:active { transform: scale(0.9); }
+.back-btn { background: #00aaff; color: black; }
+.lay-btn { background: #ff7eb9; color: black; }
+.odds-val { font-weight: bold; font-size: 13px; }
+.odds-vol { font-size: 9px; opacity: 0.8; }
+
+/* POP ANIMATION */
+@keyframes livePop { 0% { transform: scale(1); } 50% { transform: scale(1.15); filter: brightness(1.5); } 100% { transform: scale(1); } }
+.pop-active { animation: livePop 0.4s ease; }
+
+/* BET SLIP POPUP */
+.bet-popup-slip { position: fixed; bottom: 20px; right: 20px; width: 300px; background: #011627; border: 2px solid var(--accent); border-radius: 12px; z-index: 5000; display: none; box-shadow: 0 0 30px rgba(0,0,0,0.8); animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.slip-head { background: var(--accent); color: black; padding: 10px; font-weight: bold; display: flex; justify-content: space-between; border-radius: 10px 10px 0 0; }
+.slip-body { padding: 15px; }
+.chip-to-rs { font-size: 11px; color: var(--accent); margin-top: 8px; text-align: center; }
+
         @media(max-width:768px) { 
             .sidebar { position:fixed; left:0; height:100%; transform: translateX(-100%); } 
             .sidebar.show { transform: translateX(0); box-shadow:10px 0 30px rgba(0,0,0,0.8); } 
@@ -189,23 +216,68 @@
         </div>
 
         <div id="page-bet" class="page">
-            <div class="account-card">
-                <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">BETTING EXPOSURE</p>
-                <h1 style="color:var(--neon-g); font-size:45px; text-shadow: 0 0 15px var(--neon-g);">🪙 <span id="bet-exp">0</span></h1>
-                <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
-                    <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 150px; background:#0b0e14; color:white; border:1px solid #333; padding:8px; border-radius:4px;">
-                    <button onclick="addExp()" class="btn" style="background: var(--accent); color: black; font-weight:bold; padding:8px 15px; border-radius:4px;">Deposit</button>
-                </div>
+    <div class="account-card" style="padding: 15px; margin-bottom: 10px; border-left: 5px solid var(--accent);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <p style="color:#aaa; font-size:11px;">CONVERSION: 1 CHIP = ₹10</p>
+                <h2 style="color:var(--neon-g);">🪙 <span id="display-chips">0</span> <small style="font-size:14px; color:var(--accent);">(₹<span id="display-rs">0</span>)</small></h2>
             </div>
-            <div class="card" style="text-align:center; background:#12161f; border:1px solid #1a202c; padding:20px; border-radius:12px;">
-                <h4 style="margin-bottom:20px; color:var(--accent)">Place Quick Bet</h4>
-                <div style="display:flex; justify-content:center; gap:25px;">
-                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(100)">100</button>
-                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(500)">500</button>
-                    <button class="chip-btn" style="width:60px; height:60px; border-radius:50%; background:transparent; border:2px solid var(--accent); color:var(--accent); cursor:pointer;" onclick="bet(1000)">1000</button>
-                </div>
+            <h4 id="match-timer" style="color:var(--neon-r); font-weight:bold;">READY</h4>
+        </div>
+    </div>
+
+    <div class="match-list-card">
+        <div class="match-header-row">
+            <span>MATCH DETAILS</span>
+            <div style="display:flex; gap: 50px; padding-right: 30px;">
+                <span>BACK</span><span>LAY</span>
             </div>
         </div>
+
+        <div class="match-entry">
+            <div class="team-meta">
+                <div class="team-title"><i class="fas fa-trophy" style="color:var(--accent)"></i> Otago Volts v Northern Brave</div>
+                <div class="status-tag">● In-Play | LIVE</div>
+            </div>
+            <div class="odds-grid">
+                <button class="odds-btn back-btn" id="o1" onclick="openSlip('Otago Volts', 6.2, 'BACK')">
+                    <span class="odds-val">6.2</span><span class="odds-vol">12K</span>
+                </button>
+                <button class="odds-btn lay-btn" id="o2" onclick="openSlip('Otago Volts', 6.6, 'LAY')">
+                    <span class="odds-val">6.6</span><span class="odds-vol">8K</span>
+                </button>
+                <div style="width:10px"></div>
+                <button class="odds-btn back-btn" id="o3" onclick="openSlip('Northern Brave', 1.18, 'BACK')">
+                    <span class="odds-val">1.18</span><span class="odds-vol">450K</span>
+                </button>
+                <button class="odds-btn lay-btn" id="o4" onclick="openSlip('Northern Brave', 1.19, 'LAY')">
+                    <span class="odds-val">1.19</span><span class="odds-vol">200K</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bet-popup-slip" id="betSlip">
+    <div class="slip-head">
+        <span id="slipTeam">Team Name</span>
+        <i class="fas fa-times" onclick="closeSlip()" style="cursor:pointer;"></i>
+    </div>
+    <div class="slip-body">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <span>Odds: <b id="slipOdds" style="color:var(--accent)">1.95</b></span>
+            <span id="slipType" style="font-weight:bold;">BACK</span>
+        </div>
+        <input type="number" id="betAmountInput" class="form-group input" value="100" min="100" oninput="updateRsValue()" style="width:100%; padding:10px; background:#0b0e14; border:1px solid #333; color:white; border-radius:6px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:10px;">
+            <button class="act-btn btn-mode" style="width:100%; height:35px;" onclick="addQuickStake(500)">+500</button>
+            <button class="act-btn btn-mode" style="width:100%; height:35px;" onclick="addQuickStake(1000)">+1000</button>
+            <button class="act-btn btn-mode" style="width:100%; height:35px;" onclick="addQuickStake(5000)">+5000</button>
+        </div>
+        <p class="chip-to-rs" id="rsVal">Value: ₹1,000</p>
+        <button class="btn" style="width:100%; background:var(--neon-g); color:black; font-weight:bold; margin-top:15px; border-radius:6px; padding:12px;" onclick="confirmLiveBet()">PLACE BET</button>
+    </div>
+</div>
 
         <div id="page-history" class="page">
             <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px;">
@@ -487,6 +559,50 @@ function startLiveTimer(amt) {
     }, 1000);
 }
 
+        // --- CRICKET BETTING LOGIC ---
+let activeOdds = 0;
+
+function openSlip(team, odds, type) {
+    activeOdds = odds;
+    document.getElementById('slipTeam').innerText = team;
+    document.getElementById('slipOdds').innerText = odds;
+    document.getElementById('slipType').innerText = type;
+    document.getElementById('slipType').style.color = type === 'BACK' ? '#00aaff' : '#ff7eb9';
+    document.getElementById('betSlip').style.display = 'block';
+    updateRsValue();
+}
+
+function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
+
+function addQuickStake(amt) {
+    const input = document.getElementById('betAmountInput');
+    input.value = parseInt(input.value) + amt;
+    updateRsValue();
+}
+
+function updateRsValue() {
+    const chips = document.getElementById('betAmountInput').value || 0;
+    document.getElementById('rsVal').innerText = `Value: ₹${(chips * 10).toLocaleString()}`;
+}
+
+async function confirmLiveBet() {
+    const amt = document.getElementById('betAmountInput').value;
+    if(amt < 100) return alert("Min bet is 100 chips");
+    closeSlip();
+    // Reusing your existing bet logic
+    bet(amt); 
+}
+
+// LIVE POPPING ANIMATION SIMULATION (Other Users Betting)
+setInterval(() => {
+    const randomId = 'o' + (Math.floor(Math.random() * 4) + 1);
+    const el = document.getElementById(randomId);
+    if(el) {
+        el.classList.add('pop-active');
+        setTimeout(() => el.classList.remove('pop-active'), 400);
+    }
+}, 4000);
+
         function setupRoles() {
             const roles = ['Admin','SuperMaster','Master','Agent','Client'];
             const hierarchy = {'SuperAdmin':6,'Admin':5,'SuperMaster':4,'Master':3,'Agent':2,'Client':1};
@@ -513,3 +629,4 @@ function startLiveTimer(amt) {
     </script>
 </body>
 </html>
+
