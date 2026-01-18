@@ -401,7 +401,7 @@
 </div>
 
     <script>
-    // --- AUTH CHECK ---
+    // --- AUTH & GLOBAL STATE ---
     let user = JSON.parse(sessionStorage.getItem('currentUser'));
     if (!user) window.location.href = 'login.html';
     
@@ -417,13 +417,11 @@
         document.getElementById('mComm').value = "0";
         document.getElementById('mDeposit').value = "0";
         
-        // Show hidden fields for new user creation
         const fields = ['passDiv', 'cPassDiv', 'roleDiv', 'depoDiv'];
         fields.forEach(id => { 
             let el = document.getElementById(id);
             if(el) el.style.display = 'flex'; 
         });
-        
         document.getElementById('userModal').style.display = 'flex';
     }
 
@@ -433,13 +431,11 @@
         document.getElementById('mUName').value = uname;
         document.getElementById('mComm').value = comm || 0;
         
-        // Hide fields not needed for basic edit
         const fields = ['passDiv', 'cPassDiv', 'roleDiv', 'depoDiv'];
         fields.forEach(id => { 
             let el = document.getElementById(id);
             if(el) el.style.display = 'none'; 
         });
-        
         document.getElementById('userModal').style.display = 'flex';
     }
 
@@ -460,25 +456,29 @@
                 user = d.data;
                 sessionStorage.setItem('currentUser', JSON.stringify(user));
 
-                // Currency Sync (1 Chip = 10 Rs)
+                // --- SECURITY: FORCE PASSWORD CHANGE CHECK ---
+                if (user.role !== 'SuperAdmin' && user.force_password_change === 1) {
+                    document.getElementById('passChangeModal').style.display = 'flex';
+                    document.getElementById('sidebar').style.pointerEvents = 'none';
+                    document.getElementById('sidebar').style.opacity = '0.5';
+                }
+
+                // Balance Display (1 Chip = 10 Rs sync)
                 const chipBal = parseFloat(user.balance);
                 document.getElementById('headerBal').innerText = `🪙 ${chipBal.toLocaleString()}`;
                 document.getElementById('inr').innerText = (chipBal * 10).toLocaleString();
                 document.getElementById('chips').innerText = chipBal.toLocaleString();
                 
-                // Stats
                 document.getElementById('wins').innerText = ((user.total_wins || 0) * 10).toLocaleString();
                 document.getElementById('lose').innerText = ((user.total_losses || 0) * 10).toLocaleString();
 
-                // Betting Tab Logic
                 const betPage = document.getElementById('page-bet');
                 if (user.role !== 'Client') {
-                    betPage.innerHTML = `
-                        <div class="account-card" style="border: 2px dashed var(--neon-r); padding: 50px;">
-                            <h2 style="color:var(--neon-r);"><i class="fas fa-lock"></i> Restricted Access</h2>
-                            <p style="margin-top:10px; color:#aaa;">Only <b>Client</b> roles are permitted to place live bets.</p>
-                            <p>Current Role: <span style="color:var(--accent)">${user.role}</span></p>
-                        </div>`;
+                    betPage.innerHTML = `<div class="account-card" style="border: 2px dashed var(--neon-r); padding: 50px;">
+                        <h2 style="color:var(--neon-r);"><i class="fas fa-lock"></i> Restricted Access</h2>
+                        <p style="margin-top:10px; color:#aaa;">Only <b>Client</b> roles are permitted to place live bets.</p>
+                        <p>Current Role: <span style="color:var(--accent)">${user.role}</span></p>
+                    </div>`;
                 } else {
                     if (document.getElementById('display-chips')) {
                         document.getElementById('display-chips').innerText = chipBal.toLocaleString();
@@ -512,15 +512,16 @@
                 body: JSON.stringify({ parentId: user.id, role: user.role })
             });
             const d = await res.json();
+            const filteredUsers = (d.users || []).filter(u => u.id !== user.id);
 
-            tbody.innerHTML = (d.users || []).map(u => {
+            tbody.innerHTML = filteredUsers.map(u => {
                 const isOnline = u.status === 'Online';
                 return `
                 <tr id="user-row-${u.id}">
                     <td><i class="fas fa-arrow-circle-right" style="color:${isOnline ? 'var(--neon-g)' : 'var(--neon-r)'}"></i></td>
                     <td style="text-align:left; padding-left:15px;">
                         <span style="color:var(--accent); font-weight:bold;">${u.username}</span><br>
-                        <small style="color:#888;">${u.role} | Comm: ${u.commission_percentage || 0}%</small>
+                        <small style="color:var(--primary); font-weight:bold;">( ${u.role.toUpperCase()} )</small>
                     </td>
                     <td style="color:var(--neon-g)">${parseFloat(u.exposure || 0).toLocaleString()}</td>
                     <td style="color:#aaa">0</td>
@@ -529,71 +530,47 @@
                     <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
                     <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
                     <td>
-                        <button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}', ${u.commission_percentage})"><i class="fas fa-cog"></i></button>
-                        <button class="act-btn btn-d" onclick="give(${u.id},'${u.username}')">D</button>
-                        <button class="act-btn btn-w" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                        <button class="act-btn btn-del" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
+                        <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}', ${u.commission_percentage})"><i class="fas fa-edit"></i></button>
+                        <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
+                        <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
+                        <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
             }).join('');
         } catch (e) { console.error("User Load Error", e); }
     }
 
-    async function submitUser() {
-        const data = {
-            fName: "User",
-            uName: document.getElementById('mUName').value,
-            pass: document.getElementById('mPass').value,
-            role: document.getElementById('mRole').value,
-            logins: 1,
-            deposit: document.getElementById('mDeposit').value,
-            commission: document.getElementById('mComm').value,
-            creatorId: user.id
-        };
+    // --- SECURITY HANDLER ---
+    async function forceUpdatePass() {
+        const newPass = document.getElementById('newSecurePass').value;
+        const confirmPass = document.getElementById('confirmSecurePass').value;
+        if (newPass.length < 6) return alert("Password must be exactly 6 characters.");
+        if (newPass !== confirmPass) return alert("Passwords do not match!");
 
-        if (!data.uName || (!editUserId && !data.pass)) return alert("Required fields missing!");
-
-        const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
-        const res = await fetch(endpoint, {
+        const res = await fetch('/api/update-password-secure', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...data, id: editUserId })
+            body: JSON.stringify({ userId: user.id, newPass: newPass })
         });
         const d = await res.json();
-        alert(d.message || "Done!");
-        if (d.success) { closeModal(); init(); }
+        if (d.success) {
+            alert("Security reset complete. Access granted.");
+            location.reload();
+        } else alert(d.message);
+    }
+
+    async function deleteUser(id) {
+        if (!confirm("Permanently delete user and history?")) return;
+        const res = await fetch('/api/delete-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        });
+        const d = await res.json();
+        if (d.success) { alert("User deleted."); init(); } else alert(d.message);
     }
 
     // --- BETTING ENGINE ---
-    function openSlip(team, odds, type) {
-        activeOdds = odds;
-        document.getElementById('slipTeam').innerText = `${team} (${type})`;
-        document.getElementById('slipOdds').innerText = odds;
-        document.getElementById('slipType').innerText = type;
-        document.getElementById('betSlip').style.display = 'block';
-        updateRsValue();
-    }
-
-    function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
-
-    function addQuickStake(amt) {
-        const input = document.getElementById('betAmountInput');
-        input.value = parseInt(input.value || 0) + amt;
-        updateRsValue();
-    }
-
-    function updateRsValue() {
-        const chips = document.getElementById('betAmountInput').value || 0;
-        document.getElementById('rsVal').innerText = `Value: ₹${(chips * 10).toLocaleString()}`;
-    }
-
-    async function confirmLiveBet() {
-        const amt = document.getElementById('betAmountInput').value;
-        if(amt < 100) return alert("Min bet 100 chips");
-        closeSlip(); 
-        bet(amt);
-    }
-
     async function bet(amt) {
         if (parseFloat(user.exposure) < parseFloat(amt)) return alert("Low exposure balance!");
         const res = await fetch('/api/place-bet', {
@@ -622,6 +599,7 @@
                 alert(win ? "🏆 WON!" : "❌ LOST!");
                 if (timerEl) timerEl.innerText = "READY";
                 init();
+                loadHistory();
             }
         }, 1000);
     }
@@ -636,15 +614,14 @@
         });
         const d = await res.json();
         if (d.success) {
-            tbody.innerHTML = d.history.map(h => `
-                <tr>
-                    <td style="font-size:11px; padding:12px; border-bottom:1px solid #1a202c;">${new Date(h.created_at).toLocaleString()}</td>
-                    <td style="border-bottom:1px solid #1a202c;"><b style="color:var(--accent)">${h.type.toUpperCase()}</b></td>
-                    <td style="color:${h.amount >= 0 ? 'var(--neon-g)' : 'var(--neon-r)'}; font-weight:bold; border-bottom:1px solid #1a202c;">
-                        ${h.amount >= 0 ? '+' : ''}${parseFloat(h.amount).toLocaleString()}
-                    </td>
-                    <td style="font-size:12px; color:#aaa; text-align:left; border-bottom:1px solid #1a202c;">${h.description}</td>
-                </tr>`).join('');
+            tbody.innerHTML = d.history.map(h => `<tr>
+                <td style="font-size:11px; padding:12px; border-bottom:1px solid #1a202c;">${new Date(h.created_at).toLocaleString()}</td>
+                <td style="border-bottom:1px solid #1a202c;"><b style="color:var(--accent)">${h.type.toUpperCase()}</b></td>
+                <td style="color:${h.amount >= 0 ? 'var(--neon-g)' : 'var(--neon-r)'}; font-weight:bold; border-bottom:1px solid #1a202c;">
+                    ${h.amount >= 0 ? '+' : ''}${parseFloat(h.amount).toLocaleString()}
+                </td>
+                <td style="font-size:12px; color:#aaa; text-align:left; border-bottom:1px solid #1a202c;">${h.description}</td>
+            </tr>`).join('');
         }
     }
 
@@ -657,13 +634,12 @@
         });
         const d = await res.json();
         if (d.success && d.summary.length > 0) {
-            tbody.innerHTML = d.summary.map(s => `
-                <tr>
-                    <td style="padding:12px; border-bottom:1px solid #1a202c;">${s.downline_name}</td>
-                    <td style="padding:12px; border-bottom:1px solid #1a202c;">Set %</td>
-                    <td style="padding:12px; border-bottom:1px solid #1a202c; color:var(--neon-g);">+${parseFloat(s.total_earned).toFixed(2)}</td>
-                    <td style="padding:12px; border-bottom:1px solid #1a202c;">₹${(s.total_earned * 10).toLocaleString()}</td>
-                </tr>`).join('');
+            tbody.innerHTML = d.summary.map(s => `<tr>
+                <td style="padding:12px; border-bottom:1px solid #1a202c;">${s.downline_name}</td>
+                <td style="padding:12px; border-bottom:1px solid #1a202c;">Active</td>
+                <td style="padding:12px; border-bottom:1px solid #1a202c; color:var(--neon-g);">+${parseFloat(s.total_earned).toFixed(2)}</td>
+                <td style="padding:12px; border-bottom:1px solid #1a202c;">₹${(s.total_earned * 10).toLocaleString()}</td>
+            </tr>`).join('');
         }
     }
 
@@ -722,6 +698,17 @@
     }
 
     function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+
+    function updateRsValue() {
+        const chips = document.getElementById('betAmountInput').value || 0;
+        document.getElementById('rsVal').innerText = `Value: ₹${(chips * 10).toLocaleString()}`;
+    }
+
+    function addQuickStake(amt) {
+        const input = document.getElementById('betAmountInput');
+        input.value = parseInt(input.value || 0) + amt;
+        updateRsValue();
+    }
 
     init();
 </script>
