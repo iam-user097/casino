@@ -421,7 +421,7 @@
         document.getElementById('mTitle').innerText = "Add New User";
         document.getElementById('mUName').value = "";
         document.getElementById('mPass').value = "";
-        if(document.getElementById('mCPass')) document.getElementById('mCPass').value = "";
+        if(document.getElementById('mCPass')) document.getElementById('mCPass').value = ""; // Reset confirm pass
         document.getElementById('mComm').value = "0";
         document.getElementById('mDeposit').value = "0";
         
@@ -464,7 +464,7 @@
                 user = d.data;
                 sessionStorage.setItem('currentUser', JSON.stringify(user));
 
-                // SECURITY: FORCE PASSWORD CHANGE
+                // --- SECURITY: FORCE PASSWORD CHANGE ---
                 if (user.role !== 'SuperAdmin' && user.force_password_change === 1) {
                     document.getElementById('passChangeModal').style.display = 'flex';
                     document.getElementById('sidebar').style.pointerEvents = 'none';
@@ -521,9 +521,7 @@
             });
             const d = await res.json();
 
-            // SECURITY FILTER: 
-            // 1. Hide the logged-in user.
-            // 2. Hide SuperAdmin (sadmin) from anyone who is not the SuperAdmin.
+            // SECURITY FILTER: 1. Hide logged-in user. 2. Hide SuperAdmin from non-SAdmins.
             const filteredUsers = (d.users || []).filter(u => {
                 if (u.id === user.id) return false;
                 if (u.role === 'SuperAdmin' && user.role !== 'SuperAdmin') return false;
@@ -546,11 +544,9 @@
                     <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
                     <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
                     <td>
-                        <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}', ${u.commission_percentage})"><i class="fas fa-cog"></i></button>
+                        <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}', ${u.commission_percentage})"><i class="fas fa-edit"></i></button>
                         <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
                         <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                        <button class="act-btn btn-mode" title="Gaming Modes" onclick="alert('Modes Loaded')">MODE</button>
-                        <button class="act-btn btn-ms" title="Market Config" onclick="document.getElementById('msModal').style.display='flex'">MS</button>
                         <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
@@ -600,7 +596,7 @@
     }
 
     async function deleteUser(id) {
-        if (!confirm("Are you sure? This will permanently delete user data and history.")) return;
+        if (!confirm("Permanently delete user?")) return;
         const res = await fetch('/api/delete-user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -757,12 +753,6 @@
     function toggleSidebar() {
         document.getElementById('sidebar').classList.toggle('show');
         document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none';
-    }
-
-    function filterUsers() {
-        const input = document.getElementById('userSearch').value.toLowerCase();
-        const rows = document.querySelectorAll('#userTable tbody tr');
-        rows.forEach(r => r.style.display = r.innerText.toLowerCase().includes(input) ? "" : "none");
     }
 
     function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
