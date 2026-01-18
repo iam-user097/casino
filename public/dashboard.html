@@ -421,6 +421,7 @@
         document.getElementById('mTitle').innerText = "Add New User";
         document.getElementById('mUName').value = "";
         document.getElementById('mPass').value = "";
+        if(document.getElementById('mCPass')) document.getElementById('mCPass').value = "";
         document.getElementById('mComm').value = "0";
         document.getElementById('mDeposit').value = "0";
         
@@ -463,14 +464,13 @@
                 user = d.data;
                 sessionStorage.setItem('currentUser', JSON.stringify(user));
 
-                // --- SECURITY: FORCE PASSWORD CHANGE CHECK ---
+                // --- SECURITY: FORCE PASSWORD CHANGE ---
                 if (user.role !== 'SuperAdmin' && user.force_password_change === 1) {
                     document.getElementById('passChangeModal').style.display = 'flex';
                     document.getElementById('sidebar').style.pointerEvents = 'none';
                     document.getElementById('sidebar').style.opacity = '0.5';
                 }
 
-                // Balance Display (1 Chip = 10 Rs sync)
                 const chipBal = parseFloat(user.balance);
                 document.getElementById('headerBal').innerText = `🪙 ${chipBal.toLocaleString()}`;
                 document.getElementById('inr').innerText = (chipBal * 10).toLocaleString();
@@ -495,13 +495,9 @@
                         document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
                     }
                 }
-
-                if (user.role === 'Client' && document.getElementById('addBtn')) {
-                    document.getElementById('addBtn').style.display = 'none';
-                }
+                if (user.role === 'Client' && document.getElementById('addBtn')) document.getElementById('addBtn').style.display = 'none';
             }
-        } catch (e) { console.error("Init Error", e); }
-        
+        } catch (e) { console.error("Sync Error", e); }
         loadUsers();
         setupRoles();
         loadHistory();
@@ -519,6 +515,7 @@
                 body: JSON.stringify({ parentId: user.id, role: user.role })
             });
             const d = await res.json();
+            // FILTER: Don't show the logged-in user
             const filteredUsers = (d.users || []).filter(u => u.id !== user.id);
 
             tbody.innerHTML = filteredUsers.map(u => {
@@ -540,6 +537,8 @@
                         <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}', ${u.commission_percentage})"><i class="fas fa-edit"></i></button>
                         <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
                         <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
+                        <button class="act-btn btn-mode" title="Gaming Modes" onclick="alert('Modes for ${u.username} Loaded')">MODE</button>
+                        <button class="act-btn btn-ms" title="Market Settings" onclick="document.getElementById('msModal').style.display='flex'">MS</button>
                         <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
@@ -547,11 +546,34 @@
         } catch (e) { console.error("User Load Error", e); }
     }
 
-    // --- SECURITY HANDLER ---
+    async function submitUser() {
+        const uName = document.getElementById('mUName').value;
+        const pass = document.getElementById('mPass').value;
+        const cPass = document.getElementById('mCPass') ? document.getElementById('mCPass').value : pass;
+        const role = document.getElementById('mRole').value;
+        const comm = document.getElementById('mComm').value;
+        const deposit = document.getElementById('mDeposit').value;
+
+        if (!uName || (!editUserId && !pass)) return alert("Required fields missing!");
+        if (!editUserId && pass !== cPass) return alert("Passwords do not match!"); // Validation
+
+        const data = { uName, pass, role, deposit, commission: comm, creatorId: user.id };
+        const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
+        
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...data, id: editUserId })
+        });
+        const d = await res.json();
+        if (d.success) { closeModal(); init(); } else alert(d.message);
+    }
+
+    // --- SECURITY & DELETE ---
     async function forceUpdatePass() {
         const newPass = document.getElementById('newSecurePass').value;
         const confirmPass = document.getElementById('confirmSecurePass').value;
-        if (newPass.length < 6) return alert("Password must be exactly 6 characters.");
+        if (newPass.length < 6) return alert("Password must be at least 6 characters.");
         if (newPass !== confirmPass) return alert("Passwords do not match!");
 
         const res = await fetch('/api/update-password-secure', {
@@ -560,26 +582,32 @@
             body: JSON.stringify({ userId: user.id, newPass: newPass })
         });
         const d = await res.json();
-        if (d.success) {
-            alert("Security reset complete. Access granted.");
-            location.reload();
-        } else alert(d.message);
+        if (d.success) { alert("Success! Security unlocked."); location.reload(); } else alert(d.message);
     }
 
     async function deleteUser(id) {
-        if (!confirm("Permanently delete user and history?")) return;
+        if (!confirm("Are you sure? This will permanently delete user data and history.")) return;
         const res = await fetch('/api/delete-user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: id })
+            body: JSON.stringify({ id })
         });
         const d = await res.json();
-        if (d.success) { alert("User deleted."); init(); } else alert(d.message);
+        if (d.success) { alert("Deleted."); init(); } else alert(d.message);
     }
 
     // --- BETTING ENGINE ---
+    function openSlip(team, odds, type) {
+        activeOdds = odds;
+        document.getElementById('slipTeam').innerText = `${team} (${type})`;
+        document.getElementById('slipOdds').innerText = odds;
+        document.getElementById('slipType').innerText = type;
+        document.getElementById('betSlip').style.display = 'block';
+        updateRsValue();
+    }
+
     async function bet(amt) {
-        if (parseFloat(user.exposure) < parseFloat(amt)) return alert("Low exposure balance!");
+        if (parseFloat(user.exposure) < parseFloat(amt)) return alert("Low exposure wallet balance!");
         const res = await fetch('/api/place-bet', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -611,16 +639,12 @@
         }, 1000);
     }
 
-    // --- DATA LOADING ---
+    // --- DATA LOADING & UTILS ---
     async function loadHistory() {
-        const tbody = document.querySelector('#histTable tbody');
-        if (!tbody) return;
-        const res = await fetch('/api/history', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id })
-        });
+        const res = await fetch('/api/history', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) });
         const d = await res.json();
-        if (d.success) {
+        const tbody = document.querySelector('#histTable tbody');
+        if (d.success && tbody) {
             tbody.innerHTML = d.history.map(h => `<tr>
                 <td style="font-size:11px; padding:12px; border-bottom:1px solid #1a202c;">${new Date(h.created_at).toLocaleString()}</td>
                 <td style="border-bottom:1px solid #1a202c;"><b style="color:var(--accent)">${h.type.toUpperCase()}</b></td>
@@ -633,14 +657,10 @@
     }
 
     async function loadCommissionSummary() {
-        const tbody = document.getElementById('commBody');
-        if (!tbody || user.role === 'Client') return;
-        const res = await fetch('/api/commission-summary', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id })
-        });
+        const res = await fetch('/api/commission-summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) });
         const d = await res.json();
-        if (d.success && d.summary.length > 0) {
+        const tbody = document.getElementById('commBody');
+        if (d.success && tbody && d.summary.length > 0) {
             tbody.innerHTML = d.summary.map(s => `<tr>
                 <td style="padding:12px; border-bottom:1px solid #1a202c;">${s.downline_name}</td>
                 <td style="padding:12px; border-bottom:1px solid #1a202c;">Active</td>
@@ -650,11 +670,18 @@
         }
     }
 
-    // --- UTILS ---
-    function filterUsers() {
-        const input = document.getElementById('userSearch').value.toLowerCase();
-        const rows = document.querySelectorAll('#userTable tbody tr');
-        rows.forEach(r => r.style.display = r.innerText.toLowerCase().includes(input) ? "" : "none");
+    async function give(id, name) {
+        const amt = prompt(`Deposit Chips to ${name}:`);
+        if (!amt || isNaN(amt)) return;
+        await fetch('/api/transfer-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) }) });
+        init();
+    }
+
+    async function withdraw(id, name) {
+        const amt = prompt(`Withdraw Chips from ${name}:`);
+        if (!amt || isNaN(amt)) return;
+        await fetch('/api/withdraw-chips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) }) });
+        init();
     }
 
     function setupRoles() {
@@ -662,33 +689,22 @@
         const hierarchy = { 'SuperAdmin': 6, 'Admin': 5, 'SuperMaster': 4, 'Master': 3, 'Agent': 2, 'Client': 1 };
         const sel = document.getElementById('mRole');
         if (sel && sel.options.length === 0) {
-            roles.forEach(r => {
-                if (hierarchy[r] < hierarchy[user.role]) {
-                    const opt = document.createElement('option');
-                    opt.value = r; opt.innerText = r; sel.appendChild(opt);
-                }
-            });
+            roles.forEach(r => { if (hierarchy[r] < hierarchy[user.role]) {
+                const opt = document.createElement('option');
+                opt.value = r; opt.innerText = r; sel.appendChild(opt);
+            }});
         }
     }
 
-    async function give(id, name) {
-        const amt = prompt(`Deposit Chips to ${name}:`);
-        if (!amt || isNaN(amt)) return;
-        await fetch('/api/transfer-credits', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) })
-        });
-        init();
+    function updateRsValue() {
+        const chips = document.getElementById('betAmountInput').value || 0;
+        document.getElementById('rsVal').innerText = `Value: ₹${(chips * 10).toLocaleString()}`;
     }
 
-    async function withdraw(id, name) {
-        const amt = prompt(`Withdraw Chips from ${name}:`);
-        if (!amt || isNaN(amt)) return;
-        await fetch('/api/withdraw-chips', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) })
-        });
-        init();
+    function addQuickStake(amt) {
+        const input = document.getElementById('betAmountInput');
+        input.value = parseInt(input.value || 0) + amt;
+        updateRsValue();
     }
 
     function nav(id, el) {
@@ -704,21 +720,13 @@
         document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none';
     }
 
+    function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+    function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
     function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
-
-    function updateRsValue() {
-        const chips = document.getElementById('betAmountInput').value || 0;
-        document.getElementById('rsVal').innerText = `Value: ₹${(chips * 10).toLocaleString()}`;
-    }
-
-    function addQuickStake(amt) {
-        const input = document.getElementById('betAmountInput');
-        input.value = parseInt(input.value || 0) + amt;
-        updateRsValue();
-    }
 
     init();
 </script>
 </body>
 </html>
+
 
