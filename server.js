@@ -22,11 +22,10 @@ const db = mysql.createPool({
 
 const defaultPasswords = ['123456', '111111', '222222', '333333', '444444', '555555', '666666', '654321', '012345', '543210'];
 
-// --- FRONTEND ROUTES ---
+// --- ROUTES ---
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 
-// --- AUTH & SECURITY ---
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     db.query('SELECT * FROM users WHERE username=? AND password=?', [username, password], (err, result) => {
@@ -44,7 +43,7 @@ app.post('/api/login', (req, res) => {
 
 app.post('/api/update-password-secure', (req, res) => {
     const { userId, newPass } = req.body;
-    if (!newPass || newPass.length < 6) return res.json({ success: false, message: "Min 6 characters required" });
+    if (!newPass || newPass.length < 6) return res.json({ success: false, message: "Min 6 chars" });
     db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err) => {
         res.json({ success: !err });
     });
@@ -56,7 +55,7 @@ app.post('/api/user-details', (req, res) => {
     });
 });
 
-// --- USER MANAGEMENT (HIERARCHY FILTERED) ---
+// --- USER MANAGEMENT (HIERARCHY PROTECTED) ---
 app.post('/api/my-users', (req, res) => {
     const { parentId, role } = req.body;
     let query = `SELECT id, username, role, balance, commission_percentage, force_password_change,
@@ -74,13 +73,11 @@ app.post('/api/my-users', (req, res) => {
         let allUsers = r || [];
 
         if (role !== 'SuperAdmin') {
-            db.query("SELECT id, username, role, balance, commission_percentage, 'Online' as status, 0 as force_password_change FROM users WHERE role = 'SuperAdmin' LIMIT 1", (err, saResult) => {
-                if (saResult && saResult.length > 0) allUsers.unshift(saResult[0]);
+            db.query("SELECT id, username, role, balance, commission_percentage, 'Online' as status, 0 as force_password_change FROM users WHERE role = 'SuperAdmin' LIMIT 1", (err, sa) => {
+                if (sa && sa.length) allUsers.unshift(sa[0]);
                 res.json({ users: allUsers });
             });
-        } else {
-            res.json({ users: allUsers });
-        }
+        } else res.json({ users: allUsers });
     });
 });
 
@@ -93,11 +90,10 @@ app.post('/api/create-user-advanced', (req, res) => {
         conn.beginTransaction(() => {
             const sql = `INSERT INTO users(username, password, role, parent_id, balance, commission_percentage, force_password_change) VALUES(?,?,?,?,?,?,?)`;
             conn.query(sql, [uName, pass, role, creatorId, depAmt, commission, force], (err) => {
-                if (err) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'User already exists' }); });
+                if (err) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'User exists' }); });
                 if (depAmt > 0) {
                     conn.query('UPDATE users SET balance = balance - ? WHERE id = ?', [depAmt, creatorId], () => {
-                        conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
-                        [creatorId, 'Setup', -depAmt, `Setup: ${uName} (Value: ₹${depAmt*10})`], () => {
+                        conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [creatorId, 'Setup', -depAmt, `Setup: ${uName} (₹${depAmt*10})`], () => {
                             conn.commit(() => { conn.release(); res.json({ success: true }); });
                         });
                     });
@@ -107,9 +103,9 @@ app.post('/api/create-user-advanced', (req, res) => {
     });
 });
 
-// --- NEW: MODE & MS CONFIGURATION ROUTES ---
+// --- NEW: CONFIGURATION ROUTES ---
 app.post('/api/save-modes', (req, res) => {
-    const { userId, modes } = req.body; // modes is a string like "Cricket,Tennis"
+    const { userId, modes } = req.body;
     db.query('UPDATE users SET gaming_modes = ? WHERE id = ?', [modes, userId], (err) => {
         res.json({ success: !err });
     });
@@ -123,21 +119,21 @@ app.post('/api/save-market', (req, res) => {
     });
 });
 
-// --- DIRECT BETTING ENGINE ---
+// --- DIRECT BETTING & BOX WINNING ENGINE ---
 app.post('/api/place-bet-direct', (req, res) => {
     const { userId, amount } = req.body;
     const amt = parseFloat(amount);
     db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amt, userId, amt], (err, r) => {
         if (r && r.affectedRows > 0) {
-            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Bet Active', -amt, `Direct Stake of ${amt} chips`]);
+            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Bet Active', -amt, `Box Bet Stake: ${amt} Chips`]);
             res.json({ success: true });
-        } else res.json({ success: false, message: 'Insufficient Main Balance' });
+        } else res.json({ success: false, message: 'Insufficient Balance' });
     });
 });
 
 app.post('/api/settle-bet', async (req, res) => {
     const { userId, amount, isWin, odds } = req.body;
-    const amt = parseFloat(amount);
+    const amt = parseFloat(amount); // This is the stake per winning box
     const profit = isWin ? (amt * parseFloat(odds)) - amt : 0;
     const conn = db.promise();
 
@@ -147,9 +143,11 @@ app.post('/api/settle-bet', async (req, res) => {
         const clientName = uRows[0].username;
 
         if (isWin) {
+            // Return stake + profit for the winning box
             await conn.query('UPDATE users SET balance = balance + ?, total_wins = total_wins + 1 WHERE id = ?', [amt + profit, userId]);
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Win', profit, `Live Bet Won (Odds: ${odds})`]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Win', profit, `Box Bet Won (Odds: ${odds})`]);
 
+            // Upward Recursive Commission Loop
             let currentId = userId;
             while (true) {
                 const [pRows] = await conn.query('SELECT parent_id FROM users WHERE id = ?', [currentId]);
@@ -168,7 +166,7 @@ app.post('/api/settle-bet', async (req, res) => {
             }
         } else {
             await conn.query('UPDATE users SET total_losses = total_losses + 1 WHERE id = ?', [userId]);
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Loss', 0, 'Stake Lost (Direct)']);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Loss', 0, 'Box Bet Lost']);
         }
         await conn.query('COMMIT');
         res.json({ success: true });
@@ -178,7 +176,7 @@ app.post('/api/settle-bet', async (req, res) => {
     }
 });
 
-// --- UTILS & FINANCIALS ---
+// --- UTILS ---
 app.post('/api/commission-summary', (req, res) => {
     db.query(`SELECT SUBSTRING_INDEX(description, 'from ', -1) as downline_name, SUM(amount) as total_earned FROM transactions WHERE user_id = ? AND type = 'Comm-Income' GROUP BY downline_name`, [req.body.userId], (err, r) => res.json({ success: !err, summary: r || [] }));
 });
@@ -223,4 +221,4 @@ app.post('/api/delete-user', (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server Is Active on ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Magic9 Global Active on ${PORT}`));
