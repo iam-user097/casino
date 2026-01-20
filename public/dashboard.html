@@ -568,7 +568,6 @@
                         <small style="color:var(--primary); font-weight:bold;">( ${u.role.toUpperCase()} )</small>
                     </td>
                     <td style="color:#aaa">Direct</td> 
-                    <td style="color:#aaa">0</td>
                     <td style="color:var(--accent); font-weight:bold;">${parseFloat(u.balance).toLocaleString()}</td>
                     <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
                     <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
@@ -741,15 +740,36 @@
     }
 
     async function saveGamingModes() {
-        alert("Success: Gaming modes updated for user ID: " + currentTargetUserId);
-        closeModal();
+        // Collect checked boxes
+        const checkedModes = Array.from(document.querySelectorAll('#modeCheckboxes input:checked'))
+                                 .map(cb => cb.parentElement.innerText.trim())
+                                 .join(',');
+        
+        const res = await fetch('/api/save-modes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentTargetUserId, modes: checkedModes })
+        });
+        const d = await res.json();
+        if(d.success) {
+            alert("Success: Gaming modes locked for user.");
+            closeModal();
+        }
     }
 
     async function saveMarketSettings() {
         const game = document.getElementById('msGame').value;
         const market = document.getElementById('msMarket').value;
-        alert(`Success: ${game} ${market} updated for user ID: ${currentTargetUserId}`);
-        closeModal();
+        const res = await fetch('/api/save-market', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentTargetUserId, game: game, market: market })
+        });
+        const d = await res.json();
+        if(d.success) {
+            alert(`Success: ${game} ${market} updated for user.`);
+            closeModal();
+        }
     }
 
     function setupRoles() {
@@ -801,4 +821,3 @@
 </script>
 </body>
 </html>
-
