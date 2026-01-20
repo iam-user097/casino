@@ -16,7 +16,7 @@ const db = mysql.createPool({
     database: process.env.DB_NAME || "u178691095_magic9_db",
     port: 3306,
     waitForConnections: true,
-    connectionLimit: 15, // Increased for concurrent betting
+    connectionLimit: 15,
     queueLimit: 0
 });
 
@@ -59,7 +59,7 @@ app.post('/api/user-details', (req, res) => {
 // --- USER MANAGEMENT (HIERARCHY FILTERED) ---
 app.post('/api/my-users', (req, res) => {
     const { parentId, role } = req.body;
-    let query = `SELECT id, username, role, balance, exposure, commission_percentage, force_password_change,
+    let query = `SELECT id, username, role, balance, commission_percentage, force_password_change,
                 CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
                 FROM users WHERE id != ?`;
     let params = [parentId];
@@ -73,13 +73,14 @@ app.post('/api/my-users', (req, res) => {
         if (err) return res.json({ users: [] });
         let allUsers = r || [];
 
-        // Manual injection of sadmin reference for downline users
         if (role !== 'SuperAdmin') {
-            db.query("SELECT id, username, role, balance, 0 as exposure, commission_percentage, 'Online' as status, 0 as force_password_change FROM users WHERE role = 'SuperAdmin' LIMIT 1", (err, saResult) => {
+            db.query("SELECT id, username, role, balance, commission_percentage, 'Online' as status, 0 as force_password_change FROM users WHERE role = 'SuperAdmin' LIMIT 1", (err, saResult) => {
                 if (saResult && saResult.length > 0) allUsers.unshift(saResult[0]);
                 res.json({ users: allUsers });
             });
-        } else res.json({ users: allUsers });
+        } else {
+            res.json({ users: allUsers });
+        }
     });
 });
 
@@ -106,33 +107,31 @@ app.post('/api/create-user-advanced', (req, res) => {
     });
 });
 
-// --- EXPOSURE & BETTING ENGINE ---
-app.post('/api/add-exposure', (req, res) => {
-    const { userId, amount } = req.body;
-    const amt = parseFloat(amount);
-    if (amt < 1000) return res.json({ success: false, message: 'Min 1000 chips required' });
-
-    db.getConnection((err, conn) => {
-        conn.beginTransaction(() => {
-            conn.query('UPDATE users SET balance = balance - ?, exposure = exposure + ? WHERE id = ? AND balance >= ?', [amt, amt, userId, amt], (err, r) => {
-                if (err || r.affectedRows === 0) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'Low main balance' }); });
-                conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
-                [userId, 'Exposure Dep', -amt, `Moved to Exposure Wallet (₹${amt*10})`], () => {
-                    conn.commit(() => { conn.release(); res.json({ success: true }); });
-                });
-            });
-        });
+// --- NEW: MODE & MS CONFIGURATION ROUTES ---
+app.post('/api/save-modes', (req, res) => {
+    const { userId, modes } = req.body; // modes is a string like "Cricket,Tennis"
+    db.query('UPDATE users SET gaming_modes = ? WHERE id = ?', [modes, userId], (err) => {
+        res.json({ success: !err });
     });
 });
 
-app.post('/api/place-bet', (req, res) => {
+app.post('/api/save-market', (req, res) => {
+    const { userId, game, market } = req.body;
+    const desc = `${game} - ${market}`;
+    db.query('UPDATE users SET market_config = ? WHERE id = ?', [desc, userId], (err) => {
+        res.json({ success: !err });
+    });
+});
+
+// --- DIRECT BETTING ENGINE ---
+app.post('/api/place-bet-direct', (req, res) => {
     const { userId, amount } = req.body;
     const amt = parseFloat(amount);
-    db.query('UPDATE users SET exposure = exposure - ? WHERE id = ? AND exposure >= ?', [amt, userId, amt], (err, r) => {
+    db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amt, userId, amt], (err, r) => {
         if (r && r.affectedRows > 0) {
-            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Bet Active', -amt, 'Chips moved from Exposure']);
+            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Bet Active', -amt, `Direct Stake of ${amt} chips`]);
             res.json({ success: true });
-        } else res.json({ success: false, message: 'Insufficient Exposure Wallet' });
+        } else res.json({ success: false, message: 'Insufficient Main Balance' });
     });
 });
 
@@ -169,7 +168,7 @@ app.post('/api/settle-bet', async (req, res) => {
             }
         } else {
             await conn.query('UPDATE users SET total_losses = total_losses + 1 WHERE id = ?', [userId]);
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Loss', -amt, 'Live Bet Lost']);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Loss', 0, 'Stake Lost (Direct)']);
         }
         await conn.query('COMMIT');
         res.json({ success: true });
