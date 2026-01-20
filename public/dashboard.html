@@ -437,7 +437,7 @@
     if (!user) window.location.href = 'login.html';
     
     let editUserId = null;
-    let currentTargetUserId = null; // Target for MODE/MS
+    let currentTargetUserId = null; 
     let activeOdds = 1.95;
 
     // --- MODAL HELPERS ---
@@ -446,7 +446,7 @@
         document.getElementById('mTitle').innerText = "Add New User";
         document.getElementById('mUName').value = "";
         document.getElementById('mPass').value = "";
-        if(document.getElementById('mCPass')) document.getElementById('mCPass').value = ""; // Reset confirm pass
+        if(document.getElementById('mCPass')) document.getElementById('mCPass').value = ""; 
         document.getElementById('mComm').value = "0";
         document.getElementById('mDeposit').value = "0";
         
@@ -472,14 +472,12 @@
         document.getElementById('userModal').style.display = 'flex';
     }
 
-    // NEW: Open Gaming Modes Modal
     function openModeModal(id, name) {
         currentTargetUserId = id;
         document.getElementById('modeUser').innerText = name;
         document.getElementById('modeModal').style.display = 'flex';
     }
 
-    // NEW: Open Market Setting Modal
     function openMarketSetting(id, name) {
         currentTargetUserId = id;
         document.getElementById('msUser').innerText = name;
@@ -503,14 +501,12 @@
                 user = d.data;
                 sessionStorage.setItem('currentUser', JSON.stringify(user));
 
-                // --- SECURITY: FORCE PASSWORD CHANGE ---
                 if (user.role !== 'SuperAdmin' && user.force_password_change === 1) {
                     document.getElementById('passChangeModal').style.display = 'flex';
                     document.getElementById('sidebar').style.pointerEvents = 'none';
                     document.getElementById('sidebar').style.opacity = '0.5';
                 }
 
-                // Balance Display (1 Chip = 10 Rs sync)
                 const chipBal = parseFloat(user.balance);
                 document.getElementById('headerBal').innerText = `🪙 ${chipBal.toLocaleString()}`;
                 document.getElementById('inr').innerText = (chipBal * 10).toLocaleString();
@@ -524,15 +520,11 @@
                     betPage.innerHTML = `<div class="account-card" style="border: 2px dashed var(--neon-r); padding: 50px;">
                         <h2 style="color:var(--neon-r);"><i class="fas fa-lock"></i> Restricted Access</h2>
                         <p style="margin-top:10px; color:#aaa;">Only <b>Client</b> roles are permitted to place live bets.</p>
-                        <p>Current Role: <span style="color:var(--accent)">${user.role}</span></p>
                     </div>`;
                 } else {
                     if (document.getElementById('display-chips')) {
                         document.getElementById('display-chips').innerText = chipBal.toLocaleString();
                         document.getElementById('display-rs').innerText = (chipBal * 10).toLocaleString();
-                    }
-                    if (document.getElementById('bet-exp')) {
-                        document.getElementById('bet-exp').innerText = (user.exposure || 0).toLocaleString();
                     }
                 }
 
@@ -548,7 +540,7 @@
         loadCommissionSummary();
     }
 
-    // --- USER MANAGEMENT ---
+    // --- USER MANAGEMENT (HIERARCHY PROTECTED) ---
     async function loadUsers() {
         const tbody = document.querySelector('#userTable tbody');
         if (!tbody) return;
@@ -560,7 +552,7 @@
             });
             const d = await res.json();
 
-            // SECURITY FILTER
+            // SECURITY FILTER: Hide self and protect SuperAdmin
             const filteredUsers = (d.users || []).filter(u => {
                 if (u.id === user.id) return false;
                 if (u.role === 'SuperAdmin' && user.role !== 'SuperAdmin') return false;
@@ -576,7 +568,7 @@
                         <span style="color:var(--accent); font-weight:bold;">${u.username}</span><br>
                         <small style="color:var(--primary); font-weight:bold;">( ${u.role.toUpperCase()} )</small>
                     </td>
-                    <td style="color:var(--neon-g)">${parseFloat(u.exposure || 0).toLocaleString()}</td>
+                    <td style="color:#aaa">Direct</td> 
                     <td style="color:#aaa">0</td>
                     <td style="color:var(--accent); font-weight:bold;">${parseFloat(u.balance).toLocaleString()}</td>
                     <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
@@ -586,10 +578,8 @@
                         <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}', ${u.commission_percentage})"><i class="fas fa-edit"></i></button>
                         <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
                         <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                        
                         <button class="act-btn btn-mode" title="Gaming Modes" onclick="openModeModal(${u.id}, '${u.username}')">MODE</button>
-                        <button class="act-btn btn-ms" title="Market Config" onclick="openMarketSetting(${u.id}, '${u.username}')">MS</button>
-                        
+                        <button class="act-btn btn-ms" title="Market Settings" onclick="openMarketSetting(${u.id}, '${u.username}')">MS</button>
                         <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
@@ -606,8 +596,6 @@
         const deposit = document.getElementById('mDeposit').value;
 
         if (!uName || (!editUserId && !pass)) return alert("Username and Password are required!");
-        
-        // CONFIRM PASSWORD VALIDATION
         if (!editUserId && pass !== cPass) return alert("Passwords do not match!");
 
         const data = { uName, pass, role, deposit, commission: comm, creatorId: user.id };
@@ -639,7 +627,7 @@
     }
 
     async function deleteUser(id) {
-        if (!confirm("Are you sure? This will permanently delete user data and history.")) return;
+        if (!confirm("Permanently delete user?")) return;
         const res = await fetch('/api/delete-user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -649,26 +637,7 @@
         if (d.success) { alert("Deleted."); init(); } else alert(d.message);
     }
 
-    // --- EXPOSURE WALLET ---
-    async function addExp() {
-        const amt = parseFloat(document.getElementById('expInp').value);
-        if (isNaN(amt) || amt < 1000) return alert("Minimum 1000 chips required for exposure.");
-        if (parseFloat(user.balance) < amt) return alert("Insufficient main balance!");
-
-        const res = await fetch('/api/add-exposure', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id, amount: amt })
-        });
-        const d = await res.json();
-        if (d.success) {
-            alert("Moved to Exposure Wallet!");
-            document.getElementById('expInp').value = "";
-            init();
-        } else alert(d.message);
-    }
-
-    // --- BETTING ENGINE ---
+    // --- BETTING ENGINE (DIRECT BALANCE) ---
     function openSlip(team, odds, type) {
         activeOdds = odds;
         document.getElementById('slipTeam').innerText = `${team} (${type})`;
@@ -686,14 +655,23 @@
     }
 
     async function bet(amt) {
-        if (parseFloat(user.exposure) < parseFloat(amt)) return alert("Insufficient Exposure Wallet balance!");
-        const res = await fetch('/api/place-bet', {
+        const betAmt = parseFloat(amt);
+        if (parseFloat(user.balance) < betAmt) {
+            return alert("Insufficient Balance! Please contact Agent for chips.");
+        }
+
+        const res = await fetch('/api/place-bet-direct', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id, amount: amt })
+            body: JSON.stringify({ userId: user.id, amount: betAmt })
         });
         const d = await res.json();
-        if (d.success) { init(); startLiveTimer(amt); } else alert(d.message);
+        if (d.success) { 
+            init(); 
+            startLiveTimer(betAmt); 
+        } else {
+            alert(d.message);
+        }
     }
 
     function startLiveTimer(amt) {
@@ -763,7 +741,6 @@
         init();
     }
 
-    // NEW: Save handlers for MODE and MS
     async function saveGamingModes() {
         alert("Success: Gaming modes updated for user ID: " + currentTargetUserId);
         closeModal();
