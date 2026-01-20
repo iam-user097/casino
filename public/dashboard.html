@@ -291,113 +291,151 @@
     </div>
 
     <div class="main">
-    <div class="header">
-        <div style="display:flex; align-items:center;">
-            <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)" style="cursor:pointer; font-size: 20px;"></i>
-            <h3 style="font-weight: 500; margin-left: 10px;">Dashboard</h3>
-        </div>
-        <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent); box-shadow: 0 0 10px rgba(255,204,0,0.2);">🪙 Loading...</div>
-    </div>
-
-    <div id="page-user" class="page active">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-            <div style="position:relative; width: 300px;">
-                <i class="fas fa-search" style="position:absolute; left:12px; top:12px; color:#888;"></i>
-                <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User Here..." style="width:100%; padding:10px 10px 10px 35px; border-radius:6px; background:#12161f; border:1px solid #333; color:white;">
+        <div class="header">
+            <div style="display:flex; align-items:center;">
+                <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)" style="cursor:pointer; font-size: 20px;"></i>
+                <h3 style="font-weight: 500; margin-left: 10px;">Dashboard</h3>
             </div>
-            <button id="addBtn" class="btn" style="font-size:22px; padding: 2px 15px; background: var(--primary); border-radius:6px;" onclick="openModal()">+</button>
+            <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent); box-shadow: 0 0 10px rgba(255,204,0,0.2);">🪙 Loading...</div>
         </div>
 
-        <div class="table-container">
-            <table id="userTable">
-                <thead>
-                    <tr>
-                        <th>In</th>
-                        <th>Name</th>
-                        <th>Settlement</th>
-                        <th>Points</th>
-                        <th>Login</th>
-                        <th>Lock</th>
-                        <th>Active</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="page-bet" class="page">
-        <div class="account-card" style="padding: 15px; margin-bottom: 20px; border-left: 5px solid var(--neon-g); background: #011627;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="text-align:left;">
-                    <p style="color:#aaa; font-size:11px;">DIRECT MAIN BALANCE</p>
-                    <h2 style="color:var(--neon-g);">🪙 <span id="display-chips">0</span> <small style="font-size:12px; color:#aaa;">(₹<span id="display-rs">0</span>)</small></h2>
+        <div id="page-user" class="page active">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                <div style="position:relative; width: 300px;">
+                    <i class="fas fa-search" style="position:absolute; left:12px; top:12px; color:#888;"></i>
+                    <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User Here..." style="width:100%; padding:10px 10px 10px 35px; border-radius:6px; background:#12161f; border:1px solid #333; color:white;">
                 </div>
-                <div style="text-align:right;">
-                    <p style="color:#aaa; font-size:11px;">STATUS</p>
-                    <h4 id="match-timer" style="color:var(--accent); letter-spacing:1px;">READY</h4>
-                </div>
-            </div>
-        </div>
-
-        <div class="match-list-card" style="padding: 25px; border: 1px solid var(--primary); background: #12161f;">
-            <div style="text-align: center; margin-bottom: 25px;">
-                <h3 style="color:var(--accent); text-transform:uppercase;">Select Your Lucky Boxes</h3>
-                <p style="font-size: 12px; color: #888;">Double your reward instantly with direct balance betting!</p>
+                <button id="addBtn" class="btn" style="font-size:22px; padding: 2px 15px; background: var(--primary); border-radius:6px; box-shadow: 0 0 10px rgba(0,80,157,0.4);" onclick="openModal()">+</button>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="boxGrid">
-                <button class="box-bet" onclick="toggleBox(this, 1)">1</button>
-                <button class="box-bet" onclick="toggleBox(this, 2)">2</button>
-                <button class="box-bet" onclick="toggleBox(this, 3)">3</button>
-                <button class="box-bet" onclick="toggleBox(this, 4)">4</button>
-                <button class="box-bet" onclick="toggleBox(this, 5)">5</button>
-                <button class="box-bet" onclick="toggleBox(this, 6)">6</button>
-                <button class="box-bet" onclick="toggleBox(this, 7)">7</button>
-                <button class="box-bet" onclick="toggleBox(this, 8)">8</button>
-                <button class="box-bet" onclick="toggleBox(this, 9)">9</button>
-                <button class="box-bet" onclick="toggleBox(this, 10)">10</button>
-            </div>
-
-            <button class="btn" id="proceedBtn" style="width: 100%; background: var(--primary); padding: 18px; font-weight: bold; border-radius: 10px; font-size: 16px; box-shadow: 0 4px 15px rgba(0,80,157,0.3);" onclick="openBoxStakePopup()">
-                PLACE BET ON <span id="selectedCount">0</span> BOXES
-            </button>
-        </div>
-    </div>
-
-    <div id="page-history" class="page">
-        <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px;">
-            <h3 style="color:var(--accent); margin-bottom:15px;"><i class="fas fa-history"></i> Transaction Log</h3>
-            <div style="overflow-x:auto">
-                <table id="histTable" style="width:100%;">
+            <div class="table-container">
+                <table id="userTable">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Amount</th>
-                            <th>Details</th>
+                            <th>In</th>
+                            <th>Name</th>
+                            <th>Settlement</th>
+                            <th>Points</th>
+                            <th>Login</th>
+                            <th>Lock</th>
+                            <th>Active</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
-                    <tbody style="color:#ddd"></tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
+
+       <div id="page-bet" class="page">
+    <div class="account-card" style="padding: 15px; margin-bottom: 20px; border-left: 5px solid var(--neon-g); background: #011627;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="text-align:left;">
+                <p style="color:#aaa; font-size:11px;">AVAILABLE BALANCE</p>
+                <h2 style="color:var(--neon-g);">🪙 <span id="display-chips">0</span> <small style="font-size:12px; color:#aaa;">(₹<span id="display-rs">0</span>)</small></h2>
+            </div>
+            <div style="text-align:right;">
+                <p style="color:#aaa; font-size:11px;">STATUS</p>
+                <h4 id="match-timer" style="color:var(--accent);">READY TO PLAY</h4>
+            </div>
+        </div>
     </div>
 
-    <div id="page-account" class="page">
-        <div class="account-card" style="background: linear-gradient(145deg, #12161f, #011627); border: 2px solid var(--accent);">
-            <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">NET SAVED CHIPS</p>
-            <h1 style="color:var(--accent); font-size:45px; text-shadow: 0 0 15px var(--accent);">₹ <span id="inr">0</span></h1>
-            <p style="opacity: 0.8; margin-top: 10px; font-size:14px;">Chip Count: <span id="chips">0</span></p>
+    <div class="match-list-card" style="padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h3 style="color:var(--accent); text-shadow: 0 0 10px var(--accent);">SELECT YOUR LUCKY BOXES</h3>
+            <p style="font-size: 12px; color: #888;">Pick one or more boxes. Winning doubles your stake!</p>
         </div>
+
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 25px;" id="boxGrid">
+            <button class="box-bet" onclick="toggleBox(this, 1)">1</button>
+            <button class="box-bet" onclick="toggleBox(this, 2)">2</button>
+            <button class="box-bet" onclick="toggleBox(this, 3)">3</button>
+            <button class="box-bet" onclick="toggleBox(this, 4)">4</button>
+            <button class="box-bet" onclick="toggleBox(this, 5)">5</button>
+            <button class="box-bet" onclick="toggleBox(this, 6)">6</button>
+            <button class="box-bet" onclick="toggleBox(this, 7)">7</button>
+            <button class="box-bet" onclick="toggleBox(this, 8)">8</button>
+            <button class="box-bet" onclick="toggleBox(this, 9)">9</button>
+            <button class="box-bet" onclick="toggleBox(this, 10)">10</button>
+        </div>
+
+        <button class="btn" id="proceedBtn" style="width: 100%; background: var(--primary); padding: 15px; font-weight: bold; border-radius: 8px; font-size: 16px;" onclick="openBoxStakePopup()">
+            PROCEED TO PLACE BET (<span id="selectedCount">0</span> SELECTED)
+        </button>
+    </div>
+</div>
         
-        <div class="neon-grid">
-            <div class="neon-box win-box">TOTAL WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
-            <div class="neon-box lose-box">TOTAL LOSSES<br><span id="lose" style="font-size: 20px;">0</span></div>
+    <div class="account-card" style="padding: 15px; margin-bottom: 15px; border-left: 5px solid var(--accent); background: #011627;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="text-align:left;">
+                <p style="color:#aaa; font-size:11px;">MAIN BALANCE (₹10/CHIP)</p>
+                <h2 style="color:var(--accent);">🪙 <span id="display-chips">0</span> <small style="font-size:14px;">(₹<span id="display-rs">0</span>)</small></h2>
+            </div>
+            <h4 id="match-timer" style="color:var(--neon-r); font-weight:bold;">READY</h4>
+        </div>
+    </div>
+
+    <div class="match-list-card">
+        <div class="match-header-row">
+            <span>LIVE CRICKET MATCHES</span>
+            <div style="display:flex; gap: 50px; padding-right: 30px;"><span>BACK</span><span>LAY</span></div>
+        </div>
+        <div class="match-entry">
+            <div class="team-meta">
+                <div class="team-title"><i class="fas fa-trophy" style="color:var(--accent)"></i>🏆 India v Northern Brave</div>
+                <div class="status-tag">● In-Play | LIVE</div>
+            </div>
+            <div class="odds-grid">
+                <button class="odds-btn back-btn" id="o1" onclick="openSlip('Otago Volts', 6.2, 'BACK')"><span class="odds-val">6.2</span><span class="odds-vol">12K</span></button>
+                <button class="odds-btn lay-btn" id="o2" onclick="openSlip('Otago Volts', 6.6, 'LAY')"><span class="odds-val">6.6</span><span class="odds-vol">8K</span></button>
+                <div style="width:10px"></div>
+                <button class="odds-btn back-btn" id="o3" onclick="openSlip('Northern Brave', 1.18, 'BACK')"><span class="odds-val">1.18</span><span class="odds-vol">450K</span></button>
+                <button class="odds-btn lay-btn" id="o4" onclick="openSlip('Northern Brave', 1.19, 'LAY')"><span class="odds-val">1.19</span><span class="odds-vol">200K</span></button>
+            </div>
         </div>
     </div>
 </div>
+
+<div class="bet-popup-slip" id="betSlip">
+    <div class="slip-head">
+        <span id="slipTeam">Team Name</span>
+        <i class="fas fa-times" onclick="closeSlip()" style="cursor:pointer;"></i>
+    </div>
+    <div class="slip-body">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <span>Odds: <b id="slipOdds" style="color:var(--accent)">1.95</b></span>
+            <span id="slipType" style="font-weight:bold;">BACK</span>
+        </div>
+        <input type="number" id="betAmountInput" class="form-group input" value="100" min="100" oninput="updateRsValue()" style="width:100%; padding:10px; background:#0b0e14; border:1px solid #333; color:white; border-radius:6px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:10px;">
+            <button class="act-btn btn-mode" style="width:100%; height:35px;" onclick="addQuickStake(500)">+500</button>
+            <button class="act-btn btn-mode" style="width:100%; height:35px;" onclick="addQuickStake(1000)">+1000</button>
+            <button class="act-btn btn-mode" style="width:100%; height:35px;" onclick="addQuickStake(5000)">+5000</button>
+        </div>
+        <p class="chip-to-rs" id="rsVal">Value: ₹1,000</p>
+        <button class="btn" style="width:100%; background:var(--neon-g); color:black; font-weight:bold; margin-top:15px; border-radius:6px; padding:12px;" onclick="confirmLiveBet()">PLACE BET</button>
+    </div>
+</div>
+
+        <div id="page-history" class="page">
+            <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px;">
+                <h3 style="color:var(--accent); margin-bottom:15px;"><i class="fas fa-history"></i> Transaction Log</h3>
+                <div style="overflow-x:auto">
+                    <table id="histTable" style="width:100%; border-collapse:collapse;">
+                        <thead><tr><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Date</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Type</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Amount</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Details</th></tr></thead>
+                        <tbody style="color:#ddd"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-account" class="page">
+    <div class="account-card">
+        <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">TOTAL SAVED MONEY</p>
+        <h1 style="color:var(--accent); font-size:40px; text-shadow: 0 0 15px var(--accent);">₹ <span id="inr">0</span></h1>
+        <p style="opacity: 0.8; margin-top: 10px; font-size:14px;">Available Chips: <span id="chips">0</span></p>
+    </div>
     
     <div class="neon-grid">
         <div class="neon-box win-box">TOTAL WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
@@ -809,4 +847,3 @@
 </script>
 </body>
 </html>
-
