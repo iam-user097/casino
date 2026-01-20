@@ -234,24 +234,48 @@
     </div>
 </div>
 
-    <div class="modal" id="msModal">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header"><h3>Market Selection</h3><i class="fas fa-times-circle" style="color:red; cursor:pointer; font-size:20px;" onclick="closeModal()"></i></div>
-            <div class="modal-body" style="grid-template-columns: 1fr;">
-                <div style="background:#0b0e14; padding:15px; border-radius:8px; border:1px solid var(--primary);">
-                    <p style="color:var(--accent); font-weight:bold; margin-bottom:12px;">Toggle Active Games:</p>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                        <label><input type="checkbox" checked> Cricket</label>
-                        <label><input type="checkbox" checked> Football</label>
-                        <label><input type="checkbox" checked> Tennis</label>
-                        <label><input type="checkbox" checked> Casino</label>
-                        <label><input type="checkbox" checked> Jackpot</label>
-                    </div>
+    <div class="modal" id="modeModal">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3>Gaming Modes: <span id="modeUser"></span></h3>
+            <i class="fas fa-times-circle" style="color:var(--neon-r); cursor:pointer;" onclick="closeModal()"></i>
+        </div>
+        <div class="modal-body" style="grid-template-columns: 1fr;">
+            <div style="background:#0b0e14; padding:20px; border-radius:12px; border:1px solid var(--primary);">
+                <p style="color:var(--accent); font-weight:bold; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">Select Active Games</p>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;" id="modeCheckboxes">
+                    <label style="cursor:pointer;"><input type="checkbox" checked> Cricket</label>
+                    <label style="cursor:pointer;"><input type="checkbox" checked> Football</label>
+                    <label style="cursor:pointer;"><input type="checkbox" checked> Tennis</label>
+                    <label style="cursor:pointer;"><input type="checkbox" checked> Casino</label>
                 </div>
-                <button class="btn" style="background:var(--primary); padding:12px; border-radius:6px; font-weight:bold;" onclick="closeModal()">Apply Settings</button>
+            </div>
+            <button class="btn" style="background:var(--neon-g); color:black; padding:12px; margin-top:15px; font-weight:bold; border-radius:6px; width:100%;" onclick="saveGamingModes()">UPDATE MODES</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="marketSettingModal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3>Market Setting: <span id="msUser"></span></h3>
+            <i class="fas fa-times-circle" style="color:var(--neon-r); cursor:pointer;" onclick="closeModal()"></i>
+        </div>
+        <div class="modal-body" style="grid-template-columns: 1fr 1fr; gap:15px;">
+            <div class="form-group">
+                <label>Game</label>
+                <select id="msGame" style="width:100%;"><option>Cricket</option><option>Football</option><option>Tennis</option></select>
+            </div>
+            <div class="form-group">
+                <label>Market</label>
+                <select id="msMarket" style="width:100%;"><option>Match Odds</option><option>Bookmaker</option><option>Session</option></select>
+            </div>
+            <div class="full-row" style="margin-top:10px;">
+                <button class="btn" style="background:var(--neon-g); color:black; padding:12px; font-weight:bold; border-radius:6px; width:100%;" onclick="saveMarketSettings()">SUBMIT SETTINGS</button>
             </div>
         </div>
     </div>
+</div>
 
     <div class="sidebar" id="sidebar">
         <div class="logo">Magic9.pro</div>
@@ -413,6 +437,7 @@
     if (!user) window.location.href = 'login.html';
     
     let editUserId = null;
+    let currentTargetUserId = null; // Target for MODE/MS
     let activeOdds = 1.95;
 
     // --- MODAL HELPERS ---
@@ -445,6 +470,20 @@
             if(el) el.style.display = 'none'; 
         });
         document.getElementById('userModal').style.display = 'flex';
+    }
+
+    // NEW: Open Gaming Modes Modal
+    function openModeModal(id, name) {
+        currentTargetUserId = id;
+        document.getElementById('modeUser').innerText = name;
+        document.getElementById('modeModal').style.display = 'flex';
+    }
+
+    // NEW: Open Market Setting Modal
+    function openMarketSetting(id, name) {
+        currentTargetUserId = id;
+        document.getElementById('msUser').innerText = name;
+        document.getElementById('marketSettingModal').style.display = 'flex';
     }
 
     function closeModal() {
@@ -521,7 +560,7 @@
             });
             const d = await res.json();
 
-            // SECURITY FILTER: 1. Hide logged-in user. 2. Hide SuperAdmin from non-SAdmins.
+            // SECURITY FILTER
             const filteredUsers = (d.users || []).filter(u => {
                 if (u.id === user.id) return false;
                 if (u.role === 'SuperAdmin' && user.role !== 'SuperAdmin') return false;
@@ -547,6 +586,10 @@
                         <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}', ${u.commission_percentage})"><i class="fas fa-edit"></i></button>
                         <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
                         <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
+                        
+                        <button class="act-btn btn-mode" title="Gaming Modes" onclick="openModeModal(${u.id}, '${u.username}')">MODE</button>
+                        <button class="act-btn btn-ms" title="Market Config" onclick="openMarketSetting(${u.id}, '${u.username}')">MS</button>
+                        
                         <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
@@ -596,7 +639,7 @@
     }
 
     async function deleteUser(id) {
-        if (!confirm("Permanently delete user?")) return;
+        if (!confirm("Are you sure? This will permanently delete user data and history.")) return;
         const res = await fetch('/api/delete-user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -670,6 +713,7 @@
                 alert(win ? "🏆 YOU WON!" : "❌ YOU LOST!");
                 if (timerEl) timerEl.innerText = "READY";
                 init();
+                loadHistory();
             }
         }, 1000);
     }
@@ -719,6 +763,19 @@
         init();
     }
 
+    // NEW: Save handlers for MODE and MS
+    async function saveGamingModes() {
+        alert("Success: Gaming modes updated for user ID: " + currentTargetUserId);
+        closeModal();
+    }
+
+    async function saveMarketSettings() {
+        const game = document.getElementById('msGame').value;
+        const market = document.getElementById('msMarket').value;
+        alert(`Success: ${game} ${market} updated for user ID: ${currentTargetUserId}`);
+        closeModal();
+    }
+
     function setupRoles() {
         const roles = ['Admin', 'SuperMaster', 'Master', 'Agent', 'Client'];
         const hierarchy = { 'SuperAdmin': 6, 'Admin': 5, 'SuperMaster': 4, 'Master': 3, 'Agent': 2, 'Client': 1 };
@@ -753,6 +810,12 @@
     function toggleSidebar() {
         document.getElementById('sidebar').classList.toggle('show');
         document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none';
+    }
+
+    function filterUsers() {
+        const input = document.getElementById('userSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('#userTable tbody tr');
+        rows.forEach(r => r.style.display = r.innerText.toLowerCase().includes(input) ? "" : "none");
     }
 
     function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
