@@ -152,6 +152,10 @@
     }
 }
 
+.box-bet { height: 60px; background: #1a202c; border: 2px solid #333; border-radius: 8px; color: white; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    .box-bet:hover { border-color: var(--accent); }
+    .box-bet.selected { background: var(--accent); color: black; border-color: white; box-shadow: 0 0 15px var(--accent); }
+        
 .odds-btn:active { transform: scale(0.9); }
 .back-btn { background: #00aaff; color: black; }
 .lay-btn { background: #ff7eb9; color: black; }
@@ -323,18 +327,45 @@
             </div>
         </div>
 
-        <div id="page-bet" class="page">
-    <div class="account-card" style="border-bottom: 3px solid var(--neon-g); margin-bottom: 20px;">
-        <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">BETTING EXPOSURE WALLET</p>
-        <h1 style="color:var(--neon-g); font-size:45px; text-shadow: 0 0 15px var(--neon-g);">🪙 <span id="bet-exp">0</span></h1>
-        
-        <div style="display:flex; gap:10px; margin-top:15px; justify-content:center;">
-            <input type="number" id="expInp" placeholder="Min 1000" style="max-width: 140px; background:#0b0e14; color:white; border:1px solid #333; padding:10px; border-radius:6px;">
-            <button onclick="addExp()" class="btn" style="background: var(--accent); color: black; font-weight:bold; padding:0 20px; border-radius:6px;">Deposit to Wallet</button>
+       <div id="page-bet" class="page">
+    <div class="account-card" style="padding: 15px; margin-bottom: 20px; border-left: 5px solid var(--neon-g); background: #011627;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="text-align:left;">
+                <p style="color:#aaa; font-size:11px;">AVAILABLE BALANCE</p>
+                <h2 style="color:var(--neon-g);">🪙 <span id="display-chips">0</span> <small style="font-size:12px; color:#aaa;">(₹<span id="display-rs">0</span>)</small></h2>
+            </div>
+            <div style="text-align:right;">
+                <p style="color:#aaa; font-size:11px;">STATUS</p>
+                <h4 id="match-timer" style="color:var(--accent);">READY TO PLAY</h4>
+            </div>
         </div>
-        <p style="font-size: 10px; color: #888; margin-top: 8px;">Chips will be moved from your main balance to betting exposure.</p>
     </div>
 
+    <div class="match-list-card" style="padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h3 style="color:var(--accent); text-shadow: 0 0 10px var(--accent);">SELECT YOUR LUCKY BOXES</h3>
+            <p style="font-size: 12px; color: #888;">Pick one or more boxes. Winning doubles your stake!</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 25px;" id="boxGrid">
+            <button class="box-bet" onclick="toggleBox(this, 1)">1</button>
+            <button class="box-bet" onclick="toggleBox(this, 2)">2</button>
+            <button class="box-bet" onclick="toggleBox(this, 3)">3</button>
+            <button class="box-bet" onclick="toggleBox(this, 4)">4</button>
+            <button class="box-bet" onclick="toggleBox(this, 5)">5</button>
+            <button class="box-bet" onclick="toggleBox(this, 6)">6</button>
+            <button class="box-bet" onclick="toggleBox(this, 7)">7</button>
+            <button class="box-bet" onclick="toggleBox(this, 8)">8</button>
+            <button class="box-bet" onclick="toggleBox(this, 9)">9</button>
+            <button class="box-bet" onclick="toggleBox(this, 10)">10</button>
+        </div>
+
+        <button class="btn" id="proceedBtn" style="width: 100%; background: var(--primary); padding: 15px; font-weight: bold; border-radius: 8px; font-size: 16px;" onclick="openBoxStakePopup()">
+            PROCEED TO PLACE BET (<span id="selectedCount">0</span> SELECTED)
+        </button>
+    </div>
+</div>
+        
     <div class="account-card" style="padding: 15px; margin-bottom: 15px; border-left: 5px solid var(--accent); background: #011627;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <div style="text-align:left;">
@@ -437,7 +468,8 @@
     
     let editUserId = null;
     let currentTargetUserId = null; 
-    let activeOdds = 1.95;
+    let activeOdds = 2.00; // Updated to 2.0 for the Box Winning System
+    let selectedBoxes = []; // NEW: Track selected boxes for betting
 
     // --- MODAL HELPERS ---
     function openModal() {
@@ -539,7 +571,7 @@
         loadCommissionSummary();
     }
 
-    // --- USER MANAGEMENT (HIERARCHY PROTECTED) ---
+    // --- USER MANAGEMENT ---
     async function loadUsers() {
         const tbody = document.querySelector('#userTable tbody');
         if (!tbody) return;
@@ -551,7 +583,6 @@
             });
             const d = await res.json();
 
-            // SECURITY FILTER: Hide self and protect SuperAdmin
             const filteredUsers = (d.users || []).filter(u => {
                 if (u.id === user.id) return false;
                 if (u.role === 'SuperAdmin' && user.role !== 'SuperAdmin') return false;
@@ -608,86 +639,94 @@
         if (d.success) { closeModal(); init(); } else alert(d.message);
     }
 
-    // --- SECURITY & DELETE ---
-    async function forceUpdatePass() {
-        const newPass = document.getElementById('newSecurePass').value;
-        const confirmPass = document.getElementById('confirmSecurePass').value;
-        if (newPass.length < 6) return alert("Password must be at least 6 characters.");
-        if (newPass !== confirmPass) return alert("Passwords do not match!");
-
-        const res = await fetch('/api/update-password-secure', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id, newPass: newPass })
-        });
-        const d = await res.json();
-        if (d.success) { alert("Success! Access granted."); location.reload(); } else alert(d.message);
+    // --- BOX BETTING LOGIC (RECONSTRUCTED) ---
+    function toggleBox(el, num) {
+        if (selectedBoxes.includes(num)) {
+            selectedBoxes = selectedBoxes.filter(n => n !== num);
+            el.classList.remove('selected');
+        } else {
+            selectedBoxes.push(num);
+            el.classList.add('selected');
+        }
+        document.getElementById('selectedCount').innerText = selectedBoxes.length;
     }
 
-    async function deleteUser(id) {
-        if (!confirm("Permanently delete user?")) return;
-        const res = await fetch('/api/delete-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
-        });
-        const d = await res.json();
-        if (d.success) { alert("Deleted."); init(); } else alert(d.message);
-    }
-
-    // --- BETTING ENGINE (DIRECT BALANCE) ---
-    function openSlip(team, odds, type) {
-        activeOdds = odds;
-        document.getElementById('slipTeam').innerText = `${team} (${type})`;
-        document.getElementById('slipOdds').innerText = odds;
-        document.getElementById('slipType').innerText = type;
+    function openBoxStakePopup() {
+        if (selectedBoxes.length === 0) return alert("Please select at least 1 box!");
+        
+        document.getElementById('slipTeam').innerText = `Boxes: ${selectedBoxes.join(', ')}`;
+        document.getElementById('slipOdds').innerText = "2.00";
+        document.getElementById('slipType').innerText = "WINNER";
+        document.getElementById('betAmountInput').value = 100;
         document.getElementById('betSlip').style.display = 'block';
         updateRsValue();
     }
 
-    async function confirmLiveBet() {
-        const amt = document.getElementById('betAmountInput').value;
-        if(amt < 100) return alert("Min bet 100 chips");
-        closeSlip(); 
-        bet(amt);
+    function updateRsValue() {
+        const stakePerBox = document.getElementById('betAmountInput').value || 0;
+        const totalChips = stakePerBox * selectedBoxes.length;
+        const totalINR = totalChips * 10;
+        document.getElementById('rsVal').innerText = `Total Bet: ${totalChips} Chips (₹${totalINR.toLocaleString()})`;
     }
 
-    async function bet(amt) {
-        const betAmt = parseFloat(amt);
-        if (parseFloat(user.balance) < betAmt) {
-            return alert("Insufficient Balance! Please contact Agent for chips.");
-        }
+    async function confirmLiveBet() {
+        const stakePerBox = parseFloat(document.getElementById('betAmountInput').value);
+        if(stakePerBox < 100) return alert("Min bet per box is 100 chips");
+
+        const totalRequired = stakePerBox * selectedBoxes.length;
+        if (parseFloat(user.balance) < totalRequired) return alert("Insufficient Balance!");
+
+        closeSlip();
+        document.getElementById('match-timer').innerText = "PROCESSING...";
 
         const res = await fetch('/api/place-bet-direct', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id, amount: betAmt })
+            body: JSON.stringify({ userId: user.id, amount: totalRequired })
         });
+
         const d = await res.json();
         if (d.success) { 
             init(); 
-            startLiveTimer(betAmt); 
+            startBoxTimer(stakePerBox); 
         } else {
             alert(d.message);
         }
     }
 
-    function startLiveTimer(amt) {
-        let sec = 10;
+    function startBoxTimer(stakePerBox) {
+        let sec = 5;
         const timerEl = document.getElementById('match-timer');
         const interval = setInterval(async () => {
             sec--;
-            if (timerEl) timerEl.innerText = `SETTLING: ${sec}s`;
+            timerEl.innerText = `SETTLING: ${sec}s`;
             if (sec <= 0) {
                 clearInterval(interval);
-                const win = Math.random() > 0.5;
+                const winningBox = Math.floor(Math.random() * 10) + 1;
+                const isUserWinner = selectedBoxes.includes(winningBox);
+
                 await fetch('/api/settle-bet', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: user.id, amount: amt, odds: activeOdds, isWin: win })
+                    body: JSON.stringify({ 
+                        userId: user.id, 
+                        amount: stakePerBox, 
+                        odds: 2.0, 
+                        isWin: isUserWinner 
+                    })
                 });
-                alert(win ? "🏆 YOU WON!" : "❌ YOU LOST!");
-                if (timerEl) timerEl.innerText = "READY";
+
+                if (isUserWinner) {
+                    alert(`🏆 Box ${winningBox} won! You get double reward!`);
+                } else {
+                    alert(`❌ Box ${winningBox} won. Better luck next time!`);
+                }
+
+                // UI RESET
+                selectedBoxes = [];
+                document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('selected'));
+                document.getElementById('selectedCount').innerText = "0";
+                timerEl.innerText = "READY";
                 init();
                 loadHistory();
             }
@@ -740,21 +779,16 @@
     }
 
     async function saveGamingModes() {
-        // Collect checked boxes
         const checkedModes = Array.from(document.querySelectorAll('#modeCheckboxes input:checked'))
                                  .map(cb => cb.parentElement.innerText.trim())
                                  .join(',');
-        
         const res = await fetch('/api/save-modes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: currentTargetUserId, modes: checkedModes })
         });
         const d = await res.json();
-        if(d.success) {
-            alert("Success: Gaming modes locked for user.");
-            closeModal();
-        }
+        if(d.success) { closeModal(); alert("Modes saved."); }
     }
 
     async function saveMarketSettings() {
@@ -766,10 +800,7 @@
             body: JSON.stringify({ userId: currentTargetUserId, game: game, market: market })
         });
         const d = await res.json();
-        if(d.success) {
-            alert(`Success: ${game} ${market} updated for user.`);
-            closeModal();
-        }
+        if(d.success) { closeModal(); alert("Market set."); }
     }
 
     function setupRoles() {
@@ -782,11 +813,6 @@
                 opt.value = r; opt.innerText = r; sel.appendChild(opt);
             }});
         }
-    }
-
-    function updateRsValue() {
-        const chips = document.getElementById('betAmountInput').value || 0;
-        document.getElementById('rsVal').innerText = `Value: ₹${(chips * 10).toLocaleString()}`;
     }
 
     function addQuickStake(amt) {
