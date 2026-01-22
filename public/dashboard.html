@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Magic9 Pro Dashboard</title>
+    
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00509d">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- NEON DARK THEME CORE --- */
@@ -34,15 +39,15 @@
         .page.active { display:block; }
         @keyframes slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
 
-        /* NEON TABLE DESIGN */
+        /* NEON TABLE & UI */
         .table-container { background: #12161f; border-radius: 12px; overflow-x: auto; margin-top: 10px; border: 1px solid var(--primary); }
         table { width:100%; border-collapse:collapse; min-width: 900px; }
         th { background: #011627; color: var(--accent); padding: 15px; font-size: 13px; text-transform: uppercase; border-bottom: 1px solid var(--primary); }
         td { padding: 12px; border-bottom: 1px solid #1a202c; text-align: center; }
+        tr:hover { background: rgba(255,255,255,0.03); transform: scale(1.002); }
 
-        /* ACTION BUTTONS */
-        .act-btn { width: 32px; height: 32px; border-radius: 50%; border: none; color: white; cursor: pointer; margin: 0 2px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; transition: 0.2s; }
-        .act-btn:hover { transform: scale(1.2); filter: brightness(1.3); }
+        .act-btn { width: 32px; height: 32px; border-radius: 50%; border: none; color: white; cursor: pointer; margin: 0 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; transition: 0.2s; }
+        .act-btn:hover { transform: scale(1.2) rotate(5deg); filter: brightness(1.3); }
         .btn-edit { background: #007bff; } .btn-d { background: var(--primary); } .btn-w { background: #6c757d; } .btn-del { background: var(--neon-r); }
 
         .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:20px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); box-shadow: 0 0 15px rgba(0, 80, 157, 0.2); }
@@ -51,7 +56,7 @@
         .box-bet.winner-set { background: var(--neon-g); color: black; border-color: white; box-shadow: 0 0 20px var(--neon-g); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        /* MODALS & INPUTS */
+        /* MODALS & FIELDS */
         .modal { display:none; position:fixed; inset: 0; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
         .modal-content { background:#12161f; width:90%; max-width:600px; border-radius:12px; border: 1px solid var(--primary); overflow:hidden; }
         .modal-header { background:#011627; padding:15px; border-bottom: 2px solid var(--neon-r); display: flex; justify-content: space-between; align-items: center; }
@@ -61,9 +66,7 @@
         .modal-body input, .modal-body select { width: 100%; padding: 12px; background: #0b0e14; border: 1px solid #333; border-radius: 8px; color: white; font-size: 14px; outline: none; }
         .btn-submit-neon { grid-column: span 2; background: linear-gradient(135deg, var(--neon-g), #2ecc71); color: black; padding: 15px; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; margin-top: 10px; box-shadow: 0 4px 15px rgba(57, 255, 20, 0.2); }
 
-        /* COUNTDOWN */
         #timer-display { font-size: 45px; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px var(--accent); }
-
         .bet-popup-slip { position: fixed; bottom: 20px; right: 20px; width: 320px; background: #011627; border: 2px solid var(--accent); border-radius: 15px; z-index: 5000; display: none; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
         .slip-head { background: var(--accent); color: black; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; border-radius: 12px 12px 0 0; }
 
@@ -88,7 +91,7 @@
         <div class="header">
             <div style="display:flex; align-items:center;">
                 <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)" style="cursor:pointer; font-size: 20px; margin-right:15px;"></i>
-                <h3 id="dashTitle">Dashboard</h3>
+                <h3 id="dashTitle">Magic9 Dashboard</h3>
             </div>
             <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 8px 20px; border-radius: 50px; border: 1px solid var(--accent);">🪙 Loading...</div>
         </div>
@@ -101,17 +104,13 @@
             <div class="table-container"><table id="userTable"><thead><tr><th>Status</th><th>Name</th><th>Settlement</th><th>Points</th><th>Login</th><th>Lock</th><th>Active</th><th>Action</th></tr></thead><tbody></tbody></table></div>
         </div>
 
-        <div id="page-bet" class="page">
-            <div id="bet-content-container"></div>
-        </div>
+        <div id="page-bet" class="page"><div id="bet-content-container"></div></div>
 
         <div id="page-mgmt" class="page">
             <div class="account-card" style="border-top: 4px solid var(--accent);">
                 <h2 style="color:var(--accent);">HOUSE CONTROL</h2>
-                <p style="color:#aaa; font-size:12px; margin-bottom: 25px;">Admin: Set the winning box to process all client settlements manually.</p>
-                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;">
-                    ${Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="setWinnerBox(this, ${i+1})">${i+1}</button>`).join('')}
-                </div>
+                <p style="color:#aaa; font-size:12px; margin-bottom: 25px;">Admin: Manually set the winner box to settle all active bets manually.</p>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="houseGrid"></div>
                 <button class="btn-submit-neon" style="width:100%;" onclick="confirmHouseResult()">REVEAL & SETTLE ALL BETS</button>
             </div>
         </div>
@@ -149,11 +148,11 @@
 
     <div class="modal" id="passChangeModal">
         <div class="modal-content" style="max-width: 450px;"><div class="modal-header"><h3>Security Reset Required</h3></div><div class="modal-body" style="grid-template-columns: 1fr;">
-            <p style="font-size:13px; color:#aaa;">Update your temporary password to access the dashboard.</p>
+            <p style="font-size:12px; color:#aaa;">Update your temporary password to unlock the dashboard.</p>
             <div class="form-group"><label>Old Password</label><input type="password" id="oldSecurePass" maxlength="6"></div>
-            <div class="form-group"><label>New Password (6 Digits)</label><input type="password" id="newSecurePass" maxlength="6"></div>
+            <div class="form-group"><label>New Password</label><input type="password" id="newSecurePass" maxlength="6"></div>
             <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmSecurePass" maxlength="6"></div>
-            <button class="btn-submit-neon" onclick="forceUpdatePass()">Update & Access Dashboard</button>
+            <button class="btn-submit-neon" onclick="forceUpdatePass()">Update & Unlock</button>
         </div></div>
     </div>
 
@@ -194,8 +193,8 @@
                         document.getElementById('nav-bet-client').style.display = 'flex';
                         document.getElementById('bet-content-container').innerHTML = `
                             <div class="account-card" style="border-left: 5px solid var(--neon-g); text-align: left; display: flex; justify-content: space-between; align-items: center; padding: 15px;">
-                                <div><p style="color:#aaa; font-size:11px;">AVAILABLE BALANCE</p><h2 style="color:var(--neon-g);">🪙 <span id="display-chips">${bal.toLocaleString()}</span> <small style="font-size:14px; color:#aaa;">(₹${(bal*10).toLocaleString()})</small></h2></div>
-                                <div style="text-align:right;"><div id="timer-display">READY</div><h4 id="match-timer" style="color:var(--accent); font-size:10px;">OPEN FOR BETS</h4></div>
+                                <div><p style="color:#aaa; font-size:11px;">CHIP BALANCE</p><h2 style="color:var(--neon-g);">🪙 <span id="display-chips">${bal.toLocaleString()}</span> <small style="font-size:14px; color:#aaa;">(₹${(bal*10).toLocaleString()})</small></h2></div>
+                                <div style="text-align:right;"><div id="timer-display">READY</div><h4 id="match-timer" style="color:var(--accent); font-size:10px;">OPEN</h4></div>
                             </div>
                             <div class="account-card" style="padding: 30px; background: #12161f;">
                                 <h3 style="color:var(--accent); margin-bottom: 20px;">CHOOSE WINNING BOXES</h3>
@@ -204,21 +203,14 @@
                             </div>`;
                     } else if (user.role === 'SuperAdmin') {
                         document.getElementById('nav-mgmt-sa').style.display = 'flex';
+                        document.getElementById('houseGrid').innerHTML = Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="setWinnerBox(this, ${i+1})">${i+1}</button>`).join('');
                     }
                 }
             } catch (e) {}
             loadUsers(); loadHistory(); loadCommissionSummary(); setupRoles();
         }
 
-        // --- HOUSE CONTROL ---
-        function setWinnerBox(el, num) { document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('winner-set')); el.classList.add('winner-set'); houseWinner = num; }
-        async function confirmHouseResult() {
-            if (!houseWinner) return alert("Select winner box first!");
-            const res = await fetch('/api/house-settle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ winnerBox: houseWinner }) });
-            if ((await res.json()).success) { alert("Round Settled! Clients processed."); location.reload(); }
-        }
-
-        // --- SUSPENSE REVEAL LOGIC ---
+        // --- 10S REVEAL ---
         function runCountdown(stakePerBox) {
             let sec = 10;
             const timerText = document.getElementById('timer-display');
@@ -229,7 +221,7 @@
 
             const interval = setInterval(async () => {
                 timerText.innerText = sec;
-                subText.innerText = "WAITING FOR RESULT...";
+                subText.innerText = "CALCULATING...";
                 if (--sec < 0) {
                     clearInterval(interval);
                     const winNum = Math.floor(Math.random() * 10) + 1;
@@ -238,38 +230,51 @@
                     await fetch('/api/settle-bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: stakePerBox, odds: 2, isWin: win }) });
                     timerText.innerText = win ? "WIN!" : "LOSS";
                     timerText.style.color = win ? "var(--neon-g)" : "var(--neon-r)";
-                    alert(win ? `🏆 Box ${winNum} WON! Stake Doubled.` : `❌ Box ${winNum} won. Better luck next time!`);
+                    alert(win ? `🏆 Box ${winNum} WON! Chips added.` : `❌ Box ${winNum} won. Better luck next time!`);
                     selectedBoxes = []; setTimeout(() => init(), 2000);
                 }
             }, 1000);
         }
 
-        // --- FINANCIALS & UI ---
+        // --- HOUSE CONTROL SETTLEMENT ---
+        function setWinnerBox(el, num) { document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('winner-set')); el.classList.add('winner-set'); houseWinner = num; }
+        async function confirmHouseResult() {
+            if (!houseWinner) return alert("Select winner box first!");
+            const res = await fetch('/api/house-settle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ winnerBox: houseWinner }) });
+            if ((await res.json()).success) { alert("Round Settled!"); location.reload(); }
+        }
+
+        // --- UI & LOGIC ---
         function toggleBox(el, num) { if (selectedBoxes.includes(num)) { selectedBoxes = selectedBoxes.filter(n => n !== num); el.classList.remove('selected'); } else { selectedBoxes.push(num); el.classList.add('selected'); } document.getElementById('selectedCount').innerText = selectedBoxes.length; updateRsValue(); }
-        function openBoxStakePopup() { if (!selectedBoxes.length) return alert("Select boxes!"); document.getElementById('slipTeam').innerText = `Selected Boxes: ${selectedBoxes.join(', ')}`; document.getElementById('betSlip').style.display = 'block'; updateRsValue(); }
+        function openBoxStakePopup() { if (!selectedBoxes.length) return alert("Select boxes!"); document.getElementById('slipTeam').innerText = `Boxes: ${selectedBoxes.join(', ')}`; document.getElementById('betSlip').style.display = 'block'; updateRsValue(); }
         function updateRsValue() { const s = document.getElementById('betAmountInput').value || 0; const t = s * selectedBoxes.length; document.getElementById('rsVal').innerText = `TOTAL DEDUCTION: ${t} Chips (₹${(t*10).toLocaleString()})`; }
         async function confirmLiveBet() {
             const stake = parseFloat(document.getElementById('betAmountInput').value); const total = stake * selectedBoxes.length;
             if (parseFloat(user.balance) < total) return alert("Insufficient Chips!");
             closeSlip();
-            // FIXED: Send StakePerBox to countdown system
             const res = await fetch('/api/place-bet-direct', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: total, boxes: selectedBoxes, stakePerBox: stake }) });
             if ((await res.json()).success) runCountdown(stake);
         }
 
-        // --- MGMT & ACCOUNT ---
-        async function loadUsers() { const res = await fetch('/api/my-users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, role: user.role }) }); const d = await res.json(); const filtered = (d.users || []).filter(u => u.id !== user.id && (user.role === 'SuperAdmin' || u.role !== 'SuperAdmin')); document.querySelector('#userTable tbody').innerHTML = filtered.map(u => `<tr><td><i class="fas fa-circle" style="color:var(--neon-g); font-size:8px;"></i></td><td style="text-align:left;"><b>${u.username}</b><br><small>${u.role}</small></td><td>Direct</td><td><b>${parseFloat(u.balance).toLocaleString()}</b></td><td><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></td><td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td><td><button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-pen"></i></button><button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button><button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button><button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button></td></tr>`).join(''); }
-        async function submitUser() {
-            const uName = document.getElementById('mUName').value, pass = document.getElementById('mPass').value, cPass = document.getElementById('mCPass').value, role = document.getElementById('mRole').value, comm = document.getElementById('mComm').value, depo = document.getElementById('mDeposit').value;
-            if(!editUserId && (pass !== cPass || pass.length !== 6)) return alert("Password mismatch or length error!");
-            const res = await fetch(editUserId ? '/api/update-user' : '/api/create-user-advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uName, pass, role, commission: comm, deposit: depo, creatorId: user.id, id: editUserId }) });
-            if ((await res.json()).success) { closeModal(); init(); }
-        }
         async function forceUpdatePass() {
             const oldP = document.getElementById('oldSecurePass').value, newP = document.getElementById('newSecurePass').value, cP = document.getElementById('confirmSecurePass').value;
-            if(newP !== cP || newP.length !== 6) return alert("Security: Password must match and be 6 digits!");
+            if(newP !== cP || newP.length !== 6) return alert("Check password matches and length!");
             const res = await fetch('/api/update-password-secure', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, oldPass: oldP, newPass: newP }) });
-            if ((await res.json()).success) location.reload();
+            if ((await res.json()).success) location.reload(); else alert("Error updating security!");
+        }
+
+        async function loadUsers() {
+            const res = await fetch('/api/my-users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, role: user.role }) });
+            const d = await res.json();
+            const filtered = (d.users || []).filter(u => u.id !== user.id && (user.role === 'SuperAdmin' || u.role !== 'SuperAdmin'));
+            document.querySelector('#userTable tbody').innerHTML = filtered.map(u => `<tr><td><i class="fas fa-circle" style="color:var(--neon-g); font-size:8px;"></i></td><td style="text-align:left;"><b>${u.username}</b><br><small>${u.role}</small></td><td>Direct</td><td><b>${parseFloat(u.balance).toLocaleString()}</b></td><td><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></td><td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td><td><button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-pen"></i></button><button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button><button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button><button class="act-btn btn-del" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+        }
+
+        async function submitUser() {
+            const u = document.getElementById('mUName').value, p = document.getElementById('mPass').value, cp = document.getElementById('mCPass').value, r = document.getElementById('mRole').value, c = document.getElementById('mComm').value, d = document.getElementById('mDeposit').value;
+            if(!editUserId && (p !== cp || p.length !== 6)) return alert("Password mismatch or length error!");
+            const res = await fetch(editUserId ? '/api/update-user' : '/api/create-user-advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uName: u, pass: p, role: r, commission: c, deposit: d, creatorId: user.id, id: editUserId }) });
+            if ((await res.json()).success) { closeModal(); init(); }
         }
 
         function nav(id, el) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); if(el) el.classList.add('active'); if(window.innerWidth <= 768) toggleSidebar(); }
@@ -277,8 +282,8 @@
         function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
         function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
         function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
-        function openEdit(id, name, comm) { editUserId = id; document.getElementById('mTitle').innerText = "Edit User"; document.getElementById('mUName').value = name; document.getElementById('mComm').value = comm; document.getElementById('passDivGrp').style.display = 'none'; document.getElementById('cPassDivGrp').style.display = 'none'; document.getElementById('depoDiv').style.display = 'none'; document.getElementById('userModal').style.display = 'flex'; }
-        function openModal() { editUserId = null; document.getElementById('mTitle').innerText = "New User"; document.getElementById('mUName').value = ""; document.getElementById('passDivGrp').style.display = 'flex'; document.getElementById('cPassDivGrp').style.display = 'flex'; document.getElementById('depoDiv').style.display = 'flex'; document.getElementById('userModal').style.display = 'flex'; }
+        function openEdit(id, name, comm) { editUserId = id; document.getElementById('mTitle').innerText = "Edit Account"; document.getElementById('mUName').value = name; document.getElementById('mComm').value = comm; document.getElementById('passDivGrp').style.display = 'none'; document.getElementById('cPassDivGrp').style.display = 'none'; document.getElementById('depoDiv').style.display = 'none'; document.getElementById('userModal').style.display = 'flex'; }
+        function openModal() { editUserId = null; document.getElementById('mTitle').innerText = "New Account"; document.getElementById('mUName').value = ""; document.getElementById('passDivGrp').style.display = 'contents'; document.getElementById('depoDiv').style.display = 'contents'; document.getElementById('userModal').style.display = 'flex'; }
         async function give(id, name) { const amt = prompt(`Deposit to ${name}:`); if(amt) await fetch('/api/transfer-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) }) }); init(); }
         async function withdraw(id, name) { const amt = prompt(`Withdraw from ${name}:`); if(amt) await fetch('/api/withdraw-chips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) }) }); init(); }
         async function deleteUser(id) { if(!confirm("Perm delete? Must have 0 balance.")) return; const res = await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); if((await res.json()).success) init(); }
