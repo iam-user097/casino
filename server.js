@@ -20,7 +20,10 @@ const db = mysql.createPool({
     queueLimit: 0
 });
 
-const defaultPasswords = ['123456', '111111', '222222', '333333', '444444', '555555', '666666', '654321', '012345', '543210'];
+const defaultPasswords = ['123456', '111111', '222222', '333333', '444444', '555555', '666666', '000000', '654321', '112233'];
+
+// In-memory queue to track bets until House Settle is called
+let activeBets = [];
 
 // --- ROUTES ---
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
@@ -44,7 +47,7 @@ app.post('/api/login', (req, res) => {
 
 app.post('/api/update-password-secure', (req, res) => {
     const { userId, newPass } = req.body;
-    if (!newPass || newPass.length < 6) return res.json({ success: false, message: "Min 6 characters required" });
+    if (!newPass || newPass.length !== 6) return res.json({ success: false, message: "Fixed 6 chars only" });
     db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err) => {
         res.json({ success: !err });
     });
@@ -78,9 +81,7 @@ app.post('/api/my-users', (req, res) => {
                 if (saResult && saResult.length > 0) allUsers.unshift(saResult[0]);
                 res.json({ users: allUsers });
             });
-        } else {
-            res.json({ users: allUsers });
-        }
+        } else res.json({ users: allUsers });
     });
 });
 
@@ -93,7 +94,7 @@ app.post('/api/create-user-advanced', (req, res) => {
         conn.beginTransaction(() => {
             const sql = `INSERT INTO users(username, password, role, parent_id, balance, commission_percentage, force_password_change) VALUES(?,?,?,?,?,?,?)`;
             conn.query(sql, [uName, pass, role, creatorId, depAmt, commission, force], (err) => {
-                if (err) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'User already exists' }); });
+                if (err) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'User exists' }); });
                 if (depAmt > 0) {
                     conn.query('UPDATE users SET balance = balance - ? WHERE id = ?', [depAmt, creatorId], () => {
                         conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
@@ -107,86 +108,81 @@ app.post('/api/create-user-advanced', (req, res) => {
     });
 });
 
-// --- CONFIGURATION ROUTES ---
-app.post('/api/save-modes', (req, res) => {
-    const { userId, modes } = req.body; 
-    db.query('UPDATE users SET gaming_modes = ? WHERE id = ?', [modes, userId], (err) => {
-        res.json({ success: !err });
-    });
-});
-
-app.post('/api/save-market', (req, res) => {
-    const { userId, game, market } = req.body;
-    const desc = `${game} - ${market}`;
-    db.query('UPDATE users SET market_config = ? WHERE id = ?', [desc, userId], (err) => {
-        res.json({ success: !err });
-    });
-});
-
-// --- DIRECT BETTING & BOX WINNING ENGINE ---
+// --- DIRECT BETTING & HOUSE CONTROL ENGINE ---
 app.post('/api/place-bet-direct', (req, res) => {
-    const { userId, amount } = req.body;
-    const amt = parseFloat(amount);
-    db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amt, userId, amt], (err, r) => {
+    const { userId, amount, boxes, stakePerBox } = req.body;
+    const totalStake = parseFloat(amount);
+    
+    db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [totalStake, userId, totalStake], (err, r) => {
         if (r && r.affectedRows > 0) {
-            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Bet Active', -amt, `Direct Stake of ${amt} chips`]);
+            // Log deduction
+            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Bet Active', -totalStake, `Stake on ${boxes.length} boxes`]);
+            
+            // Queue for House Settle
+            activeBets.push({ userId, boxes, stakePerBox });
             res.json({ success: true });
         } else res.json({ success: false, message: 'Insufficient Main Balance' });
     });
 });
 
-app.post('/api/settle-bet', async (req, res) => {
-    const { userId, amount, isWin, odds } = req.body;
-    const amt = parseFloat(amount); // Per winning box stake
-    const profit = isWin ? (amt * parseFloat(odds)) - amt : 0;
+app.post('/api/house-settle', async (req, res) => {
+    const { winnerBox } = req.body;
     const conn = db.promise();
-
+    
     try {
         await conn.query('START TRANSACTION');
-        const [uRows] = await conn.query('SELECT username FROM users WHERE id = ?', [userId]);
-        const clientName = uRows[0].username;
 
-        if (isWin) {
-            // Return original stake + net profit to client
-            await conn.query('UPDATE users SET balance = balance + ?, total_wins = total_wins + 1 WHERE id = ?', [amt + profit, userId]);
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Win', profit, `Live Box Bet Won`]);
+        for (let bet of activeBets) {
+            const isWin = bet.boxes.includes(parseInt(winnerBox));
+            const stake = parseFloat(bet.stakePerBox);
+            const odds = 2; // Double payout rule
+            const profit = isWin ? (stake * odds) - stake : 0;
+            
+            const [uRows] = await conn.query('SELECT username FROM users WHERE id = ?', [bet.userId]);
+            const clientName = uRows[0].username;
 
-            // Upward Recursive Commission Loop
-            let currentChildId = userId;
-            while (true) {
-                const [pRows] = await conn.query('SELECT parent_id FROM users WHERE id = ?', [currentChildId]);
-                if (!pRows[0]?.parent_id) break;
+            if (isWin) {
+                // Return original stake + net profit
+                await conn.query('UPDATE users SET balance = balance + ?, total_wins = total_wins + 1 WHERE id = ?', [stake + profit, bet.userId]);
+                await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [bet.userId, 'Win', profit, `Winner Box: ${winnerBox}`]);
 
-                const pid = pRows[0].parent_id;
-                const [pData] = await conn.query('SELECT id, role, commission_percentage FROM users WHERE id = ?', [pid]);
-                
-                if (pData[0]) {
-                    const share = profit * (pData[0].commission_percentage / 100);
-                    if (share > 0) {
-                        await conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [share, pid]);
-                        await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
-                            [pid, 'Comm-Income', share, `Comm from ${clientName}`]);
-                    }
-                    if (pData[0].role === 'SuperAdmin') break;
-                    currentChildId = pid;
-                } else break;
+                // Upward Commission Loop
+                let currentChildId = bet.userId;
+                while (true) {
+                    const [pRows] = await conn.query('SELECT parent_id FROM users WHERE id = ?', [currentChildId]);
+                    if (!pRows[0]?.parent_id) break;
+
+                    const pid = pRows[0].parent_id;
+                    const [pData] = await conn.query('SELECT id, role, commission_percentage FROM users WHERE id = ?', [pid]);
+                    
+                    if (pData[0]) {
+                        const share = profit * (pData[0].commission_percentage / 100);
+                        if (share > 0) {
+                            await conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [share, pid]);
+                            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
+                                [pid, 'Comm-Income', share, `Comm from ${clientName}`]);
+                        }
+                        if (pData[0].role === 'SuperAdmin') break;
+                        currentChildId = pid;
+                    } else break;
+                }
+            } else {
+                await conn.query('UPDATE users SET total_losses = total_losses + 1 WHERE id = ?', [bet.userId]);
+                await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [bet.userId, 'Loss', 0, `Box ${winnerBox} won`]);
             }
-        } else {
-            await conn.query('UPDATE users SET total_losses = total_losses + 1 WHERE id = ?', [userId]);
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Loss', 0, 'Stake Lost (Direct)']);
         }
+
+        activeBets = []; // Clear queue
         await conn.query('COMMIT');
         res.json({ success: true });
     } catch (err) {
         await conn.query('ROLLBACK');
-        console.error("Settlement Error:", err);
         res.json({ success: false });
     }
 });
 
-// --- UTILS & FINANCIALS ---
+// --- FINANCIALS & UTILS ---
 app.post('/api/commission-summary', (req, res) => {
-    // Description must contain 'from ' to match dashboard parsing logic
     db.query(`SELECT SUBSTRING_INDEX(description, 'from ', -1) as downline_name, SUM(amount) as total_earned FROM transactions WHERE user_id = ? AND type = 'Comm-Income' GROUP BY downline_name`, [req.body.userId], (err, r) => res.json({ success: !err, summary: r || [] }));
 });
 
@@ -199,11 +195,11 @@ app.post('/api/transfer-credits', (req, res) => {
     db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amount, senderId, amount], (err, r) => {
         if (r && r.affectedRows > 0) {
             db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amount, receiverId], () => {
-                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [senderId, 'Sent', -amount, `Sent to User ID: ${receiverId}`]);
-                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [receiverId, 'Received', amount, `Received from User ID: ${senderId}`]);
+                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [senderId, 'Sent', -amount, `To ID: ${receiverId}`]);
+                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [receiverId, 'Received', amount, `From ID: ${senderId}`]);
                 res.json({ success: true });
             });
-        } else res.json({ success: false, message: 'Low balance' });
+        } else res.json({ success: false });
     });
 });
 
@@ -212,8 +208,8 @@ app.post('/api/withdraw-chips', (req, res) => {
     db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amount, userId, amount], (err, r) => {
         if (r && r.affectedRows > 0) {
             db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amount, adminId], () => {
-                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Withdrawal', -amount, `Recovered by Admin`]);
-                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [adminId, 'Clawback', amount, `Recovered from ID: ${userId}`]);
+                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Withdrawal', -amount, `Recovered`]);
+                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [adminId, 'Clawback', amount, `From ID: ${userId}`]);
                 res.json({ success: true });
             });
         } else res.json({ success: false });
@@ -225,7 +221,7 @@ app.post('/api/delete-user', (req, res) => {
         if (r && r.affectedRows > 0) {
             db.query('DELETE FROM transactions WHERE user_id = ?', [req.body.id]);
             res.json({ success: true });
-        } else res.json({ success: false, message: "Chips must be withdrawn before deletion" });
+        } else res.json({ success: false, message: "Withdraw chips first" });
     });
 });
 
