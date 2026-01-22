@@ -43,9 +43,10 @@
         td { padding: 12px; border-bottom: 1px solid #1a202c; text-align: center; font-size: 13px; }
         tr:hover { background: rgba(255,255,255,0.03); transform: scale(1.002); }
 
+        /* ACTION BUTTONS DESIGN */
         .act-btn { width: 32px; height: 32px; border-radius: 6px; border: none; color: white; cursor: pointer; margin: 0 2px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; transition: 0.2s; }
         .btn-edit { background: #007bff; } .btn-d { background: #28a745; } .btn-w { background: #fd7e14; } .btn-mode { background: #6f42c1; } .btn-ms { background: #17a2b8; } .btn-del { background: var(--neon-r); }
-        .act-btn:hover { filter: brightness(1.3); transform: scale(1.2) rotate(5deg); }
+        .act-btn:hover { filter: brightness(1.3); transform: scale(1.1); }
 
         .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:20px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); box-shadow: 0 0 15px rgba(0, 80, 157, 0.2); }
         .box-bet { height: 65px; background: #1a202c; border: 2px solid #333; border-radius: 10px; color: white; font-size: 22px; font-weight: bold; cursor: pointer; transition: 0.3s; }
@@ -59,7 +60,7 @@
         .modal-content { background:#12161f; width:90%; max-width:500px; border-radius:12px; border: 1px solid var(--primary); padding: 25px; }
 
         #timer-display { font-size: 45px; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px var(--accent); margin-bottom: 10px; }
-        .bet-popup-slip { position: fixed; bottom: 20px; right: 20px; width: 320px; background: #011627; border: 2px solid var(--accent); border-radius: 15px; z-index: 5000; display: none; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
+        .bet-popup-slip { position: fixed; bottom: 20px; right: 20px; width: 320px; background: #011627; border: 2px solid var(--accent); border-radius: 15px; padding: 20px; z-index: 5000; display: none; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
     </style>
 </head>
 <body>
@@ -98,23 +99,17 @@
         <div id="page-mgmt" class="page">
             <div class="account-card" style="border-top: 4px solid var(--accent);">
                 <h2 style="color:var(--accent);">HOUSE CONTROL</h2>
-                <p style="color:#aaa; font-size:12px; margin-bottom: 25px;">Admin: Select a box and click to set the PERMANENT winner.</p>
+                <p style="color:#aaa; font-size:12px; margin-bottom: 25px;">Admin: Set the PERMANENT winning box below.</p>
                 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="houseGrid"></div>
                 <button class="btn-action-main" onclick="savePermanentWinner()">SET AS PERMANENT WINNER</button>
                 <div id="adminStatus" style="font-size:11px; color:var(--neon-g); margin-top:15px; font-weight: bold;">MODE: RANDOM WINNING</div>
             </div>
         </div>
 
-        <div id="page-history" class="page">
-            <div class="account-card"><h3>Transaction Log</h3><div style="overflow-x: auto;"><table id="histTable"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr></thead><tbody></tbody></table></div></div>
-        </div>
+        <div id="page-history" class="page"><div class="account-card"><h3>Transaction History</h3><div style="overflow-x: auto;"><table id="histTable"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr></thead><tbody></tbody></table></div></div></div>
 
         <div id="page-account" class="page">
-            <div class="account-card" style="border: 2px solid var(--accent);">
-                <p style="color:#aaa; font-size:12px;">NET SAVED MONEY</p>
-                <h1 style="color:var(--accent); font-size:50px;">₹ <span id="inr">0</span></h1>
-                <p style="opacity: 0.8; margin-top: 10px;">Chips: <span id="chips">0</span></p>
-            </div>
+            <div class="account-card"><h1>₹ <span id="inr">0</span></h1><p>Chips: <span id="chips">0</span></p></div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                 <div class="account-card" style="border-color: var(--neon-g); color: var(--neon-g);">WINS (₹): <span id="wins">0</span></div>
                 <div class="account-card" style="border-color: var(--neon-r); color: var(--neon-r);">LOSSES (₹): <span id="lose">0</span></div>
@@ -129,18 +124,18 @@
     <div class="bet-popup-slip" id="betSlip" style="display:none; position: fixed; bottom: 20px; right: 20px; width: 320px; background: #011627; border: 2px solid var(--accent); border-radius: 15px; padding: 20px; z-index: 5000;">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><b style="color:var(--accent)">PLACE BET</b><i class="fas fa-times" onclick="closeSlip()" style="cursor:pointer"></i></div>
         <p id="slipBoxes" style="font-size:13px; margin-bottom:10px;"></p>
-        <input type="number" id="stakeInput" value="100" min="100" oninput="updateTotal()" style="width:100%; padding:10px; background:black; color:white; border:1px solid #333; margin-bottom:10px; border-radius: 8px;">
+        <input type="number" id="stakeInput" value="100" min="100" oninput="updateTotalStake()" style="width:100%; padding:10px; background:black; color:white; border:1px solid #333; margin-bottom:10px; border-radius: 8px;">
         <p id="totalCost" style="font-size:11px; margin-bottom:15px; color:#aaa;"></p>
         <button class="btn-action-main" onclick="confirmLiveBet()">CONFIRM BET</button>
     </div>
 
     <div class="modal" id="userModal">
         <div class="modal-content"><h3 id="mTitle">Settings</h3>
-            <input type="text" id="mUName" placeholder="Username" style="width:100%; margin:10px 0; padding:12px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
-            <div id="passDivGrp" style="display:contents"><input type="password" id="mPass" placeholder="Password (6 Digits)" maxlength="6" style="width:100%; margin:10px 0; padding:12px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
-            <select id="mRole" style="width:100%; margin:10px 0; padding:12px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></select>
-            <input type="number" id="mComm" value="0" step="0.1" style="width:100%; margin:10px 0; padding:12px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
-            <div id="depoDiv" style="display:contents"><input type="number" id="mDeposit" value="0" placeholder="Opening Balance" style="width:100%; margin:10px 0; padding:12px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
+            <input type="text" id="mUName" placeholder="Username" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
+            <div id="passDivGrp" style="display:contents"><input type="password" id="mPass" placeholder="Password" maxlength="6" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
+            <select id="mRole" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></select>
+            <input type="number" id="mComm" placeholder="Commission %" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
+            <div id="depoDiv" style="display:contents"><input type="number" id="mDeposit" value="0" placeholder="Opening Balance" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
             <button class="btn-action-main" onclick="submitUser()">Submit Details</button>
             <button style="width:100%; margin-top:10px; background:#444; color:white; border:none; padding:12px; border-radius:8px;" onclick="closeModal()">Close</button>
         </div>
@@ -194,44 +189,20 @@
             loadUsers(); loadHistory(); loadCommissionSummary(); setupRoles();
         }
 
-        // --- HOUSE CONTROL PERMANENT ---
-        function selectWinnerUI(el, num) {
-            document.querySelectorAll('#houseGrid .box-bet').forEach(b => b.classList.remove('winner-set'));
-            el.classList.add('winner-set');
-            tempAdminWinner = num;
-        }
-
-        function savePermanentWinner() {
-            if(!tempAdminWinner) return alert("Select a box first!");
-            localStorage.setItem('magicWinner', tempAdminWinner); // FIXED PERMANENT SAVE
-            document.getElementById('adminStatus').innerText = `MODE: FIXED WINNER (Box ${tempAdminWinner})`;
-            alert(`Winner locked to Box ${tempAdminWinner} permanently!`);
-        }
-
-        function runCountdown(stakePerBox) {
-            let sec = 10; const timerText = document.getElementById('timer-display'); const btns = document.querySelectorAll('.box-bet');
-            btns.forEach(b => b.disabled = true);
-            const interval = setInterval(async () => {
-                timerText.innerText = sec;
-                if (--sec < 0) {
-                    clearInterval(interval);
-                    const savedWinner = localStorage.getItem('magicWinner');
-                    let finalWinner = savedWinner ? parseInt(savedWinner) : Math.floor(Math.random() * 10) + 1;
-                    const win = selectedBoxes.includes(finalWinner);
-                    await fetch('/api/settle-bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: stakePerBox, totalStake: stakePerBox * selectedBoxes.length, isWin: win }) });
-                    timerText.innerText = win ? "WIN!" : "LOSS";
-                    selectedBoxes = []; setTimeout(() => init(), 2000);
-                }
-            }, 1000);
-        }
-
-        // --- 6-BUTTON TABLE LOGIC ---
+        // --- GLOBAL VS LOCAL FILTER ---
         async function loadUsers() {
             const res = await fetch('/api/my-users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, role: user.role }) });
             const d = await res.json();
-            // FILTER: Show only users created by THIS admin
-            const children = (d.users || []).filter(u => u.creator_id == user.id);
-            document.querySelector('#userTable tbody').innerHTML = children.map(u => `
+            
+            // SUPER ADMIN sees ALL. OTHERS see only their downline
+            let filtered;
+            if (user.role === 'SuperAdmin') {
+                filtered = (d.users || []).filter(u => u.id !== user.id);
+            } else {
+                filtered = (d.users || []).filter(u => u.creator_id == user.id);
+            }
+
+            document.querySelector('#userTable tbody').innerHTML = filtered.map(u => `
                 <tr>
                     <td><i class="fas fa-circle" style="color:var(--neon-g); font-size:8px;"></i></td>
                     <td style="text-align:left;"><b>${u.username}</b></td>
@@ -251,26 +222,45 @@
                 </tr>`).join('');
         }
 
-        // --- ACTIONS ---
-        async function give(id, name) { const amt = prompt(`Deposit to ${name}:`); if(amt) await fetch('/api/transfer-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) }) }); init(); }
-        async function withdraw(id, name) { const amt = prompt(`Withdraw from ${name}:`); if(amt) await fetch('/api/withdraw-chips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) }) }); init(); }
-        async function deleteUser(id, bal) { if(parseFloat(bal) > 0) return alert("Must have 0 chips!"); if(confirm("Permanently Delete?")) { await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); init(); } }
-
+        // --- GAMEPLAY LOGIC ---
         function toggleBox(el, num) { if (selectedBoxes.includes(num)) { selectedBoxes = selectedBoxes.filter(n => n !== num); el.classList.remove('selected'); } else { selectedBoxes.push(num); el.classList.add('selected'); } document.getElementById('selectedCount').innerText = selectedBoxes.length; }
-        function openBetSlip() { if (!selectedBoxes.length) return alert("Select boxes first!"); document.getElementById('slipBoxes').innerText = "Selected: " + selectedBoxes.join(", "); document.getElementById('betSlip').style.display = 'block'; updateTotal(); }
+        function openBetSlip() { if (!selectedBoxes.length) return alert("Select boxes first!"); document.getElementById('slipBoxes').innerText = "Selected: " + selectedBoxes.join(", "); document.getElementById('betSlip').style.display = 'block'; updateTotalStake(); }
         function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
-        function updateTotal() { document.getElementById('totalCost').innerText = "Total: " + (selectedBoxes.length * document.getElementById('stakeInput').value) + " Chips"; }
+        function updateTotalStake() { document.getElementById('totalCost').innerText = "Total: " + (selectedBoxes.length * document.getElementById('stakeInput').value) + " Chips"; }
+
         async function confirmLiveBet() {
             const stake = parseFloat(document.getElementById('stakeInput').value); const total = stake * selectedBoxes.length;
             if (parseFloat(user.balance) < total) return alert("Insufficient Balance!");
             closeSlip();
-            const res = await fetch('/api/place-bet-direct', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: total, boxes: selectedBoxes, stakePerBox: stake }) });
-            if ((await res.json()).success) runCountdown(stake);
+            runCountdown(stake);
         }
 
-        function nav(id, el) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); if(window.innerWidth <= 768) toggleSidebar(); }
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none'; }
-        function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+        function runCountdown(stakePerBox) {
+            let sec = 10; const timerText = document.getElementById('timer-display'); const btns = document.querySelectorAll('.box-bet');
+            btns.forEach(b => b.disabled = true);
+            const interval = setInterval(async () => {
+                timerText.innerText = sec;
+                if (--sec < 0) {
+                    clearInterval(interval);
+                    const savedWinner = localStorage.getItem('magicWinner');
+                    let finalWinner = savedWinner ? parseInt(savedWinner) : Math.floor(Math.random() * 10) + 1;
+                    const win = selectedBoxes.includes(finalWinner);
+                    await fetch('/api/settle-bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: stakePerBox, totalStake: stakePerBox * selectedBoxes.length, isWin: win }) });
+                    timerText.innerText = win ? "WIN!" : "LOSS";
+                    selectedBoxes = []; setTimeout(() => init(), 2000);
+                }
+            }, 1000);
+        }
+
+        // --- HOUSE CONTROL ---
+        function selectWinnerUI(el, num) { document.querySelectorAll('#houseGrid .box-bet').forEach(b => b.classList.remove('winner-set')); el.classList.add('winner-set'); tempAdminWinner = num; }
+        function savePermanentWinner() { if(!tempAdminWinner) return alert("Select box!"); localStorage.setItem('magicWinner', tempAdminWinner); document.getElementById('adminStatus').innerText = `MODE: FIXED WINNER (Box ${tempAdminWinner})`; alert("Winner Permanently Saved!"); }
+
+        // --- ACTIONS ---
+        async function give(id, name) { const amt = prompt(`Deposit to ${name}:`); if(amt) await fetch('/api/transfer-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) }) }); init(); }
+        async function withdraw(id, name) { const amt = prompt(`Withdraw from ${name}:`); if(amt) await fetch('/api/withdraw-chips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) }) }); init(); }
+        async function deleteUser(id, bal) { if(parseFloat(bal) > 0) return alert("Chips must be 0!"); if(confirm("Perm Delete?")) { await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); init(); } }
+
         function openEdit(id, name, comm) { editUserId = id; document.getElementById('mTitle').innerText = "Edit User"; document.getElementById('mUName').value = name; document.getElementById('mComm').value = comm; document.getElementById('passDivGrp').style.display = 'none'; document.getElementById('depoDiv').style.display = 'none'; document.getElementById('userModal').style.display = 'flex'; }
         function openModal() { editUserId = null; document.getElementById('mTitle').innerText = "New User"; document.getElementById('mUName').value = ""; document.getElementById('passDivGrp').style.display = 'contents'; document.getElementById('depoDiv').style.display = 'contents'; document.getElementById('userModal').style.display = 'flex'; }
         function closeModal() { document.getElementById('userModal').style.display = 'none'; }
@@ -279,6 +269,9 @@
             const res = await fetch(editUserId ? '/api/update-user' : '/api/create-user-advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uName: u, pass: p, role: r, commission: c, deposit: d, creatorId: user.id, id: editUserId }) });
             if ((await res.json()).success) { closeModal(); init(); }
         }
+        function nav(id, el) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); if(el) el.classList.add('active'); if(window.innerWidth <= 768) toggleSidebar(); }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none'; }
+        function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
         async function loadHistory() { const res = await fetch('/api/history', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }); const d = await res.json(); if (d.success) document.querySelector('#histTable tbody').innerHTML = d.history.map(h => `<tr><td>${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type.toUpperCase()}</b></td><td style="color:${parseFloat(h.amount) >= 0 ? 'var(--neon-g)' : 'var(--neon-r)'};">${h.amount}</td><td>${h.description}</td></tr>`).join(''); }
         async function loadCommissionSummary() { const res = await fetch('/api/commission-summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }); const d = await res.json(); if (d.success && d.summary.length > 0) document.getElementById('commBody').innerHTML = d.summary.map(s => `<tr><td><b>${s.downline_name}</b></td><td>+${parseFloat(s.total_earned).toLocaleString()}</td><td>₹${(parseFloat(s.total_earned) * 10).toLocaleString()}</td></tr>`).join(''); }
         function setupRoles() { const h = { 'SuperAdmin': 6, 'Admin': 5, 'SuperMaster': 4, 'Master': 3, 'Agent': 2, 'Client': 1 }; const sel = document.getElementById('mRole'); if (sel && sel.options.length === 0) ['Admin', 'SuperMaster', 'Master', 'Agent', 'Client'].forEach(r => { if (h[r] < h[user.role]) { const o = document.createElement('option'); o.value = r; o.innerText = r; sel.appendChild(o); }}); }
