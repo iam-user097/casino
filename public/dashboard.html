@@ -291,557 +291,221 @@
     </div>
 
     <div class="main">
-        <div class="header">
-            <div style="display:flex; align-items:center;">
-                <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)" style="cursor:pointer; font-size: 20px;"></i>
-                <h3 style="font-weight: 500; margin-left: 10px;">Dashboard</h3>
-            </div>
-            <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent); box-shadow: 0 0 10px rgba(255,204,0,0.2);">🪙 Loading...</div>
+    <div class="header">
+        <div style="display:flex; align-items:center;">
+            <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)" style="cursor:pointer; font-size: 20px;"></i>
+            <h3 style="font-weight: 500; margin-left: 10px;">Dashboard</h3>
         </div>
-
-        <div id="page-user" class="page active">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-                <div style="position:relative; width: 300px;">
-                    <i class="fas fa-search" style="position:absolute; left:12px; top:12px; color:#888;"></i>
-                    <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User Here..." style="width:100%; padding:10px 10px 10px 35px; border-radius:6px; background:#12161f; border:1px solid #333; color:white;">
-                </div>
-                <button id="addBtn" class="btn" style="font-size:22px; padding: 2px 15px; background: var(--primary); border-radius:6px; box-shadow: 0 0 10px rgba(0,80,157,0.4);" onclick="openModal()">+</button>
-            </div>
-
-            <div class="table-container">
-                <table id="userTable">
-                    <thead>
-                        <tr>
-                            <th>In</th>
-                            <th>Name</th>
-                            <th>Settlement</th>
-                            <th>Points</th>
-                            <th>Login</th>
-                            <th>Lock</th>
-                            <th>Active</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-       <div id="page-bet" class="page">
-    <div class="account-card" style="padding: 15px; margin-bottom: 20px; border-left: 5px solid var(--neon-g); background: #011627;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="text-align:left;">
-                <p style="color:#aaa; font-size:11px;">AVAILABLE BALANCE</p>
-                <h2 style="color:var(--neon-g);">🪙 <span id="display-chips">0</span> <small style="font-size:12px; color:#aaa;">(₹<span id="display-rs">0</span>)</small></h2>
-            </div>
-            <div style="text-align:right;">
-                <p style="color:#aaa; font-size:11px;">STATUS</p>
-                <h4 id="match-timer" style="color:var(--accent);">READY TO PLAY</h4>
-            </div>
-        </div>
+        <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent); box-shadow: 0 0 10px rgba(255,204,0,0.2);">🪙 Loading...</div>
     </div>
 
-    <div class="match-list-card" style="padding: 20px;">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <h3 style="color:var(--accent); text-shadow: 0 0 10px var(--accent);">SELECT YOUR LUCKY BOXES</h3>
-            <p style="font-size: 12px; color: #888;">Pick one or more boxes. Winning doubles your stake!</p>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 25px;" id="boxGrid">
-            <button class="box-bet" onclick="toggleBox(this, 1)">1</button>
-            <button class="box-bet" onclick="toggleBox(this, 2)">2</button>
-            <button class="box-bet" onclick="toggleBox(this, 3)">3</button>
-            <button class="box-bet" onclick="toggleBox(this, 4)">4</button>
-            <button class="box-bet" onclick="toggleBox(this, 5)">5</button>
-            <button class="box-bet" onclick="toggleBox(this, 6)">6</button>
-            <button class="box-bet" onclick="toggleBox(this, 7)">7</button>
-            <button class="box-bet" onclick="toggleBox(this, 8)">8</button>
-            <button class="box-bet" onclick="toggleBox(this, 9)">9</button>
-            <button class="box-bet" onclick="toggleBox(this, 10)">10</button>
-        </div>
-
-        <button class="btn" id="proceedBtn" style="width: 100%; background: var(--primary); padding: 15px; font-weight: bold; border-radius: 8px; font-size: 16px;" onclick="openBoxStakePopup()">
-            PROCEED TO PLACE BET (<span id="selectedCount">0</span> SELECTED)
-        </button>
-    </div>
-</div>
-        
-    <div class="account-card" style="padding: 15px; margin-bottom: 15px; border-left: 5px solid var(--accent); background: #011627;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="text-align:left;">
-                <p style="color:#aaa; font-size:11px;">MAIN BALANCE (₹10/CHIP)</p>
-                <h2 style="color:var(--accent);">🪙 <span id="display-chips">0</span> <small style="font-size:14px;">(₹<span id="display-rs">0</span>)</small></h2>
+    <div id="page-user" class="page active">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+            <div style="position:relative; width: 300px;">
+                <i class="fas fa-search" style="position:absolute; left:12px; top:12px; color:#888;"></i>
+                <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User Here..." style="width:100%; padding:10px 10px 10px 35px; border-radius:6px; background:#12161f; border:1px solid #333; color:white;">
             </div>
-            <h4 id="match-timer" style="color:var(--neon-r); font-weight:bold;">READY</h4>
-        </div>
-    </div>
-
-    <div class="match-list-card">
-        <div class="match-header-row">
-            <span>LIVE CRICKET MATCHES</span>
-            <div style="display:flex; gap: 50px; padding-right: 30px;"><span>BACK</span><span>LAY</span></div>
-        </div>
-        <div class="match-entry">
-            <div class="team-meta">
-                <div class="team-title"><i class="fas fa-trophy" style="color:var(--accent)"></i>🏆 India v Northern Brave</div>
-                <div class="status-tag">● In-Play | LIVE</div>
-            </div>
-            <div class="odds-grid">
-                <button class="odds-btn back-btn" id="o1" onclick="openSlip('Otago Volts', 6.2, 'BACK')"><span class="odds-val">6.2</span><span class="odds-vol">12K</span></button>
-                <button class="odds-btn lay-btn" id="o2" onclick="openSlip('Otago Volts', 6.6, 'LAY')"><span class="odds-val">6.6</span><span class="odds-vol">8K</span></button>
-                <div style="width:10px"></div>
-                <button class="odds-btn back-btn" id="o3" onclick="openSlip('Northern Brave', 1.18, 'BACK')"><span class="odds-val">1.18</span><span class="odds-vol">450K</span></button>
-                <button class="odds-btn lay-btn" id="o4" onclick="openSlip('Northern Brave', 1.19, 'LAY')"><span class="odds-val">1.19</span><span class="odds-vol">200K</span></button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="bet-popup-slip" id="betSlip">
-    <div class="slip-head">
-        <span id="slipTeam">Team Name</span>
-        <i class="fas fa-times" onclick="closeSlip()" style="cursor:pointer;"></i>
-    </div>
-    <div class="slip-body">
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <span>Odds: <b id="slipOdds" style="color:var(--accent)">1.95</b></span>
-            <span id="slipType" style="font-weight:bold;">BACK</span>
-        </div>
-        <input type="number" id="betAmountInput" class="form-group input" value="100" min="100" oninput="updateRsValue()" style="width:100%; padding:10px; background:#0b0e14; border:1px solid #333; color:white; border-radius:6px;">
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:10px;">
-            <button class="act-btn btn-mode" style="width:100%; height:35px;" onclick="addQuickStake(500)">+500</button>
-            <button class="act-btn btn-mode" style="width:100%; height:35px;" onclick="addQuickStake(1000)">+1000</button>
-            <button class="act-btn btn-mode" style="width:100%; height:35px;" onclick="addQuickStake(5000)">+5000</button>
-        </div>
-        <p class="chip-to-rs" id="rsVal">Value: ₹1,000</p>
-        <button class="btn" style="width:100%; background:var(--neon-g); color:black; font-weight:bold; margin-top:15px; border-radius:6px; padding:12px;" onclick="confirmLiveBet()">PLACE BET</button>
-    </div>
-</div>
-
-        <div id="page-history" class="page">
-            <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px;">
-                <h3 style="color:var(--accent); margin-bottom:15px;"><i class="fas fa-history"></i> Transaction Log</h3>
-                <div style="overflow-x:auto">
-                    <table id="histTable" style="width:100%; border-collapse:collapse;">
-                        <thead><tr><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Date</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Type</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Amount</th><th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Details</th></tr></thead>
-                        <tbody style="color:#ddd"></tbody>
-                    </table>
-                </div>
-            </div>
+            <button id="addBtn" class="btn" style="font-size:22px; padding: 2px 15px; background: var(--primary); border-radius:6px; box-shadow: 0 0 10px rgba(0,80,157,0.4);" onclick="openModal()">+</button>
         </div>
 
-        <div id="page-account" class="page">
-    <div class="account-card">
-        <p style="color:#aaa; font-size:12px; letter-spacing: 1px;">TOTAL SAVED MONEY</p>
-        <h1 style="color:var(--accent); font-size:40px; text-shadow: 0 0 15px var(--accent);">₹ <span id="inr">0</span></h1>
-        <p style="opacity: 0.8; margin-top: 10px; font-size:14px;">Available Chips: <span id="chips">0</span></p>
-    </div>
-    
-    <div class="neon-grid">
-        <div class="neon-box win-box">TOTAL WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
-        <div class="neon-box lose-box">TOTAL LOSSES<br><span id="lose" style="font-size: 20px;">0</span></div>
-    </div>
-
-    <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px; margin-top: 20px;">
-        <h3 style="color:var(--neon-g); margin-bottom:15px;"><i class="fas fa-percentage"></i> Downline Commission Summary</h3>
-        <div style="overflow-x:auto">
-            <table id="commTable" style="width:100%; border-collapse:collapse;">
+        <div class="table-container">
+            <table id="userTable">
                 <thead>
-                    <tr>
-                        <th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Source User</th>
-                        <th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Comm %</th>
-                        <th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Earnings (Chips)</th>
-                        <th style="color:var(--accent); text-align:left; padding:10px; border-bottom:1px solid var(--primary)">Value (INR)</th>
-                    </tr>
+                    <tr><th>In</th><th>Name</th><th>Settlement</th><th>Points</th><th>Login</th><th>Lock</th><th>Active</th><th>Action</th></tr>
                 </thead>
-                <tbody style="color:#ddd" id="commBody">
-                    </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </div>
-</div>
 
+    <div id="page-bet" class="page">
+        <div class="account-card" style="padding: 15px; border-left: 5px solid var(--neon-g); display: flex; justify-content: space-between; align-items: center; text-align: left;">
+            <div>
+                <p style="color:#aaa; font-size:11px;">DIRECT CHIP BALANCE</p>
+                <h2 style="color:var(--neon-g);">🪙 <span id="display-chips">0</span> <small style="font-size:12px;">(₹<span id="display-rs">0</span>)</small></h2>
+            </div>
+            <h4 id="match-timer" style="color:var(--accent);">READY TO PLAY</h4>
+        </div>
+
+        <div class="match-list-card">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h3 style="color:var(--accent);">SELECT YOUR LUCKY BOXES</h3>
+                <p style="font-size: 12px; color: #888;">Win double reward on the lucky box!</p>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 25px;" id="boxGrid">
+                <button class="box-bet" onclick="toggleBox(this, 1)">1</button>
+                <button class="box-bet" onclick="toggleBox(this, 2)">2</button>
+                <button class="box-bet" onclick="toggleBox(this, 3)">3</button>
+                <button class="box-bet" onclick="toggleBox(this, 4)">4</button>
+                <button class="box-bet" onclick="toggleBox(this, 5)">5</button>
+                <button class="box-bet" onclick="toggleBox(this, 6)">6</button>
+                <button class="box-bet" onclick="toggleBox(this, 7)">7</button>
+                <button class="box-bet" onclick="toggleBox(this, 8)">8</button>
+                <button class="box-bet" onclick="toggleBox(this, 9)">9</button>
+                <button class="box-bet" onclick="toggleBox(this, 10)">10</button>
+            </div>
+            <button class="btn" style="width: 100%; background: var(--primary); padding: 15px; font-weight: bold; border-radius: 8px; color: white;" onclick="openBoxStakePopup()">
+                PROCEED ON <span id="selectedCount">0</span> BOXES
+            </button>
+        </div>
+    </div>
+
+    <div id="page-history" class="page">
+        <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px;">
+            <h3 style="color:var(--accent); margin-bottom:15px;"><i class="fas fa-history"></i> Transaction Log</h3>
+            <div style="overflow-x:auto"><table id="histTable" style="width:100%;"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr></thead><tbody style="color:#ddd"></tbody></table></div>
+        </div>
+    </div>
+
+    <div id="page-account" class="page">
+        <div class="account-card">
+            <p style="color:#aaa; font-size:12px;">TOTAL SAVED MONEY</p>
+            <h1 style="color:var(--accent); font-size:40px; text-shadow: 0 0 15px var(--accent);">₹ <span id="inr">0</span></h1>
+            <p style="opacity: 0.8; margin-top: 10px;">Chips: <span id="chips">0</span></p>
+        </div>
+        <div class="neon-grid">
+            <div class="neon-box win-box">TOTAL WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
+            <div class="neon-box lose-box">TOTAL LOSSES<br><span id="lose" style="font-size: 20px;">0</span></div>
+        </div>
+        <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px; margin-top: 20px;">
+            <h3 style="color:var(--neon-g); margin-bottom:15px;"><i class="fas fa-percentage"></i> Commission Summary</h3>
+            <div style="overflow-x:auto"><table id="commTable" style="width:100%;"><thead><tr><th>Source</th><th>Comm %</th><th>Earnings</th><th>INR</th></tr></thead><tbody id="commBody"></tbody></table></div>
+        </div>
+    </div>
+</div>
+    
     <script>
-    // --- AUTH & GLOBAL STATE ---
     let user = JSON.parse(sessionStorage.getItem('currentUser'));
     if (!user) window.location.href = 'login.html';
     
-    let editUserId = null;
-    let currentTargetUserId = null; 
-    let activeOdds = 2.00; // Updated to 2.0 for the Box Winning System
-    let selectedBoxes = []; // NEW: Track selected boxes for betting
+    let editUserId = null, currentTargetUserId = null, selectedBoxes = [];
 
-    // --- MODAL HELPERS ---
-    function openModal() {
-        editUserId = null;
-        document.getElementById('mTitle').innerText = "Add New User";
-        document.getElementById('mUName').value = "";
-        document.getElementById('mPass').value = "";
-        if(document.getElementById('mCPass')) document.getElementById('mCPass').value = ""; 
-        document.getElementById('mComm').value = "0";
-        document.getElementById('mDeposit').value = "0";
-        
-        const fields = ['passDiv', 'cPassDiv', 'roleDiv', 'depoDiv'];
-        fields.forEach(id => { 
-            let el = document.getElementById(id);
-            if(el) el.style.display = 'flex'; 
-        });
-        document.getElementById('userModal').style.display = 'flex';
-    }
-
-    function openEdit(id, uname, comm) {
-        editUserId = id;
-        document.getElementById('mTitle').innerText = "Edit User Settings";
-        document.getElementById('mUName').value = uname;
-        document.getElementById('mComm').value = comm || 0;
-        
-        const fields = ['passDiv', 'cPassDiv', 'roleDiv', 'depoDiv'];
-        fields.forEach(id => { 
-            let el = document.getElementById(id);
-            if(el) el.style.display = 'none'; 
-        });
-        document.getElementById('userModal').style.display = 'flex';
-    }
-
-    function openModeModal(id, name) {
-        currentTargetUserId = id;
-        document.getElementById('modeUser').innerText = name;
-        document.getElementById('modeModal').style.display = 'flex';
-    }
-
-    function openMarketSetting(id, name) {
-        currentTargetUserId = id;
-        document.getElementById('msUser').innerText = name;
-        document.getElementById('marketSettingModal').style.display = 'flex';
-    }
-
-    function closeModal() {
-        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-    }
-
-    // --- CORE INITIALIZATION ---
     async function init() {
         try {
-            const res = await fetch('/api/user-details', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: user.id })
-            });
+            const res = await fetch('/api/user-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: user.id }) });
             const d = await res.json();
             if (d.success) {
-                user = d.data;
-                sessionStorage.setItem('currentUser', JSON.stringify(user));
-
-                if (user.role !== 'SuperAdmin' && user.force_password_change === 1) {
-                    document.getElementById('passChangeModal').style.display = 'flex';
-                    document.getElementById('sidebar').style.pointerEvents = 'none';
-                    document.getElementById('sidebar').style.opacity = '0.5';
-                }
-
-                const chipBal = parseFloat(user.balance);
-                document.getElementById('headerBal').innerText = `🪙 ${chipBal.toLocaleString()}`;
-                document.getElementById('inr').innerText = (chipBal * 10).toLocaleString();
-                document.getElementById('chips').innerText = chipBal.toLocaleString();
-                
+                user = d.data; sessionStorage.setItem('currentUser', JSON.stringify(user));
+                const bal = parseFloat(user.balance);
+                document.getElementById('headerBal').innerText = `🪙 ${bal.toLocaleString()}`;
+                document.getElementById('display-chips').innerText = bal.toLocaleString();
+                document.getElementById('display-rs').innerText = (bal * 10).toLocaleString();
+                document.getElementById('inr').innerText = (bal * 10).toLocaleString();
+                document.getElementById('chips').innerText = bal.toLocaleString();
                 document.getElementById('wins').innerText = ((user.total_wins || 0) * 10).toLocaleString();
                 document.getElementById('lose').innerText = ((user.total_losses || 0) * 10).toLocaleString();
-
-                const betPage = document.getElementById('page-bet');
-                if (user.role !== 'Client') {
-                    betPage.innerHTML = `<div class="account-card" style="border: 2px dashed var(--neon-r); padding: 50px;">
-                        <h2 style="color:var(--neon-r);"><i class="fas fa-lock"></i> Restricted Access</h2>
-                        <p style="margin-top:10px; color:#aaa;">Only <b>Client</b> roles are permitted to place live bets.</p>
-                    </div>`;
-                } else {
-                    if (document.getElementById('display-chips')) {
-                        document.getElementById('display-chips').innerText = chipBal.toLocaleString();
-                        document.getElementById('display-rs').innerText = (chipBal * 10).toLocaleString();
-                    }
-                }
-
-                if (user.role === 'Client' && document.getElementById('addBtn')) {
-                    document.getElementById('addBtn').style.display = 'none';
+                if (user.role === 'Client' && document.getElementById('addBtn')) document.getElementById('addBtn').style.display = 'none';
+                
+                if (user.role !== 'SuperAdmin' && user.force_password_change === 1) {
+                    document.getElementById('passChangeModal').style.display = 'flex';
                 }
             }
-        } catch (e) { console.error("Sync Error", e); }
-        
-        loadUsers();
-        setupRoles();
-        loadHistory();
-        loadCommissionSummary();
+        } catch (e) { console.error(e); }
+        loadUsers(); loadHistory(); loadCommissionSummary(); setupRoles();
     }
 
-    // --- USER MANAGEMENT ---
     async function loadUsers() {
         const tbody = document.querySelector('#userTable tbody');
         if (!tbody) return;
-        try {
-            const res = await fetch('/api/my-users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ parentId: user.id, role: user.role })
-            });
-            const d = await res.json();
-
-            const filteredUsers = (d.users || []).filter(u => {
-                if (u.id === user.id) return false;
-                if (u.role === 'SuperAdmin' && user.role !== 'SuperAdmin') return false;
-                return true;
-            });
-
-            tbody.innerHTML = filteredUsers.map(u => {
-                const isOnline = u.status === 'Online';
-                return `
-                <tr id="user-row-${u.id}">
-                    <td><i class="fas fa-arrow-circle-right" style="color:${isOnline ? 'var(--neon-g)' : 'var(--neon-r)'}"></i></td>
-                    <td style="text-align:left; padding-left:15px;">
-                        <span style="color:var(--accent); font-weight:bold;">${u.username}</span><br>
-                        <small style="color:var(--primary); font-weight:bold;">( ${u.role.toUpperCase()} )</small>
-                    </td>
-                    <td style="color:#aaa">Direct</td> 
-                    <td style="color:var(--accent); font-weight:bold;">${parseFloat(u.balance).toLocaleString()}</td>
-                    <td><label class="switch"><input type="checkbox" ${isOnline ? 'checked' : ''} disabled><span class="slider"></span></label></td>
-                    <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
-                    <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
-                    <td>
-                        <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}', ${u.commission_percentage})"><i class="fas fa-edit"></i></button>
-                        <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
-                        <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                        <button class="act-btn btn-mode" title="Gaming Modes" onclick="openModeModal(${u.id}, '${u.username}')">MODE</button>
-                        <button class="act-btn btn-ms" title="Market Settings" onclick="openMarketSetting(${u.id}, '${u.username}')">MS</button>
-                        <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`;
-            }).join('');
-        } catch (e) { console.error("User Load Error", e); }
-    }
-
-    async function submitUser() {
-        const uName = document.getElementById('mUName').value;
-        const pass = document.getElementById('mPass').value;
-        const cPass = document.getElementById('mCPass') ? document.getElementById('mCPass').value : pass;
-        const role = document.getElementById('mRole').value;
-        const comm = document.getElementById('mComm').value;
-        const deposit = document.getElementById('mDeposit').value;
-
-        if (!uName || (!editUserId && !pass)) return alert("Username and Password are required!");
-        if (!editUserId && pass !== cPass) return alert("Passwords do not match!");
-
-        const data = { uName, pass, role, deposit, commission: comm, creatorId: user.id };
-        const endpoint = editUserId ? '/api/update-user' : '/api/create-user-advanced';
-        
-        const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...data, id: editUserId })
-        });
+        const res = await fetch('/api/my-users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, role: user.role }) });
         const d = await res.json();
-        if (d.success) { closeModal(); init(); } else alert(d.message);
+        const filtered = (d.users || []).filter(u => u.id !== user.id && (user.role === 'SuperAdmin' || u.role !== 'SuperAdmin'));
+        tbody.innerHTML = filtered.map(u => `
+            <tr>
+                <td><i class="fas fa-arrow-circle-right" style="color:var(--neon-g)"></i></td>
+                <td style="text-align:left;"><b>${u.username}</b><br><small>${u.role}</small></td>
+                <td>Direct</td>
+                <td><b>${parseFloat(u.balance).toLocaleString()}</b></td>
+                <td><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></td>
+                <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                <td>
+                    <button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-edit"></i></button>
+                    <button class="act-btn btn-d" onclick="give(${u.id},'${u.username}')">D</button>
+                    <button class="act-btn btn-w" onclick="withdraw(${u.id},'${u.username}')">W</button>
+                    <button class="act-btn btn-mode" onclick="openModeModal(${u.id},'${u.username}')">MODE</button>
+                    <button class="act-btn btn-ms" onclick="openMarketSetting(${u.id},'${u.username}')">MS</button>
+                    <button class="act-btn btn-del" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`).join('');
     }
 
-    // --- BOX BETTING LOGIC (RECONSTRUCTED) ---
     function toggleBox(el, num) {
-        if (selectedBoxes.includes(num)) {
-            selectedBoxes = selectedBoxes.filter(n => n !== num);
-            el.classList.remove('selected');
-        } else {
-            selectedBoxes.push(num);
-            el.classList.add('selected');
-        }
+        if (selectedBoxes.includes(num)) { selectedBoxes = selectedBoxes.filter(n => n !== num); el.classList.remove('selected'); }
+        else { selectedBoxes.push(num); el.classList.add('selected'); }
         document.getElementById('selectedCount').innerText = selectedBoxes.length;
+        updateRsValue();
     }
 
     function openBoxStakePopup() {
-        if (selectedBoxes.length === 0) return alert("Please select at least 1 box!");
-        
-        document.getElementById('slipTeam').innerText = `Boxes: ${selectedBoxes.join(', ')}`;
-        document.getElementById('slipOdds').innerText = "2.00";
-        document.getElementById('slipType').innerText = "WINNER";
-        document.getElementById('betAmountInput').value = 100;
+        if (!selectedBoxes.length) return alert("Select boxes first!");
+        document.getElementById('slipTeam').innerText = `Selected Boxes: ${selectedBoxes.join(', ')}`;
         document.getElementById('betSlip').style.display = 'block';
         updateRsValue();
     }
 
     function updateRsValue() {
-        const stakePerBox = document.getElementById('betAmountInput').value || 0;
-        const totalChips = stakePerBox * selectedBoxes.length;
-        const totalINR = totalChips * 10;
-        document.getElementById('rsVal').innerText = `Total Bet: ${totalChips} Chips (₹${totalINR.toLocaleString()})`;
+        const stake = document.getElementById('betAmountInput').value || 0;
+        const total = stake * selectedBoxes.length;
+        document.getElementById('rsVal').innerText = `TOTAL STAKE: ${total} Chips (₹${(total * 10).toLocaleString()})`;
     }
 
     async function confirmLiveBet() {
-        const stakePerBox = parseFloat(document.getElementById('betAmountInput').value);
-        if(stakePerBox < 100) return alert("Min bet per box is 100 chips");
-
-        const totalRequired = stakePerBox * selectedBoxes.length;
-        if (parseFloat(user.balance) < totalRequired) return alert("Insufficient Balance!");
-
+        const stake = parseFloat(document.getElementById('betAmountInput').value);
+        const total = stake * selectedBoxes.length;
+        if (parseFloat(user.balance) < total) return alert("Low Balance!");
+        if (stake < 100) return alert("Min bet 100 per box");
         closeSlip();
-        document.getElementById('match-timer').innerText = "PROCESSING...";
-
-        const res = await fetch('/api/place-bet-direct', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id, amount: totalRequired })
-        });
-
-        const d = await res.json();
-        if (d.success) { 
-            init(); 
-            startBoxTimer(stakePerBox); 
-        } else {
-            alert(d.message);
-        }
+        const res = await fetch('/api/place-bet-direct', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: total }) });
+        if ((await res.json()).success) { init(); startBoxTimer(stake); }
     }
 
-    function startBoxTimer(stakePerBox) {
+    function startBoxTimer(stake) {
         let sec = 5;
         const timerEl = document.getElementById('match-timer');
         const interval = setInterval(async () => {
-            sec--;
-            timerEl.innerText = `SETTLING: ${sec}s`;
+            timerEl.innerText = `SETTLING: ${--sec}s`;
             if (sec <= 0) {
                 clearInterval(interval);
-                const winningBox = Math.floor(Math.random() * 10) + 1;
-                const isUserWinner = selectedBoxes.includes(winningBox);
-
-                await fetch('/api/settle-bet', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        userId: user.id, 
-                        amount: stakePerBox, 
-                        odds: 2.0, 
-                        isWin: isUserWinner 
-                    })
-                });
-
-                if (isUserWinner) {
-                    alert(`🏆 Box ${winningBox} won! You get double reward!`);
-                } else {
-                    alert(`❌ Box ${winningBox} won. Better luck next time!`);
-                }
-
-                // UI RESET
-                selectedBoxes = [];
-                document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('selected'));
-                document.getElementById('selectedCount').innerText = "0";
-                timerEl.innerText = "READY";
-                init();
-                loadHistory();
+                const winNum = Math.floor(Math.random() * 10) + 1;
+                const win = selectedBoxes.includes(winNum);
+                await fetch('/api/settle-bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: stake, odds: 2, isWin: win }) });
+                alert(win ? `🏆 Box ${winNum} WON! Stake Doubled!` : `❌ Box ${winNum} won. You Lost.`);
+                selectedBoxes = []; document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('selected'));
+                document.getElementById('selectedCount').innerText = "0"; timerEl.innerText = "READY"; init();
             }
         }, 1000);
     }
 
-    // --- DATA LOADING & UTILS ---
-    async function loadHistory() {
-        const res = await fetch('/api/history', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) });
-        const d = await res.json();
-        const tbody = document.querySelector('#histTable tbody');
-        if (d.success && tbody) {
-            tbody.innerHTML = d.history.map(h => `<tr>
-                <td style="font-size:11px; padding:12px; border-bottom:1px solid #1a202c;">${new Date(h.created_at).toLocaleString()}</td>
-                <td style="border-bottom:1px solid #1a202c;"><b style="color:var(--accent)">${h.type.toUpperCase()}</b></td>
-                <td style="color:${h.amount >= 0 ? 'var(--neon-g)' : 'var(--neon-r)'}; font-weight:bold; border-bottom:1px solid #1a202c;">
-                    ${h.amount >= 0 ? '+' : ''}${parseFloat(h.amount).toLocaleString()}
-                </td>
-                <td style="font-size:12px; color:#aaa; text-align:left; border-bottom:1px solid #1a202c;">${h.description}</td>
-            </tr>`).join('');
-        }
+    function nav(id, el) { 
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
+        document.getElementById('page-' + id).classList.add('active'); 
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        if(el) el.classList.add('active');
+        if(window.innerWidth <= 768) toggleSidebar();
     }
-
-    async function loadCommissionSummary() {
-        const res = await fetch('/api/commission-summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) });
-        const d = await res.json();
-        const tbody = document.getElementById('commBody');
-        if (d.success && tbody && d.summary.length > 0) {
-            tbody.innerHTML = d.summary.map(s => `<tr>
-                <td style="padding:12px; border-bottom:1px solid #1a202c;">${s.downline_name}</td>
-                <td style="padding:12px; border-bottom:1px solid #1a202c;">Active</td>
-                <td style="padding:12px; border-bottom:1px solid #1a202c; color:var(--neon-g);">+${parseFloat(s.total_earned).toFixed(2)}</td>
-                <td style="padding:12px; border-bottom:1px solid #1a202c;">₹${(s.total_earned * 10).toLocaleString()}</td>
-            </tr>`).join('');
-        }
-    }
-
-    async function give(id, name) {
-        const amt = prompt(`Deposit Chips to ${name}:`);
-        if (!amt || isNaN(amt)) return;
-        await fetch('/api/transfer-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) }) });
-        init();
-    }
-
-    async function withdraw(id, name) {
-        const amt = prompt(`Withdraw Chips from ${name}:`);
-        if (!amt || isNaN(amt)) return;
-        await fetch('/api/withdraw-chips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) }) });
-        init();
-    }
-
-    async function saveGamingModes() {
-        const checkedModes = Array.from(document.querySelectorAll('#modeCheckboxes input:checked'))
-                                 .map(cb => cb.parentElement.innerText.trim())
-                                 .join(',');
-        const res = await fetch('/api/save-modes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentTargetUserId, modes: checkedModes })
-        });
-        const d = await res.json();
-        if(d.success) { closeModal(); alert("Modes saved."); }
-    }
-
-    async function saveMarketSettings() {
-        const game = document.getElementById('msGame').value;
-        const market = document.getElementById('msMarket').value;
-        const res = await fetch('/api/save-market', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentTargetUserId, game: game, market: market })
-        });
-        const d = await res.json();
-        if(d.success) { closeModal(); alert("Market set."); }
-    }
-
+    
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none'; }
+    function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+    function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
+    function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+    
     function setupRoles() {
-        const roles = ['Admin', 'SuperMaster', 'Master', 'Agent', 'Client'];
         const hierarchy = { 'SuperAdmin': 6, 'Admin': 5, 'SuperMaster': 4, 'Master': 3, 'Agent': 2, 'Client': 1 };
         const sel = document.getElementById('mRole');
         if (sel && sel.options.length === 0) {
-            roles.forEach(r => { if (hierarchy[r] < hierarchy[user.role]) {
-                const opt = document.createElement('option');
-                opt.value = r; opt.innerText = r; sel.appendChild(opt);
-            }});
+            ['Admin', 'SuperMaster', 'Master', 'Agent', 'Client'].forEach(r => { 
+                if (hierarchy[r] < hierarchy[user.role]) {
+                    const opt = document.createElement('option'); opt.value = r; opt.innerText = r; sel.appendChild(opt);
+                }
+            });
         }
-    }
-
-    function addQuickStake(amt) {
-        const input = document.getElementById('betAmountInput');
-        input.value = parseInt(input.value || 0) + amt;
-        updateRsValue();
-    }
-
-    function nav(id, el) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById('page-' + id).classList.add('active');
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        if (el) el.classList.add('active');
-        if (window.innerWidth <= 768) toggleSidebar();
-    }
-
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('show');
-        document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none';
     }
 
     function filterUsers() {
         const input = document.getElementById('userSearch').value.toLowerCase();
-        const rows = document.querySelectorAll('#userTable tbody tr');
-        rows.forEach(r => r.style.display = r.innerText.toLowerCase().includes(input) ? "" : "none");
+        document.querySelectorAll('#userTable tbody tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(input) ? "" : "none");
     }
-
-    function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
-    function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
 
     init();
 </script>
