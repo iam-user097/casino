@@ -18,272 +18,55 @@
         .nav-item:hover { color: white; background: rgba(0, 80, 157, 0.1); padding-left: 30px; }
         .nav-item.active { background:linear-gradient(90deg, rgba(0, 80, 157, 0.3), transparent); color:var(--accent); border-left:4px solid var(--accent); font-weight: bold; }
 
-        /* Sidebar hidden off-screen by default on mobile */
- @media (max-width: 768px) {
-    .sidebar { 
-        position: fixed; 
-        left: -260px; 
-        height: 100vh; 
-        z-index: 2000;
-    }
-    /* When 'show' class is added via JS, move it into view */
-    .sidebar.show { 
-        transform: translateX(260px); 
-    }
-}
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: -260px; height: 100vh; z-index: 2000; }
+            .sidebar.show { transform: translateX(260px); }
+        }
 
-/* Background Dimmer */
-.sidebar-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 1500;
-    backdrop-filter: blur(3px);
-}
-        
-        /* Mobile Overlay */
-        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1500; backdrop-filter: blur(3px); }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1500; backdrop-filter: blur(3px); }
 
         .main { flex:1; display:flex; flex-direction:column; width:100%; overflow:hidden; position: relative; }
         .header { background:#12161f; color:white; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
         
-        /* Page Transition Animations */
         .page { display:none; padding:20px; overflow-y:auto; flex:1; animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .page.active { display:block; }
         @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 
-        /* NEON DARK TABLE DESIGN */
-        .table-container { background: #12161f; border-radius: 8px; overflow-x: auto; margin-top: 10px; border: 1px solid var(--primary); box-shadow: 0 0 20px rgba(0, 80, 157, 0.2); }
+        .table-container { background: #12161f; border-radius: 8px; overflow-x: auto; margin-top: 10px; border: 1px solid var(--primary); }
         table { width:100%; border-collapse:collapse; background: transparent; color: #eee; min-width: 900px; }
         th { background: #011627; color: var(--accent); padding: 12px; font-size: 13px; text-transform: capitalize; border-bottom: 1px solid var(--primary); text-align: center; }
-        td { padding: 12px; border-bottom: 1px solid #1a202c; text-align: center; font-weight: 500; font-size: 13px; vertical-align: middle; }
-        tr:hover { background: rgba(0, 80, 157, 0.1); }
+        td { padding: 12px; border-bottom: 1px solid #1a202c; text-align: center; font-size: 13px; }
 
-        /* CIRCULAR NEON ACTION BUTTONS */
-        .act-btn { width: 30px; height: 30px; border-radius: 50%; border: none; color: white; cursor: pointer; margin: 0 2px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
-        .act-btn:hover { transform: scale(1.1); filter: brightness(1.2); }
-        .btn-edit { background: #007bff; box-shadow: 0 0 5px #007bff; }
-        .btn-d { background: var(--primary); box-shadow: 0 0 5px var(--primary); }
-        .btn-w { background: #6c757d; }
-        .btn-mode { background: #00509d; border-radius: 4px; width: auto; padding: 0 8px; font-size: 9px; }
-        .btn-ms { background: var(--neon-g); color: #000; box-shadow: 0 0 5px var(--neon-g); }
-        .btn-key { background: #343a40; }
-        .btn-del { background: var(--neon-r); box-shadow: 0 0 5px var(--neon-r); }
+        .act-btn { width: 30px; height: 30px; border-radius: 50%; border: none; color: white; cursor: pointer; margin: 0 2px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
+        .btn-edit { background: #007bff; } .btn-d { background: var(--primary); } .btn-w { background: #6c757d; } .btn-mode { background: #00509d; border-radius: 4px; width: auto; padding: 0 8px; } .btn-ms { background: var(--neon-g); color: #000; } .btn-del { background: var(--neon-r); }
 
-        /* NEON STATUS TOGGLES */
+        .box-bet { height: 60px; background: #1a202c; border: 2px solid #333; border-radius: 8px; color: white; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .box-bet.selected { background: var(--accent); color: black; border-color: white; box-shadow: 0 0 15px var(--accent); }
+
+        .modal { display:none; position:fixed; inset: 0; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; }
+        .modal-content { background:#12161f; width:90%; max-width:600px; border-radius:12px; border: 1px solid var(--primary); }
+        .modal-header { background:#011627; padding:15px; border-bottom: 2px solid var(--neon-r); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding:20px; display:grid; grid-template-columns: 1fr 1fr; gap:15px; }
+
+        .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:20px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); }
+        .bet-popup-slip { position: fixed; bottom: 20px; right: 20px; width: 300px; background: #011627; border: 2px solid var(--accent); border-radius: 12px; z-index: 5000; display: none; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        .slip-head { background: var(--accent); color: black; padding: 10px; font-weight: bold; display: flex; justify-content: space-between; border-radius: 10px 10px 0 0; }
+        
         .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; border: 1px solid #444; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #333; transition: .4s; border-radius: 34px; border: 1px solid #444; }
         .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); border-color: var(--accent); }
+        input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(16px); background-color: var(--accent); }
-
-        /* NEON MODAL STYLES */
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
-        .modal-content { background:#12161f; color:white; width:90%; max-width:650px; border-radius:12px; overflow:hidden; animation: zoomIn 0.3s; border: 1px solid var(--primary); box-shadow: 0 0 30px rgba(0, 80, 157, 0.5); }
-        .modal-header { background:#011627; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid var(--neon-r); color: var(--accent); }
-        .modal-body { padding:25px; display:grid; grid-template-columns: 1fr 1fr; gap:20px; max-height: 80vh; overflow-y: auto; }
-        .form-group { display:flex; flex-direction:column; gap:8px; }
-        .form-group label { font-size: 13px; font-weight: bold; color: var(--accent); }
-        .form-group input, .form-group select { padding: 12px; border: 1px solid #333; border-radius: 6px; font-size: 14px; background: #0b0e14; color: white; outline: none; }
-        .form-group input:focus { border-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
-        .full-row { grid-column: span 2; }
-        .modal-footer { padding: 20px; background: #011627; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #1a202c; }
-
-        @keyframes zoomIn { from { transform:scale(0.8); opacity:0; } to { transform:scale(1); opacity:1; } }
-
-        /* Professional Neon Cards */
-        .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:25px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); box-shadow: 0 0 20px rgba(0, 80, 157, 0.3); }
-        .neon-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-        .neon-box { padding:15px; border-radius:12px; font-weight:bold; text-align:center; font-size:14px; text-transform: uppercase; background: #0b0e14; border: 2px solid #333; }
-        .win-box { border-color: var(--neon-g); color: var(--neon-g); box-shadow: 0 0 10px rgba(57, 255, 20, 0.2); }
-        .lose-box { border-color: var(--neon-r); color: var(--neon-r); box-shadow: 0 0 10px rgba(255, 49, 49, 0.2); }
-
-        /* --- UPDATED MOBILE-FIRST CRICKET LAYOUT --- */
-.match-list-card { background: #12161f; border: 1px solid var(--primary); border-radius: 8px; margin-top: 15px; overflow: hidden; }
-.match-header-row { background: #011627; padding: 10px 15px; display: flex; justify-content: space-between; border-bottom: 2px solid var(--primary); font-size: 12px; font-weight: bold; color: var(--accent); }
-
-/* Mobile Default: Stacked Layout */
-.match-entry { 
-    display: flex; 
-    flex-direction: column; 
-    padding: 15px; 
-    border-bottom: 1px solid #1a202c; 
-    gap: 12px; 
-}
-
-.team-meta { width: 100%; }
-.team-title { font-weight: bold; font-size: 15px; color: white; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
-.status-tag { color: var(--neon-g); font-size: 11px; font-weight: bold; text-transform: uppercase; }
-
-/* Responsive 4-Column Grid for Buttons */
-.odds-grid { 
-    display: grid; 
-    grid-template-columns: repeat(4, 1fr); 
-    gap: 6px; 
-    width: 100%; 
-}
-
-.odds-btn { 
-    width: 100%; 
-    height: 48px; 
-    border: none; 
-    border-radius: 4px; 
-    display: flex;
-    flex-direction: column;
-    align-items: center; 
-    justify-content: center; 
-    cursor: pointer; 
-    transition: transform 0.1s; 
-}
-
-/* Desktop View: Side-by-Side Layout */
-@media (min-width: 769px) {
-    .match-entry { 
-        flex-direction: row; 
-        justify-content: space-between; 
-        align-items: center; 
-    }
-    .team-meta { flex: 1; }
-    .odds-grid { 
-        width: auto; 
-        grid-template-columns: repeat(4, 60px); 
-    }
-}
-
-.box-bet { height: 60px; background: #1a202c; border: 2px solid #333; border-radius: 8px; color: white; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-    .box-bet:hover { border-color: var(--accent); }
-    .box-bet.selected { background: var(--accent); color: black; border-color: white; box-shadow: 0 0 15px var(--accent); }
-        
-.odds-btn:active { transform: scale(0.9); }
-.back-btn { background: #00aaff; color: black; }
-.lay-btn { background: #ff7eb9; color: black; }
-.odds-val { font-weight: bold; font-size: 14px; }
-.odds-vol { font-size: 9px; opacity: 0.8; }
-
-/* --- UPDATED COLOR POP ANIMATION --- */
-
-/* Keyframes for the Neon Flash Effect */
-/* --- AUTOMATED LIVE POP ANIMATION --- */
-@keyframes colorPop {
-    0% { filter: brightness(1); transform: scale(1); }
-    50% { filter: brightness(2); transform: scale(1.05); box-shadow: 0 0 20px var(--accent); }
-    100% { filter: brightness(1); transform: scale(1); }
-}
-
-.pop-active { 
-    animation: colorPop 0.6s ease-in-out; 
-}
-
-/* Ensure buttons have smooth transitions for all properties */
-.odds-btn { 
-    transition: all 0.3s ease;
-    flex-direction: column; /* Restored column view for Val/Vol text */
-}
-
-/* BET SLIP POPUP */
-.bet-popup-slip { position: fixed; bottom: 20px; right: 20px; width: 300px; background: #011627; border: 2px solid var(--accent); border-radius: 12px; z-index: 5000; display: none; box-shadow: 0 0 30px rgba(0,0,0,0.8); animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-.slip-head { background: var(--accent); color: black; padding: 10px; font-weight: bold; display: flex; justify-content: space-between; border-radius: 10px 10px 0 0; }
-.slip-body { padding: 15px; }
-.chip-to-rs { font-size: 11px; color: var(--accent); margin-top: 8px; text-align: center; }
-
-        @media(max-width:768px) { 
-            .sidebar { position:fixed; left:0; height:100%; transform: translateX(-100%); } 
-            .sidebar.show { transform: translateX(0); box-shadow:10px 0 30px rgba(0,0,0,0.8); } 
-            .sidebar-overlay.show { display: block; }
-            .mobile-toggle { display:block !important; font-size: 22px; color: #fff; margin-right: 15px; }
-            .modal-body { grid-template-columns: 1fr; }
-            .full-row { grid-column: span 1; }
-        }
     </style>
 </head>
 <body>
 
     <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
 
-    <div class="modal" id="passChangeModal">
-        <div class="modal-content" style="max-width: 450px;">
-            <div class="modal-header"><h3>Security Reset Required</h3></div>
-            <div class="modal-body" style="grid-template-columns: 1fr;">
-                <p style="font-size:13px; color:#aaa; margin-bottom:10px;">Please update your temporary password to access the dashboard.</p>
-                <div class="form-group"><label>Current Password</label><input type="password" id="oldSecurePass" required></div>
-                <div class="form-group"><label>New Password</label><input type="password" id="newSecurePass" required></div>
-                <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmSecurePass" required></div>
-                <button class="btn" style="background:var(--neon-g); color:black; padding:12px; font-weight:bold; border-radius:6px; margin-top:10px;" onclick="forceUpdatePass()">Update & Access Dashboard</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="userModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="mTitle">Add New User</h3>
-            <i class="fas fa-times-circle" style="color:var(--neon-r); cursor:pointer; font-size:22px;" onclick="closeModal()"></i>
-        </div>
-        <div class="modal-body">
-            <div class="form-group"><label>Username*</label><input type="text" id="mUName" required placeholder="Enter Username"></div>
-            <div class="form-group" id="passDiv"><label>Password*</label><input type="password" id="mPass" required placeholder="Min 6 chars"></div>
-            <div class="form-group" id="cPassDiv"><label>Confirm Password*</label><input type="password" id="mCPass" required placeholder="Repeat Password"></div>
-            <div class="form-group" id="roleDiv"><label>Role*</label><select id="mRole"></select></div>
-            <div class="form-group"><label>Commission % (Profit Share)</label><input type="number" id="mComm" value="0" step="0.1"></div>
-            <div class="form-group" id="depoDiv"><label>Initial Deposit (Chips)*</label><input type="number" id="mDeposit" value="0"></div>
-        </div>
-        <div class="modal-footer" style="background: #011627; padding: 15px 25px;">
-            <button class="btn" style="background:transparent; color:#aaa; margin-right:15px; border:none; cursor:pointer;" onclick="closeModal()">Cancel</button>
-            <button class="btn" style="background:var(--neon-g); color:black; padding: 10px 30px; border-radius:6px; font-weight:bold; border:none; cursor:pointer; box-shadow: 0 0 15px rgba(57, 255, 20, 0.4); transition: 0.3s;" onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='brightness(1)'" onclick="submitUser()">
-                <i class="fas fa-user-plus"></i> SUBMIT
-            </button>
-        </div>
-    </div>
-</div>
-
-    <div class="modal" id="modeModal">
-    <div class="modal-content" style="max-width: 450px;">
-        <div class="modal-header">
-            <h3>Gaming Modes: <span id="modeUser"></span></h3>
-            <i class="fas fa-times-circle" style="color:var(--neon-r); cursor:pointer;" onclick="closeModal()"></i>
-        </div>
-        <div class="modal-body" style="grid-template-columns: 1fr;">
-            <div style="background:#0b0e14; padding:20px; border-radius:12px; border:1px solid var(--primary);">
-                <p style="color:var(--accent); font-weight:bold; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">Select Active Games</p>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;" id="modeCheckboxes">
-                    <label style="cursor:pointer;"><input type="checkbox" checked> Cricket</label>
-                    <label style="cursor:pointer;"><input type="checkbox" checked> Football</label>
-                    <label style="cursor:pointer;"><input type="checkbox" checked> Tennis</label>
-                    <label style="cursor:pointer;"><input type="checkbox" checked> Casino</label>
-                </div>
-            </div>
-            <button class="btn" style="background:var(--neon-g); color:black; padding:12px; margin-top:15px; font-weight:bold; border-radius:6px; width:100%;" onclick="saveGamingModes()">UPDATE MODES</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal" id="marketSettingModal">
-    <div class="modal-content" style="max-width: 500px;">
-        <div class="modal-header">
-            <h3>Market Setting: <span id="msUser"></span></h3>
-            <i class="fas fa-times-circle" style="color:var(--neon-r); cursor:pointer;" onclick="closeModal()"></i>
-        </div>
-        <div class="modal-body" style="grid-template-columns: 1fr 1fr; gap:15px;">
-            <div class="form-group">
-                <label>Game</label>
-                <select id="msGame" style="width:100%;"><option>Cricket</option><option>Football</option><option>Tennis</option></select>
-            </div>
-            <div class="form-group">
-                <label>Market</label>
-                <select id="msMarket" style="width:100%;"><option>Match Odds</option><option>Bookmaker</option><option>Session</option></select>
-            </div>
-            <div class="full-row" style="margin-top:10px;">
-                <button class="btn" style="background:var(--neon-g); color:black; padding:12px; font-weight:bold; border-radius:6px; width:100%;" onclick="saveMarketSettings()">SUBMIT SETTINGS</button>
-            </div>
-        </div>
-    </div>
-</div>
-
     <div class="sidebar" id="sidebar">
         <div class="logo">Magic9.pro</div>
-        <div class="nav-item active" onclick="nav('user', this)"><i class="fa-regular fa-user"></i> User Management</div>
+        <div class="nav-item active" onclick="nav('user', this)"><i class="fas fa-users"></i> User Management</div>
         <div class="nav-item" onclick="nav('bet', this)"><i class="fas fa-dice"></i> Live Betting</div>
         <div class="nav-item" onclick="nav('history', this)"><i class="fas fa-history"></i> History</div>
         <div class="nav-item" onclick="nav('account', this)"><i class="fas fa-user-circle"></i> My Account</div>
@@ -291,326 +74,233 @@
     </div>
 
     <div class="main">
-    <div class="header">
-        <div style="display:flex; align-items:center;">
-            <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)" style="cursor:pointer; font-size: 20px;"></i>
-            <h3 style="font-weight: 500; margin-left: 10px;">Dashboard</h3>
-        </div>
-        <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent);">🪙 Loading...</div>
-    </div>
-
-    <div id="page-user" class="page active">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-            <div style="position:relative; width: 300px;">
-                <i class="fas fa-search" style="position:absolute; left:12px; top:12px; color:#888;"></i>
-                <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User Here..." style="width:100%; padding:10px 10px 10px 35px; border-radius:6px; background:#12161f; border:1px solid #333; color:white;">
+        <div class="header">
+            <div style="display:flex; align-items:center;">
+                <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)" style="cursor:pointer; font-size: 20px;"></i>
+                <h3 style="margin-left: 15px;">Dashboard</h3>
             </div>
-            <button id="addBtn" class="btn" style="font-size:22px; padding: 2px 15px; background: var(--primary); border-radius:6px;" onclick="openModal()">+</button>
+            <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent);">🪙 Loading...</div>
         </div>
-        <div class="table-container">
-            <table id="userTable">
-                <thead>
-                    <tr><th>In</th><th>Name</th><th>Settlement</th><th>Points</th><th>Login</th><th>Lock</th><th>Active</th><th>Action</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
 
-    <div id="page-bet" class="page">
-        <div class="account-card" style="padding: 15px; border-left: 5px solid var(--neon-g); display: flex; justify-content: space-between; align-items: center; text-align: left;">
-            <div>
-                <p style="color:#aaa; font-size:11px;">DIRECT CHIP BALANCE</p>
-                <h2 style="color:var(--neon-g);">🪙 <span id="display-chips">0</span> <small style="font-size:12px; color:#aaa;">(₹<span id="display-rs">0</span>)</small></h2>
+        <div id="page-user" class="page active">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User..." style="padding:10px; border-radius:6px; background:#12161f; border:1px solid #333; color:white; width: 250px;">
+                <button id="addBtn" class="btn" style="padding: 10px 20px; background: var(--primary); border-radius:6px; color:white; font-weight:bold;" onclick="openModal()">+ Add User</button>
             </div>
-            <h4 id="match-timer" style="color:var(--accent);">READY TO PLAY</h4>
-        </div>
-
-        <div class="match-list-card" style="padding: 25px; background: #12161f; border: 1px solid var(--primary);">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h3 style="color:var(--accent);">SELECT YOUR LUCKY BOXES</h3>
-                <p style="font-size: 12px; color: #888;">Pick one or more. Reward is doubled! Stake = Stake per Box × Box Count.</p>
+            <div class="table-container">
+                <table id="userTable">
+                    <thead>
+                        <tr><th>In</th><th>Name</th><th>Settlement</th><th>Points</th><th>Login</th><th>Lock</th><th>Active</th><th>Action</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 25px;" id="boxGrid">
-                <button class="box-bet" onclick="toggleBox(this, 1)">1</button>
-                <button class="box-bet" onclick="toggleBox(this, 2)">2</button>
-                <button class="box-bet" onclick="toggleBox(this, 3)">3</button>
-                <button class="box-bet" onclick="toggleBox(this, 4)">4</button>
-                <button class="box-bet" onclick="toggleBox(this, 5)">5</button>
-                <button class="box-bet" onclick="toggleBox(this, 6)">6</button>
-                <button class="box-bet" onclick="toggleBox(this, 7)">7</button>
-                <button class="box-bet" onclick="toggleBox(this, 8)">8</button>
-                <button class="box-bet" onclick="toggleBox(this, 9)">9</button>
-                <button class="box-bet" onclick="toggleBox(this, 10)">10</button>
+        </div>
+
+        <div id="page-bet" class="page">
+            <div class="account-card" style="border-left: 5px solid var(--neon-g); text-align: left; display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+                <div>
+                    <p style="color:#aaa; font-size:11px;">AVAILABLE CHIPS</p>
+                    <h2 style="color:var(--neon-g);">🪙 <span id="display-chips">0</span> <small style="font-size:14px; color:#aaa;">(₹<span id="display-rs">0</span>)</small></h2>
+                </div>
+                <h4 id="match-timer" style="color:var(--accent);">READY</h4>
             </div>
-            <button class="btn" style="width: 100%; background: var(--primary); color:white; padding: 18px; font-weight: bold; border-radius: 10px;" onclick="openBoxStakePopup()">
-                PROCEED TO PLACE BET ON <span id="selectedCount">0</span> BOXES
-            </button>
+
+            <div class="account-card" style="padding: 30px; background: #12161f;">
+                <h3 style="color:var(--accent); margin-bottom: 20px;">SELECT YOUR LUCKY BOXES</h3>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="boxGrid">
+                    <button class="box-bet" onclick="toggleBox(this, 1)">1</button>
+                    <button class="box-bet" onclick="toggleBox(this, 2)">2</button>
+                    <button class="box-bet" onclick="toggleBox(this, 3)">3</button>
+                    <button class="box-bet" onclick="toggleBox(this, 4)">4</button>
+                    <button class="box-bet" onclick="toggleBox(this, 5)">5</button>
+                    <button class="box-bet" onclick="toggleBox(this, 6)">6</button>
+                    <button class="box-bet" onclick="toggleBox(this, 7)">7</button>
+                    <button class="box-bet" onclick="toggleBox(this, 8)">8</button>
+                    <button class="box-bet" onclick="toggleBox(this, 9)">9</button>
+                    <button class="box-bet" onclick="toggleBox(this, 10)">10</button>
+                </div>
+                <button class="btn" style="width: 100%; background: var(--primary); color:white; padding: 18px; font-weight: bold; border-radius: 10px; font-size: 16px;" onclick="openBoxStakePopup()">
+                    PROCEED TO PLACE BET ON <span id="selectedCount">0</span> BOXES
+                </button>
+            </div>
+        </div>
+
+        <div id="page-history" class="page">
+            <div class="account-card">
+                <h3 style="color:var(--accent); text-align:left; margin-bottom:15px;"><i class="fas fa-history"></i> Transaction Log</h3>
+                <div style="overflow-x: auto;">
+                    <table id="histTable">
+                        <thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-account" class="page">
+            <div class="account-card" style="border: 2px solid var(--accent); margin-bottom: 20px;">
+                <p style="color:#aaa; font-size:12px;">NET SAVED MONEY</p>
+                <h1 style="color:var(--accent); font-size:45px;">₹ <span id="inr">0</span></h1>
+                <p style="opacity: 0.8; margin-top: 10px;">Chips: <span id="chips">0</span></p>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="account-card" style="border-color: var(--neon-g); color: var(--neon-g);">WINS (₹): <span id="wins">0</span></div>
+                <div class="account-card" style="border-color: var(--neon-r); color: var(--neon-r);">LOSSES (₹): <span id="lose">0</span></div>
+            </div>
+            <div class="account-card" style="margin-top: 20px;">
+                 <h3 style="color:var(--neon-g); text-align:left; margin-bottom:15px;"><i class="fas fa-percentage"></i> Commission Summary</h3>
+                 <div style="overflow-x:auto"><table id="commTable" style="width:100%;"><thead><tr><th>Source</th><th>Chips</th><th>Value (INR)</th></tr></thead><tbody id="commBody" style="color:#ddd"></tbody></table></div>
+            </div>
         </div>
     </div>
 
-    </div>
-
-    <div id="page-history" class="page">
-        <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px;">
-            <h3 style="color:var(--accent); margin-bottom:15px;"><i class="fas fa-history"></i> Transaction Log</h3>
-            <div style="overflow-x:auto"><table id="histTable" style="width:100%;"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr></thead><tbody style="color:#ddd"></tbody></table></div>
+    <div class="bet-popup-slip" id="betSlip">
+        <div class="slip-head"><span>BET SLIP</span><i class="fas fa-times" onclick="closeSlip()" style="cursor:pointer;"></i></div>
+        <div style="padding:15px;">
+            <p id="slipTeam" style="font-size:13px; margin-bottom:10px; font-weight:bold; color:var(--accent)"></p>
+            <input type="number" id="betAmountInput" value="100" min="100" oninput="updateRsValue()" style="width:100%; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:6px;">
+            <p id="rsVal" style="font-size:11px; color:white; margin-top:15px; text-align:center; background:rgba(0,80,157,0.3); padding:8px; border-radius:4px;"></p>
+            <button class="btn" style="width:100%; background:var(--neon-g); color:black; font-weight:bold; margin-top:15px; padding:12px; border-radius:6px; border:none;" onclick="confirmLiveBet()">PLACE BET</button>
         </div>
     </div>
 
-    <div id="page-account" class="page">
-        <div class="account-card">
-            <p style="color:#aaa; font-size:12px;">TOTAL SAVED MONEY</p>
-            <h1 style="color:var(--accent); font-size:40px; text-shadow: 0 0 15px var(--accent);">₹ <span id="inr">0</span></h1>
-            <p style="opacity: 0.8; margin-top: 10px;">Chips: <span id="chips">0</span></p>
-        </div>
-        <div class="neon-grid">
-            <div class="neon-box win-box">TOTAL WINNINGS<br><span id="wins" style="font-size: 20px;">0</span></div>
-            <div class="neon-box lose-box">TOTAL LOSSES<br><span id="lose" style="font-size: 20px;">0</span></div>
-        </div>
-        <div class="card" style="background:#12161f; border: 1px solid var(--primary); border-radius:8px; padding:20px; margin-top: 20px;">
-            <h3 style="color:var(--neon-g); margin-bottom:15px;"><i class="fas fa-percentage"></i> Commission Summary</h3>
-            <div style="overflow-x:auto"><table id="commTable" style="width:100%;"><thead><tr><th>Source</th><th>Comm %</th><th>Earnings</th><th>INR</th></tr></thead><tbody id="commBody"></tbody></table></div>
+    <div class="modal" id="passChangeModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header"><h3>Security Reset Required</h3></div>
+            <div class="modal-body" style="grid-template-columns: 1fr;">
+                <p style="font-size:13px; color:#aaa;">Update your temporary password to access the dashboard.</p>
+                <div style="display:flex; flex-direction:column;"><label>New Password</label><input type="password" id="newSecurePass" style="padding:10px; background:#0b0e14; color:white; border:1px solid #333;"></div>
+                <button class="btn" style="background:var(--neon-g); color:black; padding:12px; font-weight:bold; margin-top:10px; border:none; border-radius:6px;" onclick="forceUpdatePass()">Update Password</button>
+            </div>
         </div>
     </div>
-</div>
-    
+
     <script>
-    // --- AUTH & GLOBAL STATE ---
-    let user = JSON.parse(sessionStorage.getItem('currentUser'));
-    if (!user) window.location.href = 'login.html';
-    
-    let editUserId = null, currentTargetUserId = null, selectedBoxes = [];
+        let user = JSON.parse(sessionStorage.getItem('currentUser'));
+        if (!user) window.location.href = 'login.html';
+        
+        let editUserId = null, currentTargetUserId = null, selectedBoxes = [];
 
-    // --- CORE INITIALIZATION ---
-    async function init() {
-        try {
-            const res = await fetch('/api/user-details', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ id: user.id }) 
-            });
-            const d = await res.json();
-            
-            if (d.success) {
-                // Update local storage with fresh DB data
-                user = d.data; 
-                sessionStorage.setItem('currentUser', JSON.stringify(user));
-
-                // --- FIXED: FORCE PASSWORD CHANGE LOGIC ---
-                // We check the fresh data from DB (force_password_change === 1)
-                // SuperAdmin is exempt from this force reset
-                const passModal = document.getElementById('passChangeModal');
-                if (user.role !== 'SuperAdmin' && parseInt(user.force_password_change) === 1) {
-                    if (passModal) {
-                        passModal.style.display = 'flex';
-                        // Disable sidebar interaction until password is changed
+        async function init() {
+            try {
+                const res = await fetch('/api/user-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: user.id }) });
+                const d = await res.json();
+                if (d.success) {
+                    user = d.data; sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    
+                    const passModal = document.getElementById('passChangeModal');
+                    if (user.role !== 'SuperAdmin' && parseInt(user.force_password_change) === 1) {
+                        if (passModal) passModal.style.display = 'flex';
                         document.getElementById('sidebar').style.pointerEvents = 'none';
                         document.getElementById('sidebar').style.opacity = '0.5';
+                    } else {
+                        if (passModal) passModal.style.display = 'none';
+                        document.getElementById('sidebar').style.pointerEvents = 'auto';
+                        document.getElementById('sidebar').style.opacity = '1';
                     }
-                } else {
-                    if (passModal) passModal.style.display = 'none';
-                    document.getElementById('sidebar').style.pointerEvents = 'auto';
-                    document.getElementById('sidebar').style.opacity = '1';
+
+                    const bal = parseFloat(user.balance);
+                    document.getElementById('headerBal').innerText = `🪙 ${bal.toLocaleString()}`;
+                    document.getElementById('display-chips').innerText = bal.toLocaleString();
+                    document.getElementById('display-rs').innerText = (bal * 10).toLocaleString();
+                    document.getElementById('inr').innerText = (bal * 10).toLocaleString();
+                    document.getElementById('chips').innerText = bal.toLocaleString();
+                    document.getElementById('wins').innerText = ((user.total_wins || 0) * 10).toLocaleString();
+                    document.getElementById('lose').innerText = ((user.total_losses || 0) * 10).toLocaleString();
+                    if (user.role === 'Client' && document.getElementById('addBtn')) document.getElementById('addBtn').style.display = 'none';
                 }
+            } catch (e) {}
+            loadUsers(); loadHistory(); loadCommissionSummary(); setupRoles();
+        }
 
-                // UI Balance Updates (1 Chip = 10 RS sync)
-                const bal = parseFloat(user.balance);
-                const wins = parseFloat(user.total_wins || 0);
-                const lose = parseFloat(user.total_losses || 0);
-
-                document.getElementById('headerBal').innerText = `🪙 ${bal.toLocaleString()}`;
-                document.getElementById('display-chips').innerText = bal.toLocaleString();
-                document.getElementById('display-rs').innerText = (bal * 10).toLocaleString();
-                document.getElementById('inr').innerText = (bal * 10).toLocaleString();
-                document.getElementById('chips').innerText = bal.toLocaleString();
-                
-                // Show values in INR for Account Page
-                document.getElementById('wins').innerText = (wins * 10).toLocaleString();
-                document.getElementById('lose').innerText = (lose * 10).toLocaleString();
-
-                if (user.role === 'Client' && document.getElementById('addBtn')) {
-                    document.getElementById('addBtn').style.display = 'none';
-                }
-            }
-        } catch (e) { console.error("Init Error:", e); }
-        
-        loadUsers(); 
-        loadHistory(); 
-        loadCommissionSummary(); 
-        setupRoles();
-    }
-
-    // --- USER MANAGEMENT ---
-    async function loadUsers() {
-        const tbody = document.querySelector('#userTable tbody');
-        if (!tbody) return;
-        try {
-            const res = await fetch('/api/my-users', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ parentId: user.id, role: user.role }) 
-            });
+        async function loadUsers() {
+            const tbody = document.querySelector('#userTable tbody');
+            const res = await fetch('/api/my-users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, role: user.role }) });
             const d = await res.json();
-            
-            // Hierarchy Security: Hide self and protect SuperAdmin
-            const filtered = (d.users || []).filter(u => 
-                u.id !== user.id && (user.role === 'SuperAdmin' || u.role !== 'SuperAdmin')
-            );
-
-            tbody.innerHTML = filtered.map(u => {
-                const isOnline = u.status === 'Online';
-                return `
-                <tr id="user-row-${u.id}">
-                    <td><i class="fas fa-arrow-circle-right" style="color:${isOnline ? 'var(--neon-g)' : 'var(--neon-r)'}"></i></td>
-                    <td style="text-align:left; padding-left:10px;">
-                        <b>${u.username}</b><br><small style="color:var(--primary)">${u.role.toUpperCase()}</small>
-                    </td>
-                    <td style="color:#aaa">Direct</td>
-                    <td style="color:var(--accent)"><b>${parseFloat(u.balance).toLocaleString()}</b></td>
+            const filtered = (d.users || []).filter(u => u.id !== user.id && (user.role === 'SuperAdmin' || u.role !== 'SuperAdmin'));
+            tbody.innerHTML = filtered.map(u => `
+                <tr>
+                    <td><i class="fas fa-arrow-circle-right" style="color:var(--neon-g)"></i></td>
+                    <td style="text-align:left;"><b>${u.username}</b><br><small>${u.role}</small></td>
+                    <td>Direct</td>
+                    <td><b>${parseFloat(u.balance).toLocaleString()}</b></td>
                     <td><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></td>
                     <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
                     <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
                     <td>
-                        <button class="act-btn btn-edit" title="Settings" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-edit"></i></button>
+                        <button class="act-btn btn-edit" title="Settings" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-cog"></i></button>
                         <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
                         <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                        <button class="act-btn btn-mode" title="Gaming Modes" onclick="openModeModal(${u.id},'${u.username}')">MODE</button>
-                        <button class="act-btn btn-ms" title="Market Settings" onclick="openMarketSetting(${u.id},'${u.username}')">MS</button>
                         <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
                     </td>
-                </tr>`;
-            }).join('');
-        } catch (e) { console.error("Load Users Error:", e); }
-    }
-
-    // --- 10-BOX BETTING LOGIC ---
-    function toggleBox(el, num) {
-        if (selectedBoxes.includes(num)) {
-            selectedBoxes = selectedBoxes.filter(n => n !== num);
-            el.classList.remove('selected');
-        } else {
-            selectedBoxes.push(num);
-            el.classList.add('selected');
+                </tr>`).join('');
         }
-        document.getElementById('selectedCount').innerText = selectedBoxes.length;
-        updateRsValue();
-    }
 
-    function openBoxStakePopup() {
-        if (selectedBoxes.length === 0) return alert("Please select at least one box!");
-        document.getElementById('slipTeam').innerText = `Boxes: ${selectedBoxes.sort((a,b)=>a-b).join(', ')}`;
-        document.getElementById('betSlip').style.display = 'block';
-        updateRsValue();
-    }
-
-    function updateRsValue() {
-        const stake = document.getElementById('betAmountInput').value || 0;
-        const total = stake * selectedBoxes.length;
-        document.getElementById('rsVal').innerText = `TOTAL STAKE: ${total} Chips (₹${(total * 10).toLocaleString()})`;
-    }
-
-    async function confirmLiveBet() {
-        const stake = parseFloat(document.getElementById('betAmountInput').value);
-        const total = stake * selectedBoxes.length;
-        
-        if (stake < 100) return alert("Minimum bet per box is 100 chips.");
-        if (parseFloat(user.balance) < total) return alert("Insufficient balance for this total stake!");
-
-        closeSlip();
-        document.getElementById('match-timer').innerText = "PROCESSING...";
-
-        const res = await fetch('/api/place-bet-direct', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ userId: user.id, amount: total }) 
-        });
-        
-        const d = await res.json();
-        if (d.success) {
-            init(); // Immediate balance refresh
-            startBoxTimer(stake);
-        } else {
-            alert(d.message);
-            document.getElementById('match-timer').innerText = "READY";
+        function toggleBox(el, num) {
+            if (selectedBoxes.includes(num)) { selectedBoxes = selectedBoxes.filter(n => n !== num); el.classList.remove('selected'); }
+            else { selectedBoxes.push(num); el.classList.add('selected'); }
+            document.getElementById('selectedCount').innerText = selectedBoxes.length;
+            updateRsValue();
         }
-    }
 
-    function startBoxTimer(stake) {
-        let sec = 5;
-        const timerEl = document.getElementById('match-timer');
-        const interval = setInterval(async () => {
-            timerEl.innerText = `SETTLING: ${--sec}s`;
-            if (sec <= 0) {
-                clearInterval(interval);
-                const winNum = Math.floor(Math.random() * 10) + 1;
-                const win = selectedBoxes.includes(winNum);
-                
-                // Settlement includes Upward Commission Logic
-                await fetch('/api/settle-bet', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ userId: user.id, amount: stake, odds: 2, isWin: win }) 
-                });
-                
-                if (win) {
-                    alert(`🏆 Box ${winNum} WON! Stake Doubled!`);
-                } else {
-                    alert(`❌ Box ${winNum} won. You Lost.`);
+        function openBoxStakePopup() {
+            if (!selectedBoxes.length) return alert("Select at least one box!");
+            document.getElementById('slipTeam').innerText = `Selected Boxes: ${selectedBoxes.join(', ')}`;
+            document.getElementById('betSlip').style.display = 'block';
+            updateRsValue();
+        }
+
+        function updateRsValue() {
+            const stake = document.getElementById('betAmountInput').value || 0;
+            const total = stake * selectedBoxes.length;
+            document.getElementById('rsVal').innerText = `TOTAL STAKE: ${total} Chips (₹${(total * 10).toLocaleString()})`;
+        }
+
+        async function confirmLiveBet() {
+            const stake = parseFloat(document.getElementById('betAmountInput').value);
+            const total = stake * selectedBoxes.length;
+            if (stake < 100) return alert("Min bet is 100 chips per box.");
+            if (parseFloat(user.balance) < total) return alert("Insufficient Balance!");
+            
+            closeSlip();
+            document.getElementById('match-timer').innerText = "PROCESSING...";
+
+            const res = await fetch('/api/place-bet-direct', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: total }) });
+            if ((await res.json()).success) { init(); startBoxTimer(stake); }
+        }
+
+        function startBoxTimer(stake) {
+            let sec = 5;
+            const timerEl = document.getElementById('match-timer');
+            const interval = setInterval(async () => {
+                timerEl.innerText = `SETTLING: ${--sec}s`;
+                if (sec <= 0) {
+                    clearInterval(interval);
+                    const winNum = Math.floor(Math.random() * 10) + 1;
+                    const win = selectedBoxes.includes(winNum);
+                    await fetch('/api/settle-bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: stake, odds: 2, isWin: win }) });
+                    alert(win ? `🏆 Box ${winNum} WON! Stake Doubled!` : `❌ Box ${winNum} was the winner. Better luck!`);
+                    selectedBoxes = []; document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('selected'));
+                    document.getElementById('selectedCount').innerText = "0"; timerEl.innerText = "READY"; init();
                 }
-
-                // Reset Game UI
-                selectedBoxes = [];
-                document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('selected'));
-                document.getElementById('selectedCount').innerText = "0";
-                timerEl.innerText = "READY";
-                init();
-            }
-        }, 1000);
-    }
-
-    // --- UI HELPERS ---
-    function nav(id, el) { 
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
-        const targetPage = document.getElementById('page-' + id);
-        if (targetPage) targetPage.classList.add('active'); 
-        
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        if(el) el.classList.add('active');
-        if(window.innerWidth <= 768) toggleSidebar();
-    }
-
-    function toggleSidebar() { 
-        const sb = document.getElementById('sidebar');
-        const ov = document.getElementById('overlay');
-        sb.classList.toggle('show'); 
-        if (ov) ov.style.display = sb.classList.contains('show') ? 'block' : 'none';
-    }
-
-    function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
-    function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
-    function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
-
-    function setupRoles() {
-        const hierarchy = { 'SuperAdmin': 6, 'Admin': 5, 'SuperMaster': 4, 'Master': 3, 'Agent': 2, 'Client': 1 };
-        const sel = document.getElementById('mRole');
-        if (sel && sel.options.length === 0) {
-            ['Admin', 'SuperMaster', 'Master', 'Agent', 'Client'].forEach(r => { 
-                if (hierarchy[r] < hierarchy[user.role]) {
-                    const opt = document.createElement('option'); opt.value = r; opt.innerText = r; sel.appendChild(opt);
-                }
-            });
+            }, 1000);
         }
-    }
 
-    function filterUsers() {
-        const input = document.getElementById('userSearch').value.toLowerCase();
-        document.querySelectorAll('#userTable tbody tr').forEach(r => {
-            r.style.display = r.innerText.toLowerCase().includes(input) ? "" : "none";
-        });
-    }
+        function nav(id, el) { 
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
+            const target = document.getElementById('page-' + id);
+            if(target) target.classList.add('active'); 
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if(el) el.classList.add('active');
+            if(window.innerWidth <= 768) toggleSidebar();
+        }
 
-    init();
-</script>
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none'; }
+        function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+        function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
+        
+        init();
+    </script>
 </body>
 </html>
