@@ -21,9 +21,10 @@
         @media (max-width: 768px) {
             .sidebar { position: fixed; left: -260px; height: 100vh; }
             .sidebar.show { transform: translateX(260px); }
-            /* FIXED: Ensure logout stays visible at bottom on mobile */
-            .sidebar .nav-item[onclick="logout()"] { margin-top: auto !important; display: flex !important; }
+            /* Ensure logout always visible at bottom on mobile */
+            .sidebar .logout-btn { margin-top: auto !important; border-top: 1px solid #1a202c; }
         }
+        .logout-btn { margin-top: auto; color: var(--neon-r) !important; }
 
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1500; backdrop-filter: blur(3px); }
         .main { flex:1; display:flex; flex-direction:column; width:100%; overflow:hidden; position: relative; }
@@ -41,7 +42,7 @@
         tr:hover { background: rgba(255,255,255,0.03); transform: scale(1.002); }
 
         /* ACTION BUTTONS */
-        .act-btn { width: 32px; height: 32px; border-radius: 50%; border: none; color: white; cursor: pointer; margin: 0 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; }
+        .act-btn { width: 32px; height: 32px; border-radius: 50%; border: none; color: white; cursor: pointer; margin: 0 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; transition: 0.2s; }
         .act-btn:hover { transform: scale(1.2) rotate(5deg); filter: brightness(1.3); box-shadow: 0 0 10px currentColor; }
         .btn-edit { background: #007bff; } .btn-d { background: var(--primary); } .btn-w { background: #6c757d; } .btn-del { background: var(--neon-r); }
 
@@ -49,35 +50,24 @@
         .box-bet { height: 65px; background: #1a202c; border: 2px solid #333; border-radius: 10px; color: white; font-size: 22px; font-weight: bold; cursor: pointer; position: relative; overflow: hidden; }
         .box-bet:hover:not(:disabled) { border-color: var(--accent); background: #252d3d; transform: translateY(-3px); }
         .box-bet.selected { background: var(--accent); color: black; border-color: white; box-shadow: 0 0 20px var(--accent); }
-        .box-bet.winner-set { background: var(--neon-g); color: black; border-color: white; box-shadow: 0 0 20px var(--neon-g); animation: pulseGreen 1.5s infinite; }
-        
-        @keyframes pulseGreen { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        .box-bet.winner-set { background: var(--neon-g); color: black; border-color: white; box-shadow: 0 0 20px var(--neon-g); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
         /* MODALS & FIELDS */
-        .modal { display:none; position:fixed; inset: 0; background:rgba(0,0,0,0.85); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(8px); }
-        .modal-content { background:#12161f; width:95%; max-width:550px; border-radius:15px; border: 1px solid var(--primary); transform: scale(0.9); animation: modalIn 0.3s forwards; }
-        @keyframes modalIn { to { transform: scale(1); } }
-        .modal-header { background:#011627; padding:18px; border-bottom: 2px solid var(--neon-r); display: flex; justify-content: space-between; align-items: center; }
-        .modal-body { padding:25px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .modal { display:none; position:fixed; inset: 0; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
+        .modal-content { background:#12161f; width:90%; max-width:600px; border-radius:12px; border: 1px solid var(--primary); overflow:hidden; }
+        .modal-header { background:#011627; padding:15px; border-bottom: 2px solid var(--neon-r); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding:25px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; text-align: left; }
         .modal-body label { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
-        .modal-body input, .modal-body select { width: 100%; padding: 12px; background: #0b0e14; border: 1px solid #333; border-radius: 8px; color: white; font-size: 14px; outline: none; transition: 0.3s; }
+        .modal-body input, .modal-body select { width: 100%; padding: 12px; background: #0b0e14; border: 1px solid #333; border-radius: 8px; color: white; font-size: 14px; outline: none; }
         .modal-body input:focus { border-color: var(--primary); box-shadow: 0 0 12px rgba(0, 80, 157, 0.4); }
-        .btn-submit-neon { grid-column: span 2; background: linear-gradient(135deg, var(--neon-g), #2ecc71); color: black; padding: 16px; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
-        .btn-submit-neon:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(57, 255, 20, 0.4); }
-
-        /* COUNTDOWN UI */
-        #timer-display { font-size: 40px; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px var(--accent); margin-bottom: 10px; }
+        .btn-submit-neon { grid-column: span 2; background: linear-gradient(135deg, var(--neon-g), #2ecc71); color: black; padding: 15px; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; margin-top: 10px; box-shadow: 0 4px 15px rgba(57, 255, 20, 0.2); }
 
         .bet-popup-slip { position: fixed; bottom: 20px; right: 20px; width: 320px; background: #011627; border: 2px solid var(--accent); border-radius: 15px; z-index: 5000; display: none; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
         .slip-head { background: var(--accent); color: black; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; border-radius: 12px 12px 0 0; }
         
-        .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #333; transition: .4s; border-radius: 34px; border: 1px solid #444; }
-        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(16px); background-color: var(--accent); }
+        #timer-display { font-size: 45px; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px var(--accent); }
 
         @media (max-width: 768px) { .modal-body { grid-template-columns: 1fr; } .btn-submit-neon { grid-column: span 1; } }
     </style>
@@ -89,11 +79,11 @@
     <div class="sidebar" id="sidebar">
         <div class="logo">MAGIC9 PRO</div>
         <div class="nav-item active" onclick="nav('user', this)"><i class="fas fa-users-cog"></i> Users</div>
-        <div id="nav-bet-client" class="nav-item" style="display:none;" onclick="nav('bet', this)"><i class="fas fa-gamepad"></i> Play Game</div>
-        <div id="nav-mgmt-sa" class="nav-item" style="display:none;" onclick="nav('mgmt', this)"><i class="fas fa-terminal"></i> House Control</div>
-        <div class="nav-item" onclick="nav('history', this)"><i class="fas fa-list-ul"></i> History</div>
+        <div id="nav-bet-client" class="nav-item" style="display:none;" onclick="nav('bet', this)"><i class="fas fa-dice"></i> Live Betting</div>
+        <div id="nav-mgmt-sa" class="nav-item" style="display:none;" onclick="nav('mgmt', this)"><i class="fas fa-tools"></i> House Control</div>
+        <div class="nav-item" onclick="nav('history', this)"><i class="fas fa-history"></i> History</div>
         <div class="nav-item" onclick="nav('account', this)"><i class="fas fa-wallet"></i> Wallet</div>
-        <div class="nav-item" style="margin-top:auto; color:var(--neon-r)" onclick="logout()"><i class="fas fa-power-off"></i> Logout</div>
+        <div class="nav-item logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
     </div>
 
     <div class="main">
@@ -106,11 +96,11 @@
         </div>
 
         <div id="page-user" class="page active">
-            <div style="display:flex; justify-content:space-between; margin-bottom: 20px;">
-                <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search users..." style="padding:12px; border-radius:8px; background:#0b0e14; border:1px solid #333; color:white; width: 280px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User..." style="padding:12px; border-radius:8px; background:#12161f; border:1px solid #333; color:white; width: 280px;">
                 <button id="addBtn" class="act-btn" style="width:100px; border-radius:8px; background:var(--primary); font-weight:bold;" onclick="openModal()">+ ADD</button>
             </div>
-            <div class="table-container"><table id="userTable"><thead><tr><th>Status</th><th>User Info</th><th>Type</th><th>Points</th><th>Login</th><th>Lock</th><th>Active</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+            <div class="table-container"><table id="userTable"><thead><tr><th>Status</th><th>Name</th><th>Settlement</th><th>Points</th><th>Login</th><th>Lock</th><th>Active</th><th>Action</th></tr></thead><tbody></tbody></table></div>
         </div>
 
         <div id="page-bet" class="page">
@@ -119,46 +109,34 @@
 
         <div id="page-mgmt" class="page">
             <div class="account-card" style="border-top: 4px solid var(--accent);">
-                <h2 style="color:var(--accent); margin-bottom:10px;">HOUSE CONTROL</h2>
-                <p style="color:#aaa; margin-bottom:25px;">Select the winner box below to settle all active bets manually.</p>
-                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 30px;">
+                <h2 style="color:var(--accent);">HOUSE CONTROL</h2>
+                <p style="color:#aaa; font-size:12px; margin-bottom: 25px;">Admin: Manually set the winner box to settle all active bets.</p>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;">
                     ${Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="setWinnerBox(this, ${i+1})">${i+1}</button>`).join('')}
                 </div>
-                <button class="btn-submit-neon" style="width:100%;" onclick="confirmHouseResult()">REVEAL & SETTLE ALL CLIENTS</button>
+                <button class="btn-submit-neon" style="width:100%;" onclick="confirmHouseResult()">REVEAL & SETTLE ALL BETS</button>
             </div>
         </div>
 
         <div id="page-history" class="page">
-            <div class="account-card"><h3 style="color:var(--accent); text-align:left; margin-bottom:15px;">Activity Logs</h3><div style="overflow-x: auto;"><table id="histTable"><thead><tr><th>Time</th><th>Action</th><th>Amount</th><th>Details</th></tr></thead><tbody></tbody></table></div></div>
+            <div class="account-card"><h3 style="color:var(--accent); text-align:left; margin-bottom:15px;"><i class="fas fa-history"></i> Transaction Log</h3><div style="overflow-x: auto;"><table id="histTable"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr></thead><tbody></tbody></table></div></div>
         </div>
 
         <div id="page-account" class="page">
-            <div class="account-card" style="border: 2px solid var(--accent);"><p style="color:#aaa; font-size:12px;">NET SAVED MONEY</p><h1 style="color:var(--accent); font-size:50px;">₹ <span id="inr">0</span></h1><p style="opacity: 0.6;">Total Chips: <span id="chips">0</span></p></div>
-            <div class="neon-grid"><div class="neon-box win-box">Winnings (₹)<br><span id="wins" style="font-size:20px;">0</span></div><div class="neon-box lose-box">Stakes (₹)<br><span id="lose" style="font-size:20px;">0</span></div></div>
-            <div class="account-card" style="margin-top: 25px;"><h3 style="color:var(--neon-g); text-align:left; margin-bottom:15px;">Commission Breakdown</h3><div style="overflow-x:auto"><table id="commTable"><thead><tr><th>User Source</th><th>Chips Earned</th><th>INR Value</th></tr></thead><tbody id="commBody"></tbody></table></div></div>
+            <div class="account-card" style="border: 2px solid var(--accent);">
+                <p style="color:#aaa; font-size:12px;">NET SAVED MONEY</p>
+                <h1 style="color:var(--accent); font-size:50px;">₹ <span id="inr">0</span></h1>
+                <p style="opacity: 0.8; margin-top: 10px;">Chips: <span id="chips">0</span></p>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="account-card" style="border-color: var(--neon-g); color: var(--neon-g);">WINS (₹): <span id="wins">0</span></div>
+                <div class="account-card" style="border-color: var(--neon-r); color: var(--neon-r);">LOSSES (₹): <span id="lose">0</span></div>
+            </div>
+            <div class="account-card" style="margin-top: 20px;">
+                 <h3 style="color:var(--neon-g); text-align:left; margin-bottom:15px;"><i class="fas fa-percentage"></i> Commission Summary</h3>
+                 <div style="overflow-x:auto"><table id="commTable"><thead><tr><th>Source</th><th>Chips</th><th>INR</th></tr></thead><tbody id="commBody" style="color:#ddd"></tbody></table></div>
+            </div>
         </div>
-    </div>
-
-    <div class="modal" id="userModal">
-        <div class="modal-content"><div class="modal-header"><h3 id="mTitle">Settings</h3><i class="fas fa-times" onclick="closeModal()" style="cursor:pointer; color:var(--neon-r);"></i></div><div class="modal-body">
-            <div class="form-group"><label>Username</label><input type="text" id="mUName" placeholder="Unique name"></div>
-            <div class="form-group" id="passDivGrp"><label>Password (6 Digits)</label><input type="password" id="mPass" maxlength="6"></div>
-            <div class="form-group" id="cPassDivGrp"><label>Confirm Password</label><input type="password" id="mCPass" maxlength="6"></div>
-            <div class="form-group" id="roleDiv"><label>Access Level</label><select id="mRole"></select></div>
-            <div class="form-group"><label>Comm %</label><input type="number" id="mComm" value="0" step="0.1"></div>
-            <div class="form-group" id="depoDiv"><label>Opening Balance</label><input type="number" id="mDeposit" value="0"></div>
-            <button class="btn-submit-neon" onclick="submitUser()">Save Account Details</button>
-        </div></div>
-    </div>
-
-    <div class="modal" id="passChangeModal">
-        <div class="modal-content" style="max-width: 450px;"><div class="modal-header"><h3>Security Reset Required</h3></div><div class="modal-body" style="grid-template-columns: 1fr;">
-            <p style="font-size:13px; color:#aaa; margin-bottom:10px;">Security: Update your temporary password to unlock the dashboard.</p>
-            <div class="form-group"><label>Old Password</label><input type="password" id="oldSecurePass" maxlength="6"></div>
-            <div class="form-group"><label>New Password (6 Digits)</label><input type="password" id="newSecurePass" maxlength="6"></div>
-            <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmSecurePass" maxlength="6"></div>
-            <button class="btn-submit-neon" onclick="forceUpdatePass()">Update & Unlock Dashboard</button>
-        </div></div>
     </div>
 
     <div class="bet-popup-slip" id="betSlip">
@@ -169,6 +147,28 @@
             <p id="rsVal" style="font-size:11px; color:white; margin-top:20px; text-align:center; background:rgba(0,80,157,0.3); padding:10px; border-radius:6px;"></p>
             <button class="btn-submit-neon" style="width:100%;" onclick="confirmLiveBet()">PLACE SECURE BET</button>
         </div>
+    </div>
+
+    <div class="modal" id="passChangeModal">
+        <div class="modal-content" style="max-width: 450px;"><div class="modal-header"><h3>Security Reset Required</h3></div><div class="modal-body" style="grid-template-columns: 1fr;">
+            <p style="font-size:12px; color:#aaa;">Update your password to unlock the dashboard.</p>
+            <div class="form-group"><label>Old Password</label><input type="password" id="oldSecurePass" maxlength="6"></div>
+            <div class="form-group"><label>New Password</label><input type="password" id="newSecurePass" maxlength="6"></div>
+            <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmSecurePass" maxlength="6"></div>
+            <button class="btn-submit-neon" onclick="forceUpdatePass()">Update & Unlock Dashboard</button>
+        </div></div>
+    </div>
+
+    <div class="modal" id="userModal">
+        <div class="modal-content"><div class="modal-header"><h3 id="mTitle">Settings</h3><i class="fas fa-times" onclick="closeModal()" style="cursor:pointer; color:var(--neon-r);"></i></div><div class="modal-body">
+            <div class="form-group"><label>Username</label><input type="text" id="mUName" placeholder="Unique name"></div>
+            <div class="form-group" id="passDivGrp"><label>Password (6 Digits)</label><input type="password" id="mPass" maxlength="6"></div>
+            <div class="form-group" id="cPassDivGrp"><label>Confirm Password</label><input type="password" id="mCPass" maxlength="6"></div>
+            <div class="form-group" id="roleDiv"><label>Role</label><select id="mRole"></select></div>
+            <div class="form-group"><label>Comm %</label><input type="number" id="mComm" value="0" step="0.1"></div>
+            <div class="form-group" id="depoDiv"><label>Initial Balance</label><input type="number" id="mDeposit" value="0"></div>
+            <button class="btn-submit-neon" onclick="submitUser()">Submit Details</button>
+        </div></div>
     </div>
 
     <script>
@@ -196,14 +196,12 @@
                         document.getElementById('nav-bet-client').style.display = 'flex';
                         document.getElementById('bet-content-container').innerHTML = `
                             <div class="account-card" style="border-left: 5px solid var(--neon-g); text-align: left; display: flex; justify-content: space-between; align-items: center; padding: 15px;">
-                                <div><p style="color:#aaa; font-size:11px;">CHIP BALANCE</p><h2 style="color:var(--neon-g);">🪙 <span id="display-chips">${bal.toLocaleString()}</span> <small style="font-size:14px; color:#aaa;">(₹${(bal*10).toLocaleString()})</small></h2></div>
+                                <div><p style="color:#aaa; font-size:11px;">AVAILABLE BALANCE</p><h2 style="color:var(--neon-g);">🪙 <span id="display-chips">${bal.toLocaleString()}</span> <small style="font-size:14px; color:#aaa;">(₹${(bal*10).toLocaleString()})</small></h2></div>
                                 <div style="text-align:right;"><div id="timer-display">READY</div><h4 id="match-timer" style="color:var(--accent); font-size:10px;">OPEN FOR BETS</h4></div>
                             </div>
                             <div class="account-card" style="padding: 30px; background: #12161f;">
                                 <h3 style="color:var(--accent); margin-bottom: 20px;">CHOOSE WINNING BOXES</h3>
-                                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="boxGrid">
-                                    ${Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="toggleBox(this, ${i+1})">${i+1}</button>`).join('')}
-                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="boxGrid">${Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="toggleBox(this, ${i+1})">${i+1}</button>`).join('')}</div>
                                 <button class="btn" id="placeBetBtn" style="width: 100%; background: var(--primary); color:white; padding: 20px; font-weight: bold; border-radius: 12px;" onclick="openBoxStakePopup()">BET ON <span id="selectedCount">0</span> BOXES</button>
                             </div>`;
                     } else if (user.role === 'SuperAdmin') {
@@ -233,7 +231,7 @@
                     await fetch('/api/settle-bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: stakePerBox, odds: 2, isWin: win }) });
                     timerText.innerText = win ? "WIN!" : "LOSS";
                     timerText.style.color = win ? "var(--neon-g)" : "var(--neon-r)";
-                    alert(win ? `🏆 Box ${winNum} WON! Stake Doubled.` : `❌ Box ${winNum} won. Better luck next round!`);
+                    alert(win ? `🏆 Box ${winNum} WON! Chips added.` : `❌ Box ${winNum} won. Better luck next time!`);
                     selectedBoxes = []; setTimeout(() => init(), 2000);
                 }
             }, 1000);
@@ -244,39 +242,39 @@
         async function confirmHouseResult() {
             if (!houseWinner) return alert("Select winner box!");
             const res = await fetch('/api/house-settle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ winnerBox: houseWinner }) });
-            if ((await res.json()).success) { alert("Result Set Successfully!"); location.reload(); }
+            if ((await res.json()).success) { alert("Settled!"); location.reload(); }
         }
 
-        // --- UI & MGMT HELPERS ---
+        // --- UI & MGMT ---
         function toggleBox(el, num) { if (selectedBoxes.includes(num)) { selectedBoxes = selectedBoxes.filter(n => n !== num); el.classList.remove('selected'); } else { selectedBoxes.push(num); el.classList.add('selected'); } document.getElementById('selectedCount').innerText = selectedBoxes.length; updateRsValue(); }
-        function openBoxStakePopup() { if (!selectedBoxes.length) return alert("Select boxes!"); document.getElementById('slipTeam').innerText = `Selected Boxes: ${selectedBoxes.join(', ')}`; document.getElementById('betSlip').style.display = 'block'; updateRsValue(); }
+        function openBoxStakePopup() { if (!selectedBoxes.length) return alert("Select boxes!"); document.getElementById('slipTeam').innerText = `Boxes: ${selectedBoxes.join(', ')}`; document.getElementById('betSlip').style.display = 'block'; updateRsValue(); }
         function updateRsValue() { const s = document.getElementById('betAmountInput').value || 0; const t = s * selectedBoxes.length; document.getElementById('rsVal').innerText = `TOTAL DEDUCTION: ${t} Chips (₹${(t*10).toLocaleString()})`; }
         async function confirmLiveBet() {
-            const stake = parseFloat(document.getElementById('betAmountInput').value); const total = stake * selectedBoxes.length;
-            if (parseFloat(user.balance) < total) return alert("Insufficient Chips!");
+            const s = parseFloat(document.getElementById('betAmountInput').value); const t = s * selectedBoxes.length;
+            if (parseFloat(user.balance) < t) return alert("Low balance!");
             closeSlip();
-            const res = await fetch('/api/place-bet-direct', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: total, boxes: selectedBoxes, stakePerBox: stake }) });
-            if ((await res.json()).success) runCountdown(stake);
+            const res = await fetch('/api/place-bet-direct', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: t, boxes: selectedBoxes, stakePerBox: s }) });
+            if ((await res.json()).success) runCountdown(s);
         }
 
         async function forceUpdatePass() {
             const oldP = document.getElementById('oldSecurePass').value, newP = document.getElementById('newSecurePass').value, cP = document.getElementById('confirmSecurePass').value;
-            if(newP !== cP || newP.length !== 6) return alert("Check password length (6) and match!");
+            if(newP !== cP || newP.length !== 6) return alert("Check password matches and length!");
             const res = await fetch('/api/update-password-secure', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, oldPass: oldP, newPass: newP }) });
-            if ((await res.json()).success) location.reload(); else alert("Error: Current password incorrect.");
+            if ((await res.json()).success) location.reload(); else alert("Old password incorrect!");
         }
 
         async function loadUsers() {
             const res = await fetch('/api/my-users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, role: user.role }) });
             const d = await res.json();
             const filtered = (d.users || []).filter(u => u.id !== user.id && (user.role === 'SuperAdmin' || u.role !== 'SuperAdmin'));
-            document.querySelector('#userTable tbody').innerHTML = filtered.map(u => `<tr><td><i class="fas fa-circle" style="color:var(--neon-g); font-size:8px;"></i></td><td style="text-align:left;"><b>${u.username}</b><br><small>${u.role}</small></td><td>Direct</td><td><b>${parseFloat(u.balance).toLocaleString()}</b></td><td><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></td><td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td><td><button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-pen"></i></button><button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button><button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button><button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+            document.querySelector('#userTable tbody').innerHTML = filtered.map(u => `<tr><td><i class="fas fa-circle" style="color:var(--neon-g); font-size:8px;"></i></td><td style="text-align:left;"><b>${u.username}</b><br><small>${u.role}</small></td><td>Direct</td><td><b>${parseFloat(u.balance).toLocaleString()}</b></td><td><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></td><td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td><td><button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-pen"></i></button><button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button><button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button><button class="act-btn btn-del" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button></td></tr>`).join('');
         }
 
         async function submitUser() {
-            const uName = document.getElementById('mUName').value, pass = document.getElementById('mPass').value, cPass = document.getElementById('mCPass').value, role = document.getElementById('mRole').value, comm = document.getElementById('mComm').value, depo = document.getElementById('mDeposit').value;
-            if(!editUserId && (pass !== cPass || pass.length !== 6)) return alert("Password Error!");
-            const res = await fetch(editUserId ? '/api/update-user' : '/api/create-user-advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uName, pass, role, commission: comm, deposit: depo, creatorId: user.id, id: editUserId }) });
+            const u = document.getElementById('mUName').value, p = document.getElementById('mPass').value, cp = document.getElementById('mCPass').value, r = document.getElementById('mRole').value, c = document.getElementById('mComm').value, d = document.getElementById('mDeposit').value;
+            if(!editUserId && (p !== cp || p.length !== 6)) return alert("Password mismatch or length error!");
+            const res = await fetch(editUserId ? '/api/update-user' : '/api/create-user-advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uName: u, pass: p, role: r, commission: c, deposit: d, creatorId: user.id, id: editUserId }) });
             if ((await res.json()).success) { closeModal(); init(); }
         }
 
@@ -285,11 +283,11 @@
         function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
         function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
         function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
-        function openEdit(id, name, comm) { editUserId = id; document.getElementById('mTitle').innerText = "Edit Account"; document.getElementById('mUName').value = name; document.getElementById('mComm').value = comm; document.getElementById('passDivGrp').style.display = 'none'; document.getElementById('cPassDivGrp').style.display = 'none'; document.getElementById('depoDiv').style.display = 'none'; document.getElementById('userModal').style.display = 'flex'; }
-        function openModal() { editUserId = null; document.getElementById('mTitle').innerText = "New Account"; document.getElementById('mUName').value = ""; document.getElementById('passDivGrp').style.display = 'flex'; document.getElementById('cPassDivGrp').style.display = 'flex'; document.getElementById('depoDiv').style.display = 'flex'; document.getElementById('userModal').style.display = 'flex'; }
+        function openEdit(id, name, comm) { editUserId = id; document.getElementById('mTitle').innerText = "Edit User"; document.getElementById('mUName').value = name; document.getElementById('mComm').value = comm; document.getElementById('passDivGrp').style.display = 'none'; document.getElementById('cPassDivGrp').style.display = 'none'; document.getElementById('depoDiv').style.display = 'none'; document.getElementById('userModal').style.display = 'flex'; }
+        function openModal() { editUserId = null; document.getElementById('mTitle').innerText = "New User"; document.getElementById('mUName').value = ""; document.getElementById('passDivGrp').style.display = 'flex'; document.getElementById('cPassDivGrp').style.display = 'flex'; document.getElementById('depoDiv').style.display = 'flex'; document.getElementById('userModal').style.display = 'flex'; }
         async function give(id, name) { const amt = prompt(`Deposit to ${name}:`); if(amt) await fetch('/api/transfer-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) }) }); init(); }
         async function withdraw(id, name) { const amt = prompt(`Withdraw from ${name}:`); if(amt) await fetch('/api/withdraw-chips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) }) }); init(); }
-        async function deleteUser(id) { if(!confirm("Perm delete? Must have 0 balance.")) return; const res = await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); if((await res.json()).success) init(); else alert("Error: Withdraw balance first."); }
+        async function deleteUser(id) { if(!confirm("Perm delete? Must have 0 balance.")) return; const res = await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); if((await res.json()).success) init(); }
         async function loadHistory() { const res = await fetch('/api/history', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }); const d = await res.json(); if (d.success) { document.querySelector('#histTable tbody').innerHTML = d.history.map(h => `<tr><td>${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type.toUpperCase()}</b></td><td style="color:${parseFloat(h.amount) >= 0 ? 'var(--neon-g)' : 'var(--neon-r)'};">+${parseFloat(h.amount).toLocaleString()}</td><td>${h.description}</td></tr>`).join(''); } }
         async function loadCommissionSummary() { const res = await fetch('/api/commission-summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }); const d = await res.json(); if (d.success && d.summary.length > 0) { document.getElementById('commBody').innerHTML = d.summary.map(s => `<tr><td style="text-align:left; padding-left:15px;"><b>${s.downline_name}</b></td><td style="color:var(--neon-g);">+${parseFloat(s.total_earned).toLocaleString()}</td><td>₹${(parseFloat(s.total_earned) * 10).toLocaleString()}</td></tr>`).join(''); } }
         function setupRoles() { const h = { 'SuperAdmin': 6, 'Admin': 5, 'SuperMaster': 4, 'Master': 3, 'Agent': 2, 'Client': 1 }; const sel = document.getElementById('mRole'); if (sel && sel.options.length === 0) ['Admin', 'SuperMaster', 'Master', 'Agent', 'Client'].forEach(r => { if (h[r] < h[user.role]) { const o = document.createElement('option'); o.value = r; o.innerText = r; sel.appendChild(o); }}); }
