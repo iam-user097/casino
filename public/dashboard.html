@@ -11,12 +11,10 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- NEON DARK THEME CORE --- */
         :root { --primary:#00509d; --dark:#011627; --accent:#ffcc00; --neon-g: #39ff14; --neon-r: #ff3131; --bg:#0b0e14; }
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         body { display:flex; height:100vh; background:var(--bg); color: white; overflow:hidden; }
 
-        /* Sidebar Styling */
         .sidebar { width:260px; background:#12161f; border-right:1px solid var(--primary); display:flex; flex-direction:column; z-index:2000; box-shadow: 5px 0 15px rgba(0, 80, 157, 0.2); }
         .logo { background:black; padding:20px; text-align:center; color:var(--accent); font-weight:bold; font-size:22px; border-bottom:2px solid var(--primary); text-shadow: 0 0 10px var(--accent); }
         .nav-item { padding:15px 25px; color:#aaa; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #1a202c; }
@@ -26,7 +24,6 @@
         @media (max-width: 768px) {
             .sidebar { position: fixed; left: -260px; height: 100vh; }
             .sidebar.show { transform: translateX(260px); }
-            /* FIXED: Logout visible at bottom on mobile */
             .sidebar .logout-btn { margin-top: auto !important; display: flex !important; border-top: 1px solid #1a202c; }
         }
         .logout-btn { margin-top: auto; color: var(--neon-r) !important; }
@@ -40,14 +37,13 @@
         @keyframes slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
 
         .table-container { background: #12161f; border-radius: 12px; overflow-x: auto; margin-top: 10px; border: 1px solid var(--primary); }
-        table { width:100%; border-collapse:collapse; min-width: 900px; }
-        th { background: #011627; color: var(--accent); padding: 15px; font-size: 13px; text-transform: uppercase; border-bottom: 1px solid var(--primary); }
-        td { padding: 12px; border-bottom: 1px solid #1a202c; text-align: center; }
-        tr:hover { background: rgba(255,255,255,0.03); transform: scale(1.002); }
+        table { width:100%; border-collapse:collapse; min-width: 1100px; }
+        th { background: #011627; color: var(--accent); padding: 15px; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid var(--primary); }
+        td { padding: 10px; border-bottom: 1px solid #1a202c; text-align: center; }
 
-        .act-btn { width: 32px; height: 32px; border-radius: 50%; border: none; color: white; cursor: pointer; margin: 0 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
-        .act-btn:hover { transform: scale(1.2) rotate(5deg); filter: brightness(1.3); }
-        .btn-edit { background: #007bff; } .btn-d { background: var(--primary); } .btn-w { background: #6c757d; } .btn-del { background: var(--neon-r); }
+        .act-btn { width: 30px; height: 30px; border-radius: 6px; border: none; color: white; cursor: pointer; margin: 0 2px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; transition: 0.2s; }
+        .btn-edit { background: #007bff; } .btn-d { background: #28a745; } .btn-w { background: #fd7e14; } .btn-mode { background: #6f42c1; } .btn-ms { background: #17a2b8; } .btn-del { background: var(--neon-r); }
+        .act-btn:hover { filter: brightness(1.3); transform: scale(1.2) rotate(5deg); }
 
         .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:20px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); box-shadow: 0 0 15px rgba(0, 80, 157, 0.2); }
         .box-bet { height: 65px; background: #1a202c; border: 2px solid #333; border-radius: 10px; color: white; font-size: 22px; font-weight: bold; cursor: pointer; transition: 0.3s; }
@@ -55,20 +51,10 @@
         .box-bet.winner-set { background: var(--neon-g); color: black; border-color: white; box-shadow: 0 0 20px var(--neon-g); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        .modal { display:none; position:fixed; inset: 0; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
-        .modal-content { background:#12161f; width:90%; max-width:600px; border-radius:12px; border: 1px solid var(--primary); overflow:hidden; }
-        .modal-header { background:#011627; padding:15px; border-bottom: 2px solid var(--neon-r); display: flex; justify-content: space-between; align-items: center; }
-        .modal-body { padding:25px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; text-align: left; }
-        .modal-body label { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
-        .modal-body input, .modal-body select { width: 100%; padding: 12px; background: #0b0e14; border: 1px solid #333; border-radius: 8px; color: white; font-size: 14px; outline: none; }
-        .btn-submit-neon { grid-column: span 2; background: linear-gradient(135deg, var(--neon-g), #2ecc71); color: black; padding: 15px; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; margin-top: 10px; box-shadow: 0 4px 15px rgba(57, 255, 20, 0.2); }
-
         #timer-display { font-size: 45px; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px var(--accent); margin-bottom: 10px; }
         .bet-popup-slip { position: fixed; bottom: 20px; right: 20px; width: 320px; background: #011627; border: 2px solid var(--accent); border-radius: 15px; z-index: 5000; display: none; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
-        .slip-head { background: var(--accent); color: black; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; border-radius: 12px 12px 0 0; }
-
-        @media (max-width: 768px) { .modal-body { grid-template-columns: 1fr; } .btn-submit-neon { grid-column: span 1; } }
+        .modal { display:none; position:fixed; inset: 0; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
+        .modal-content { background:#12161f; width:90%; max-width:500px; border-radius:12px; border: 1px solid var(--primary); padding: 25px; }
     </style>
 </head>
 <body>
@@ -87,19 +73,16 @@
 
     <div class="main">
         <div class="header">
-            <div style="display:flex; align-items:center;">
-                <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)" style="cursor:pointer; font-size: 20px; margin-right:15px;"></i>
-                <h3 id="dashTitle">Magic9 Dashboard</h3>
-            </div>
-            <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 8px 20px; border-radius: 50px; border: 1px solid var(--accent);">🪙 Loading...</div>
+            <div style="display:flex; align-items:center;"><i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)" style="cursor:pointer; font-size: 20px; margin-right:15px;"></i><h3 id="dashTitle">Magic9 Dashboard</h3></div>
+            <div id="headerBal" style="font-weight:bold; color:var(--accent);">🪙 Loading...</div>
         </div>
 
         <div id="page-user" class="page active">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
                 <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User..." style="padding:12px; border-radius:8px; background:#12161f; border:1px solid #333; color:white; width: 280px;">
-                <button id="addBtn" class="act-btn" style="width:100px; border-radius:8px; background:var(--primary); font-weight:bold;" onclick="openModal()">+ ADD</button>
+                <button id="addBtn" class="act-btn" style="width:100px; border-radius:8px; background:var(--primary); font-weight:bold; display:none;" onclick="openModal()">+ ADD</button>
             </div>
-            <div class="table-container"><table id="userTable"><thead><tr><th>Status</th><th>Name</th><th>Settlement</th><th>Points</th><th>Login</th><th>Lock</th><th>Active</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+            <div class="table-container"><table id="userTable"><thead><tr><th>Status</th><th>Name</th><th>Role</th><th>Chips</th><th>Login</th><th>Lock</th><th>Active</th><th>Action</th></tr></thead><tbody></tbody></table></div>
         </div>
 
         <div id="page-bet" class="page"><div id="bet-content-container"></div></div>
@@ -113,9 +96,7 @@
             </div>
         </div>
 
-        <div id="page-history" class="page">
-            <div class="account-card"><h3 style="color:var(--accent); text-align:left; margin-bottom:15px;"><i class="fas fa-history"></i> Transaction Log</h3><div style="overflow-x: auto;"><table id="histTable"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr></thead><tbody></tbody></table></div></div>
-        </div>
+        <div id="page-history" class="page"><div class="account-card"><h3>Transaction Log</h3><div style="overflow-x: auto;"><table id="histTable"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr></thead><tbody></tbody></table></div></div></div>
 
         <div id="page-account" class="page">
             <div class="account-card" style="border: 2px solid var(--accent);">
@@ -134,41 +115,30 @@
         </div>
     </div>
 
-    <div class="bet-popup-slip" id="betSlip">
-        <div class="slip-head"><span>BET SLIP</span><i class="fas fa-times" onclick="closeSlip()" style="cursor:pointer;"></i></div>
-        <div style="padding:20px;">
-            <p id="slipTeam" style="font-size:14px; margin-bottom:15px; font-weight:bold; color:var(--accent)"></p>
-            <div class="form-group"><label>Stake Per Box</label><input type="number" id="betAmountInput" value="100" min="100" oninput="updateRsValue()" style="padding:12px; background:#0b0e14; color:white; border:1px solid #444; border-radius:8px;"></div>
-            <p id="rsVal" style="font-size:11px; color:white; margin-top:20px; text-align:center; background:rgba(0,80,157,0.3); padding:10px; border-radius:6px;"></p>
-            <button class="btn-submit-neon" style="width:100%;" onclick="confirmLiveBet()">PLACE SECURE BET</button>
-        </div>
-    </div>
-
-    <div class="modal" id="passChangeModal">
-        <div class="modal-content" style="max-width: 450px;"><div class="modal-header"><h3>Security Reset Required</h3></div><div class="modal-body" style="grid-template-columns: 1fr;">
-            <p style="font-size:12px; color:#aaa; margin-bottom:10px;">Update your temporary password to unlock the dashboard.</p>
-            <input type="password" id="oldSecurePass" placeholder="Old Password">
-            <input type="password" id="newSecurePass" placeholder="New Password (6 Digits)" maxlength="6">
-            <input type="password" id="confirmSecurePass" placeholder="Confirm Password" maxlength="6">
-            <button class="btn-submit-neon" onclick="forceUpdatePass()">Update & Unlock Dashboard</button>
-        </div></div>
+    <div class="bet-popup-slip" id="betSlip" style="display:none; position: fixed; bottom: 20px; right: 20px; width: 320px; background: #011627; border: 2px solid var(--accent); border-radius: 15px; padding: 20px; z-index: 5000;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><b style="color:var(--accent)">PLACE BET</b><i class="fas fa-times" onclick="closeSlip()" style="cursor:pointer"></i></div>
+        <p id="slipBoxes" style="font-size:13px; margin-bottom:10px;"></p>
+        <input type="number" id="stakeInput" value="100" min="100" style="width:100%; padding:10px; background:black; color:white; border:1px solid #333; margin-bottom:10px;">
+        <p id="totalCost" style="font-size:11px; margin-bottom:15px; color:#aaa;"></p>
+        <button class="btn-submit-neon" style="width:100%;" onclick="confirmLiveBet()">CONFIRM BET</button>
     </div>
 
     <div class="modal" id="userModal">
-        <div class="modal-content"><div class="modal-header"><h3 id="mTitle">Settings</h3><i class="fas fa-times" onclick="closeModal()" style="cursor:pointer; color:var(--neon-r);"></i></div><div class="modal-body">
-            <div class="form-group"><label>Username</label><input type="text" id="mUName" placeholder="Unique name"></div>
-            <div id="passDivGrp" style="display:contents"><div class="form-group"><label>Password (6 Digits)</label><input type="password" id="mPass" maxlength="6"></div><div class="form-group"><label>Confirm Password</label><input type="password" id="mCPass" maxlength="6"></div></div>
-            <div class="form-group"><label>Role</label><select id="mRole"></select></div>
-            <div class="form-group"><label>Comm %</label><input type="number" id="mComm" value="0" step="0.1"></div>
-            <div id="depoDiv" style="display:contents"><div class="form-group"><label>Initial Balance</label><input type="number" id="mDeposit" value="0"></div></div>
-            <button class="btn-submit-neon" onclick="submitUser()">Submit Details</button>
-        </div></div>
+        <div class="modal-content"><h3 id="mTitle">Settings</h3>
+            <input type="text" id="mUName" placeholder="Username" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
+            <div id="passDivGrp" style="display:contents"><input type="password" id="mPass" placeholder="Password (6 Digits)" maxlength="6" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
+            <select id="mRole" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></select>
+            <input type="number" id="mComm" value="0" step="0.1" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
+            <div id="depoDiv" style="display:contents"><input type="number" id="mDeposit" value="0" placeholder="Opening Balance" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
+            <button class="btn-submit-neon" style="width:100%;" onclick="submitUser()">Submit Details</button>
+            <button style="width:100%; margin-top:10px; background:#444; color:white; border:none; padding:12px; border-radius:8px;" onclick="closeModal()">Close</button>
+        </div>
     </div>
 
     <script>
         let user = JSON.parse(sessionStorage.getItem('currentUser'));
         if (!user) window.location.href = 'login.html';
-        let editUserId = null, selectedBoxes = [], houseWinner = null;
+        let editUserId = null, selectedBoxes = [];
 
         async function init() {
             try {
@@ -176,9 +146,6 @@
                 const d = await res.json();
                 if (d.success) {
                     user = d.data; sessionStorage.setItem('currentUser', JSON.stringify(user));
-                    const pm = document.getElementById('passChangeModal');
-                    if (user.role !== 'SuperAdmin' && parseInt(user.force_password_change) === 1) { pm.style.display = 'flex'; document.getElementById('sidebar').style.pointerEvents = 'none'; }
-                    
                     const bal = parseFloat(user.balance);
                     document.getElementById('headerBal').innerText = `🪙 ${bal.toLocaleString()}`;
                     document.getElementById('inr').innerText = (bal * 10).toLocaleString();
@@ -186,9 +153,20 @@
                     document.getElementById('wins').innerText = (parseFloat(user.total_wins || 0) * 10).toLocaleString();
                     document.getElementById('lose').innerText = (parseFloat(user.total_losses || 0) * 10).toLocaleString();
                     
+                    if (user.role !== 'Client') document.getElementById('addBtn').style.display = 'block';
+
                     if (user.role === 'Client') {
                         document.getElementById('nav-bet-client').style.display = 'flex';
-                        document.getElementById('bet-content-container').innerHTML = `<div class="account-card" style="border-left: 5px solid var(--neon-g); text-align: left; display: flex; justify-content: space-between; padding: 15px;"><div><p style="color:#aaa; font-size:11px;">CHIP BALANCE</p><h2 style="color:var(--neon-g);">🪙 <span id="display-chips">${bal.toLocaleString()}</span> <small style="font-size:14px; color:#aaa;">(₹${(bal*10).toLocaleString()})</small></h2></div><div style="text-align:right;"><div id="timer-display">READY</div><h4 id="match-timer" style="color:var(--accent); font-size:10px;">OPEN</h4></div></div><div class="account-card" style="padding: 30px; background: #12161f;"><h3 style="color:var(--accent); margin-bottom: 20px;">CHOOSE WINNING BOXES</h3><div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="boxGrid">${Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="toggleBox(this, ${i+1})">${i+1}</button>`).join('')}</div><button class="btn" id="placeBetBtn" style="width: 100%; background: var(--primary); color:white; padding: 20px; font-weight: bold; border-radius: 12px;" onclick="openBoxStakePopup()">BET ON <span id="selectedCount">0</span> BOXES</button></div>`;
+                        document.getElementById('bet-content-container').innerHTML = `
+                            <div class="account-card" style="border-left: 5px solid var(--neon-g); text-align: left; display: flex; justify-content: space-between; padding: 15px;">
+                                <div><p style="color:#aaa; font-size:11px;">CHIP BALANCE</p><h2 style="color:var(--neon-g);">🪙 <span id="display-chips">${bal.toLocaleString()}</span></h2></div>
+                                <div style="text-align:right;"><div id="timer-display">READY</div><h4 id="match-timer" style="color:var(--accent); font-size:10px;">OPEN</h4></div>
+                            </div>
+                            <div class="account-card" style="padding: 30px; background: #12161f;">
+                                <h3 style="color:var(--accent); margin-bottom: 20px;">CHOOSE WINNING BOXES</h3>
+                                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="boxGrid">${Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="toggleBox(this, ${i+1})">${i+1}</button>`).join('')}</div>
+                                <button class="btn-submit-neon" style="width: 100%;" onclick="openBetSlip()">BET ON <span id="selectedCount">0</span> BOXES</button>
+                            </div>`;
                     } else if (user.role === 'SuperAdmin') {
                         document.getElementById('nav-mgmt-sa').style.display = 'flex';
                         document.getElementById('houseGrid').innerHTML = Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="setWinnerBox(this, ${i+1})">${i+1}</button>`).join('');
@@ -204,72 +182,101 @@
             loadUsers(); loadHistory(); loadCommissionSummary(); setupRoles();
         }
 
-        // --- FIXED PERMANENT WINNER SYSTEM ---
+        // --- GAME LOGIC ---
         function setWinnerBox(el, num) {
-            document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('winner-set'));
+            document.querySelectorAll('#houseGrid .box-bet').forEach(b => b.classList.remove('winner-set'));
             el.classList.add('winner-set');
-            houseWinner = num;
+            localStorage.setItem('magicWinner', num); // FIXED PERMANENT WINNER
             document.getElementById('adminStatus').innerText = `MODE: FIXED WINNER (Box ${num})`;
-            document.getElementById('adminStatus').style.color = "var(--accent)";
-            localStorage.setItem('magicWinner', num); // Permanently saved override
+        }
+
+        function toggleBox(el, num) { 
+            if (selectedBoxes.includes(num)) { selectedBoxes = selectedBoxes.filter(n => n !== num); el.classList.remove('selected'); } 
+            else { selectedBoxes.push(num); el.classList.add('selected'); } 
+            document.getElementById('selectedCount').innerText = selectedBoxes.length;
+        }
+
+        function openBetSlip() {
+            if (!selectedBoxes.length) return alert("Select boxes first!");
+            document.getElementById('slipBoxes').innerText = "Boxes: " + selectedBoxes.join(", ");
+            document.getElementById('betSlip').style.display = 'block';
+            updateTotal();
+        }
+        function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
+        function updateTotal() { document.getElementById('totalCost').innerText = "Total Deduction: " + (selectedBoxes.length * document.getElementById('stakeInput').value) + " Chips"; }
+
+        async function confirmLiveBet() {
+            const stake = parseFloat(document.getElementById('stakeInput').value);
+            const total = stake * selectedBoxes.length;
+            if (parseFloat(user.balance) < total) return alert("Insufficient Chips!");
+            closeSlip();
+            runCountdown(stake);
         }
 
         function runCountdown(stakePerBox) {
-            let sec = 10;
-            const timerText = document.getElementById('timer-display');
-            const subText = document.getElementById('match-timer');
-            const btns = document.querySelectorAll('.box-bet');
+            let sec = 10; const timerText = document.getElementById('timer-display'); const btns = document.querySelectorAll('.box-bet');
             btns.forEach(b => b.disabled = true);
-            document.getElementById('placeBetBtn').disabled = true;
-
             const interval = setInterval(async () => {
                 timerText.innerText = sec;
-                subText.innerText = "CALCULATING...";
                 if (--sec < 0) {
                     clearInterval(interval);
                     const savedWinner = localStorage.getItem('magicWinner');
                     let finalWinner = savedWinner ? parseInt(savedWinner) : Math.floor(Math.random() * 10) + 1;
-                    
                     const win = selectedBoxes.includes(finalWinner);
                     await fetch('/api/settle-bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: stakePerBox, odds: 2, isWin: win }) });
                     timerText.innerText = win ? "WIN!" : "LOSS";
-                    timerText.style.color = win ? "var(--neon-g)" : "var(--neon-r)";
                     alert(win ? `🏆 Box ${finalWinner} WON!` : `❌ Box ${finalWinner} won.`);
                     selectedBoxes = []; setTimeout(() => init(), 2000);
                 }
             }, 1000);
         }
 
-        function toggleBox(el, num) { if (selectedBoxes.includes(num)) { selectedBoxes = selectedBoxes.filter(n => n !== num); el.classList.remove('selected'); } else { selectedBoxes.push(num); el.classList.add('selected'); } document.getElementById('selectedCount').innerText = selectedBoxes.length; updateRsValue(); }
-        function openBoxStakePopup() { if (!selectedBoxes.length) return alert("Select boxes!"); document.getElementById('slipTeam').innerText = `Selected: ${selectedBoxes.join(', ')}`; document.getElementById('betSlip').style.display = 'block'; updateRsValue(); }
-        function updateRsValue() { const s = document.getElementById('betAmountInput').value || 0; const t = s * selectedBoxes.length; document.getElementById('rsVal').innerText = `TOTAL DEDUCTION: ${t} Chips (₹${(t*10).toLocaleString()})`; }
-        async function confirmLiveBet() {
-            const stake = parseFloat(document.getElementById('betAmountInput').value); const total = stake * selectedBoxes.length;
-            if (parseFloat(user.balance) < total) return alert("Insufficient Balance!");
-            closeSlip();
-            const res = await fetch('/api/place-bet-direct', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: total, boxes: selectedBoxes, stakePerBox: stake }) });
-            if ((await res.json()).success) runCountdown(stake);
+        // --- USER MGMT ---
+        async function loadUsers() {
+            const res = await fetch('/api/my-users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, role: user.role }) });
+            const d = await res.json();
+            const filtered = (d.users || []).filter(u => u.id !== user.id);
+            document.querySelector('#userTable tbody').innerHTML = filtered.map(u => `
+                <tr>
+                    <td><i class="fas fa-circle" style="color:var(--neon-g); font-size:8px;"></i></td>
+                    <td style="text-align:left;"><b>${u.username}</b></td>
+                    <td>${u.role}</td>
+                    <td><b>${parseFloat(u.balance).toLocaleString()}</b></td>
+                    <td><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></td>
+                    <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                    <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                    <td>
+                        <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-pen"></i></button>
+                        <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
+                        <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
+                        <button class="act-btn btn-mode" title="Gaming Mode" onclick="alert('Gaming Mode updated for ${u.username}')">M</button>
+                        <button class="act-btn btn-ms" title="Market Setting" onclick="alert('Market settings updated for ${u.username}')">S</button>
+                        <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`).join('');
         }
+
+        async function give(id, name) { const amt = prompt(`Deposit to ${name}:`); if(amt) await fetch('/api/transfer-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) }) }); init(); }
+        async function withdraw(id, name) { const amt = prompt(`Withdraw from ${name}:`); if(amt) await fetch('/api/withdraw-chips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) }) }); init(); }
+        async function deleteUser(id, bal) { if(parseFloat(bal) > 0) return alert("Account must be 0 chips!"); if(confirm("Perm Delete?")) { await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); init(); } }
+
+        function openEdit(id, name, comm) { editUserId = id; document.getElementById('mTitle').innerText = "Edit User"; document.getElementById('mUName').value = name; document.getElementById('mComm').value = comm; document.getElementById('passDivGrp').style.display = 'none'; document.getElementById('depoDiv').style.display = 'none'; document.getElementById('userModal').style.display = 'flex'; }
+        function openModal() { editUserId = null; document.getElementById('mTitle').innerText = "New User"; document.getElementById('mUName').value = ""; document.getElementById('passDivGrp').style.display = 'contents'; document.getElementById('depoDiv').style.display = 'contents'; document.getElementById('userModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('userModal').style.display = 'none'; }
+        async function submitUser() {
+            const u = document.getElementById('mUName').value, p = document.getElementById('mPass').value, r = document.getElementById('mRole').value, c = document.getElementById('mComm').value, d = document.getElementById('mDeposit').value;
+            const res = await fetch(editUserId ? '/api/update-user' : '/api/create-user-advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uName: u, pass: p, role: r, commission: c, deposit: d, creatorId: user.id, id: editUserId }) });
+            if ((await res.json()).success) { closeModal(); init(); }
+        }
+
         function nav(id, el) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); if(el) el.classList.add('active'); if(window.innerWidth <= 768) toggleSidebar(); }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none'; }
         function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
-        function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
-        function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
-        function openEdit(id, name, comm) { editUserId = id; document.getElementById('mTitle').innerText = "Edit Account"; document.getElementById('mUName').value = name; document.getElementById('mComm').value = comm; document.getElementById('passDivGrp').style.display = 'none'; document.getElementById('depoDiv').style.display = 'none'; document.getElementById('userModal').style.display = 'flex'; }
-        function openModal() { editUserId = null; document.getElementById('mTitle').innerText = "New Account"; document.getElementById('mUName').value = ""; document.getElementById('passDivGrp').style.display = 'contents'; document.getElementById('depoDiv').style.display = 'contents'; document.getElementById('userModal').style.display = 'flex'; }
-        async function give(id, name) { const amt = prompt(`Deposit to ${name}:`); if(amt) await fetch('/api/transfer-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) }) }); init(); }
-        async function withdraw(id, name) { const amt = prompt(`Withdraw from ${name}:`); if(amt) await fetch('/api/withdraw-chips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) }) }); init(); }
-        async function deleteUser(id) { if(!confirm("Perm delete? Must have 0 balance.")) return; const res = await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); if((await res.json()).success) init(); }
-        async function loadHistory() { const res = await fetch('/api/history', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }); const d = await res.json(); if (d.success) { document.querySelector('#histTable tbody').innerHTML = d.history.map(h => `<tr><td>${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type.toUpperCase()}</b></td><td style="color:${parseFloat(h.amount) >= 0 ? 'var(--neon-g)' : 'var(--neon-r)'};">+${parseFloat(h.amount).toLocaleString()}</td><td>${h.description}</td></tr>`).join(''); } }
-        async function loadCommissionSummary() { const res = await fetch('/api/commission-summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }); const d = await res.json(); if (d.success && d.summary.length > 0) { document.getElementById('commBody').innerHTML = d.summary.map(s => `<tr><td style="text-align:left; padding-left:15px;"><b>${s.downline_name}</b></td><td style="color:var(--neon-g);">+${parseFloat(s.total_earned).toLocaleString()}</td><td>₹${(parseFloat(s.total_earned) * 10).toLocaleString()}</td></tr>`).join(''); } }
+        async function loadHistory() { const res = await fetch('/api/history', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }); const d = await res.json(); if (d.success) document.querySelector('#histTable tbody').innerHTML = d.history.map(h => `<tr><td>${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type.toUpperCase()}</b></td><td style="color:${parseFloat(h.amount) >= 0 ? 'var(--neon-g)' : 'var(--neon-r)'};">${h.amount}</td><td>${h.description}</td></tr>`).join(''); }
+        async function loadCommissionSummary() { const res = await fetch('/api/commission-summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }); const d = await res.json(); if (d.success && d.summary.length > 0) document.getElementById('commBody').innerHTML = d.summary.map(s => `<tr><td><b>${s.downline_name}</b></td><td>+${parseFloat(s.total_earned).toLocaleString()}</td><td>₹${(parseFloat(s.total_earned) * 10).toLocaleString()}</td></tr>`).join(''); }
         function setupRoles() { const h = { 'SuperAdmin': 6, 'Admin': 5, 'SuperMaster': 4, 'Master': 3, 'Agent': 2, 'Client': 1 }; const sel = document.getElementById('mRole'); if (sel && sel.options.length === 0) ['Admin', 'SuperMaster', 'Master', 'Agent', 'Client'].forEach(r => { if (h[r] < h[user.role]) { const o = document.createElement('option'); o.value = r; o.innerText = r; sel.appendChild(o); }}); }
         function filterUsers() { const i = document.getElementById('userSearch').value.toLowerCase(); document.querySelectorAll('#userTable tbody tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(i) ? "" : "none"); }
-        async function forceUpdatePass() {
-            const oldP = document.getElementById('oldSecurePass').value, newP = document.getElementById('newSecurePass').value, cP = document.getElementById('confirmSecurePass').value;
-            if(newP !== cP || newP.length !== 6) return alert("Security Reset Error!");
-            const res = await fetch('/api/update-password-secure', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, oldPass: oldP, newPass: newP }) });
-            if ((await res.json()).success) location.reload();
-        }
+
         init();
     </script>
 </body>
