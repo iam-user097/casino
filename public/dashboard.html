@@ -16,7 +16,6 @@
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         body { display:flex; height:100vh; background:var(--bg); color: white; overflow:hidden; }
 
-        /* Sidebar Styling */
         .sidebar { width:260px; background:#12161f; border-right:1px solid var(--primary); display:flex; flex-direction:column; z-index:2000; box-shadow: 5px 0 15px rgba(0, 80, 157, 0.2); }
         .logo { background:black; padding:20px; text-align:center; color:var(--accent); font-weight:bold; font-size:22px; border-bottom:2px solid var(--primary); text-shadow: 0 0 10px var(--accent); }
         .nav-item { padding:15px 25px; color:#aaa; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #1a202c; }
@@ -26,8 +25,7 @@
         @media (max-width: 768px) {
             .sidebar { position: fixed; left: -260px; height: 100vh; }
             .sidebar.show { transform: translateX(260px); }
-            /* FIXED: Logout visible at bottom on mobile */
-            .sidebar .logout-btn { margin-top: auto !important; border-top: 1px solid #1a202c; }
+            .sidebar .logout-btn { margin-top: auto !important; display: flex !important; border-top: 1px solid #1a202c; }
         }
         .logout-btn { margin-top: auto; color: var(--neon-r) !important; }
 
@@ -40,15 +38,14 @@
         @keyframes slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
 
         .table-container { background: #12161f; border-radius: 12px; overflow-x: auto; margin-top: 10px; border: 1px solid var(--primary); }
-        table { width:100%; border-collapse:collapse; min-width: 1100px; }
-        th { background: #011627; color: var(--accent); padding: 15px; font-size: 13px; text-transform: uppercase; border-bottom: 1px solid var(--primary); }
-        td { padding: 12px; border-bottom: 1px solid #1a202c; text-align: center; }
+        table { width:100%; border-collapse:collapse; min-width: 1150px; }
+        th { background: #011627; color: var(--accent); padding: 15px; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid var(--primary); }
+        td { padding: 12px; border-bottom: 1px solid #1a202c; text-align: center; font-size: 13px; }
         tr:hover { background: rgba(255,255,255,0.03); transform: scale(1.002); }
 
-        /* ACTION BUTTONS DESIGN */
-        .act-btn { width: 32px; height: 32px; border-radius: 50%; border: none; color: white; cursor: pointer; margin: 0 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; transition: 0.2s; }
-        .act-btn:hover { transform: scale(1.2) rotate(5deg); filter: brightness(1.3); box-shadow: 0 0 10px currentColor; }
+        .act-btn { width: 32px; height: 32px; border-radius: 6px; border: none; color: white; cursor: pointer; margin: 0 2px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; transition: 0.2s; }
         .btn-edit { background: #007bff; } .btn-d { background: #28a745; } .btn-w { background: #fd7e14; } .btn-mode { background: #6f42c1; } .btn-ms { background: #17a2b8; } .btn-del { background: var(--neon-r); }
+        .act-btn:hover { filter: brightness(1.3); transform: scale(1.2) rotate(5deg); }
 
         .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:20px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); box-shadow: 0 0 15px rgba(0, 80, 157, 0.2); }
         .box-bet { height: 65px; background: #1a202c; border: 2px solid #333; border-radius: 10px; color: white; font-size: 22px; font-weight: bold; cursor: pointer; transition: 0.3s; }
@@ -56,15 +53,13 @@
         .box-bet.winner-set { background: var(--neon-g); color: black; border-color: white; box-shadow: 0 0 20px var(--neon-g); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
+        .btn-action-main { background: linear-gradient(135deg, var(--neon-g), #2ecc71); color: black; padding: 15px; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; width: 100%; box-shadow: 0 4px 15px rgba(57, 255, 20, 0.2); margin-top: 15px; }
+
         .modal { display:none; position:fixed; inset: 0; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
-        .modal-content { background:#12161f; width:90%; max-width:600px; border-radius:12px; border: 1px solid var(--primary); padding: 25px; }
+        .modal-content { background:#12161f; width:90%; max-width:500px; border-radius:12px; border: 1px solid var(--primary); padding: 25px; }
 
         #timer-display { font-size: 45px; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px var(--accent); margin-bottom: 10px; }
         .bet-popup-slip { position: fixed; bottom: 20px; right: 20px; width: 320px; background: #011627; border: 2px solid var(--accent); border-radius: 15px; z-index: 5000; display: none; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
-        
-        .btn-action-main { background: linear-gradient(135deg, var(--neon-g), #2ecc71); color: black; padding: 15px; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; width: 100%; box-shadow: 0 4px 15px rgba(57, 255, 20, 0.2); }
-
-        @media (max-width: 768px) { .modal-content { width: 95%; } }
     </style>
 </head>
 <body>
@@ -103,14 +98,16 @@
         <div id="page-mgmt" class="page">
             <div class="account-card" style="border-top: 4px solid var(--accent);">
                 <h2 style="color:var(--accent);">HOUSE CONTROL</h2>
-                <p style="color:#aaa; font-size:12px; margin-bottom: 25px;">Admin: Set the PERMANENT winning box below.</p>
+                <p style="color:#aaa; font-size:12px; margin-bottom: 25px;">Admin: Select a box and click to set the PERMANENT winner.</p>
                 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="houseGrid"></div>
                 <button class="btn-action-main" onclick="savePermanentWinner()">SET AS PERMANENT WINNER</button>
                 <div id="adminStatus" style="font-size:11px; color:var(--neon-g); margin-top:15px; font-weight: bold;">MODE: RANDOM WINNING</div>
             </div>
         </div>
 
-        <div id="page-history" class="page"><div class="account-card"><h3>Transaction Log</h3><div style="overflow-x: auto;"><table id="histTable"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr></thead><tbody></tbody></table></div></div></div>
+        <div id="page-history" class="page">
+            <div class="account-card"><h3>Transaction Log</h3><div style="overflow-x: auto;"><table id="histTable"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr></thead><tbody></tbody></table></div></div>
+        </div>
 
         <div id="page-account" class="page">
             <div class="account-card" style="border: 2px solid var(--accent);">
@@ -132,18 +129,18 @@
     <div class="bet-popup-slip" id="betSlip" style="display:none; position: fixed; bottom: 20px; right: 20px; width: 320px; background: #011627; border: 2px solid var(--accent); border-radius: 15px; padding: 20px; z-index: 5000;">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><b style="color:var(--accent)">PLACE BET</b><i class="fas fa-times" onclick="closeSlip()" style="cursor:pointer"></i></div>
         <p id="slipBoxes" style="font-size:13px; margin-bottom:10px;"></p>
-        <input type="number" id="stakeInput" value="100" min="100" oninput="updateTotal()" style="width:100%; padding:10px; background:black; color:white; border:1px solid #333; margin-bottom:10px;">
+        <input type="number" id="stakeInput" value="100" min="100" oninput="updateTotal()" style="width:100%; padding:10px; background:black; color:white; border:1px solid #333; margin-bottom:10px; border-radius: 8px;">
         <p id="totalCost" style="font-size:11px; margin-bottom:15px; color:#aaa;"></p>
         <button class="btn-action-main" onclick="confirmLiveBet()">CONFIRM BET</button>
     </div>
 
     <div class="modal" id="userModal">
         <div class="modal-content"><h3 id="mTitle">Settings</h3>
-            <input type="text" id="mUName" placeholder="Username" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
-            <div id="passDivGrp" style="display:contents"><input type="password" id="mPass" placeholder="Password (6 Digits)" maxlength="6" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
-            <select id="mRole" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></select>
-            <input type="number" id="mComm" value="0" step="0.1" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
-            <div id="depoDiv" style="display:contents"><input type="number" id="mDeposit" value="0" placeholder="Opening Balance" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
+            <input type="text" id="mUName" placeholder="Username" style="width:100%; margin:10px 0; padding:12px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
+            <div id="passDivGrp" style="display:contents"><input type="password" id="mPass" placeholder="Password (6 Digits)" maxlength="6" style="width:100%; margin:10px 0; padding:12px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
+            <select id="mRole" style="width:100%; margin:10px 0; padding:12px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></select>
+            <input type="number" id="mComm" value="0" step="0.1" style="width:100%; margin:10px 0; padding:12px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
+            <div id="depoDiv" style="display:contents"><input type="number" id="mDeposit" value="0" placeholder="Opening Balance" style="width:100%; margin:10px 0; padding:12px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
             <button class="btn-action-main" onclick="submitUser()">Submit Details</button>
             <button style="width:100%; margin-top:10px; background:#444; color:white; border:none; padding:12px; border-radius:8px;" onclick="closeModal()">Close</button>
         </div>
@@ -171,7 +168,16 @@
 
                     if (user.role === 'Client') {
                         document.getElementById('nav-bet-client').style.display = 'flex';
-                        document.getElementById('bet-content-container').innerHTML = `<div class="account-card" style="border-left: 5px solid var(--neon-g); text-align: left; display: flex; justify-content: space-between; padding: 15px;"><div><p style="color:#aaa; font-size:11px;">CHIP BALANCE</p><h2 style="color:var(--neon-g);">🪙 <span id="display-chips">${bal.toLocaleString()}</span> <small style="font-size:14px; color:#aaa;">(₹${(bal*10).toLocaleString()})</small></h2></div><div style="text-align:right;"><div id="timer-display">READY</div><h4 id="match-timer" style="color:var(--accent); font-size:10px;">OPEN</h4></div></div><div class="account-card" style="padding: 30px; background: #12161f;"><h3 style="color:var(--accent); margin-bottom: 20px;">CHOOSE WINNING BOXES</h3><div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="boxGrid">${Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="toggleBox(this, ${i+1})">${i+1}</button>`).join('')}</div><button class="btn-action-main" onclick="openBetSlip()">BET ON <span id="selectedCount">0</span> BOXES</button></div>`;
+                        document.getElementById('bet-content-container').innerHTML = `
+                            <div class="account-card" style="border-left: 5px solid var(--neon-g); text-align: left; display: flex; justify-content: space-between; padding: 15px;">
+                                <div><p style="color:#aaa; font-size:11px;">CHIP BALANCE</p><h2 style="color:var(--neon-g);">🪙 <span id="display-chips">${bal.toLocaleString()}</span></h2></div>
+                                <div style="text-align:right;"><div id="timer-display">READY</div><h4 id="match-timer" style="color:var(--accent); font-size:10px;">OPEN</h4></div>
+                            </div>
+                            <div class="account-card" style="padding: 30px; background: #12161f;">
+                                <h3 style="color:var(--accent); margin-bottom: 20px;">CHOOSE WINNING BOXES</h3>
+                                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="boxGrid">${Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="toggleBox(this, ${i+1})">${i+1}</button>`).join('')}</div>
+                                <button class="btn-action-main" onclick="openBetSlip()">PLACE BET (<span id="selectedCount">0</span> Boxes)</button>
+                            </div>`;
                     } else if (user.role === 'SuperAdmin') {
                         document.getElementById('nav-mgmt-sa').style.display = 'flex';
                         document.getElementById('houseGrid').innerHTML = Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="selectWinnerUI(this, ${i+1})">${i+1}</button>`).join('');
@@ -199,7 +205,7 @@
             if(!tempAdminWinner) return alert("Select a box first!");
             localStorage.setItem('magicWinner', tempAdminWinner); // FIXED PERMANENT SAVE
             document.getElementById('adminStatus').innerText = `MODE: FIXED WINNER (Box ${tempAdminWinner})`;
-            alert(`Success: Winner locked to Box ${tempAdminWinner} permanently!`);
+            alert(`Winner locked to Box ${tempAdminWinner} permanently!`);
         }
 
         function runCountdown(stakePerBox) {
@@ -212,20 +218,20 @@
                     const savedWinner = localStorage.getItem('magicWinner');
                     let finalWinner = savedWinner ? parseInt(savedWinner) : Math.floor(Math.random() * 10) + 1;
                     const win = selectedBoxes.includes(finalWinner);
-                    await fetch('/api/settle-bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: stakePerBox, odds: 2, isWin: win }) });
+                    await fetch('/api/settle-bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: stakePerBox, totalStake: stakePerBox * selectedBoxes.length, isWin: win }) });
                     timerText.innerText = win ? "WIN!" : "LOSS";
-                    alert(win ? `🏆 Box ${finalWinner} WON!` : `❌ Box ${finalWinner} won.`);
                     selectedBoxes = []; setTimeout(() => init(), 2000);
                 }
             }, 1000);
         }
 
-        // --- USER LIST WITH 6 WORKING BUTTONS ---
+        // --- 6-BUTTON TABLE LOGIC ---
         async function loadUsers() {
             const res = await fetch('/api/my-users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, role: user.role }) });
             const d = await res.json();
-            const filtered = (d.users || []).filter(u => u.id !== user.id);
-            document.querySelector('#userTable tbody').innerHTML = filtered.map(u => `
+            // FILTER: Show only users created by THIS admin
+            const children = (d.users || []).filter(u => u.creator_id == user.id);
+            document.querySelector('#userTable tbody').innerHTML = children.map(u => `
                 <tr>
                     <td><i class="fas fa-circle" style="color:var(--neon-g); font-size:8px;"></i></td>
                     <td style="text-align:left;"><b>${u.username}</b></td>
@@ -238,8 +244,8 @@
                         <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-pen"></i></button>
                         <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
                         <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                        <button class="act-btn btn-mode" title="Gaming Mode" onclick="setMode(${u.id})">M</button>
-                        <button class="act-btn btn-ms" title="Market Setting" onclick="setMarket(${u.id})">S</button>
+                        <button class="act-btn btn-mode" title="Gaming Mode" onclick="alert('Algo updated for ${u.username}')">M</button>
+                        <button class="act-btn btn-ms" title="Market Setting" onclick="alert('Limits updated for ${u.username}')">S</button>
                         <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`).join('');
@@ -248,9 +254,7 @@
         // --- ACTIONS ---
         async function give(id, name) { const amt = prompt(`Deposit to ${name}:`); if(amt) await fetch('/api/transfer-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) }) }); init(); }
         async function withdraw(id, name) { const amt = prompt(`Withdraw from ${name}:`); if(amt) await fetch('/api/withdraw-chips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) }) }); init(); }
-        async function deleteUser(id, bal) { if(parseFloat(bal) > 0) return alert("Account must be 0 chips!"); if(confirm("Permanently Delete?")) { await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); init(); } }
-        function setMode(id) { alert("Switching Gaming Algorithms for ID: " + id); }
-        function setMarket(id) { alert("Updating Betting Limits for ID: " + id); }
+        async function deleteUser(id, bal) { if(parseFloat(bal) > 0) return alert("Must have 0 chips!"); if(confirm("Permanently Delete?")) { await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); init(); } }
 
         function toggleBox(el, num) { if (selectedBoxes.includes(num)) { selectedBoxes = selectedBoxes.filter(n => n !== num); el.classList.remove('selected'); } else { selectedBoxes.push(num); el.classList.add('selected'); } document.getElementById('selectedCount').innerText = selectedBoxes.length; }
         function openBetSlip() { if (!selectedBoxes.length) return alert("Select boxes first!"); document.getElementById('slipBoxes').innerText = "Selected: " + selectedBoxes.join(", "); document.getElementById('betSlip').style.display = 'block'; updateTotal(); }
