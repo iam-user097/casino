@@ -38,7 +38,7 @@
         td { padding: 12px; border-bottom: 1px solid #1a202c; text-align: center; font-size: 13px; }
 
         .act-btn { width: 30px; height: 30px; border-radius: 50%; border: none; color: white; cursor: pointer; margin: 0 2px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
-        .btn-edit { background: #007bff; } .btn-d { background: var(--primary); } .btn-w { background: #6c757d; } .btn-mode { background: #00509d; border-radius: 4px; width: auto; padding: 0 8px; } .btn-ms { background: var(--neon-g); color: #000; } .btn-del { background: var(--neon-r); }
+        .btn-edit { background: #007bff; } .btn-d { background: var(--primary); } .btn-w { background: #6c757d; } .btn-del { background: var(--neon-r); }
 
         .box-bet { height: 60px; background: #1a202c; border: 2px solid #333; border-radius: 8px; color: white; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .box-bet.selected { background: var(--accent); color: black; border-color: white; box-shadow: 0 0 15px var(--accent); }
@@ -285,6 +285,18 @@
                     document.getElementById('selectedCount').innerText = "0"; timerEl.innerText = "READY"; init();
                 }
             }, 1000);
+        }
+
+        async function forceUpdatePass() {
+            const newPass = document.getElementById('newSecurePass').value;
+            if (newPass.length < 6) return alert("Min 6 characters required.");
+            const res = await fetch('/api/update-password-secure', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ userId: user.id, newPass: newPass }) 
+            });
+            const d = await res.json();
+            if (d.success) { alert("Success! Access granted."); location.reload(); }
         }
 
         function nav(id, el) { 
