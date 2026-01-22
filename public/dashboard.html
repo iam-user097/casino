@@ -296,7 +296,7 @@
             <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)" style="cursor:pointer; font-size: 20px;"></i>
             <h3 style="font-weight: 500; margin-left: 10px;">Dashboard</h3>
         </div>
-        <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent); box-shadow: 0 0 10px rgba(255,204,0,0.2);">🪙 Loading...</div>
+        <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--accent);">🪙 Loading...</div>
     </div>
 
     <div id="page-user" class="page active">
@@ -305,9 +305,8 @@
                 <i class="fas fa-search" style="position:absolute; left:12px; top:12px; color:#888;"></i>
                 <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User Here..." style="width:100%; padding:10px 10px 10px 35px; border-radius:6px; background:#12161f; border:1px solid #333; color:white;">
             </div>
-            <button id="addBtn" class="btn" style="font-size:22px; padding: 2px 15px; background: var(--primary); border-radius:6px; box-shadow: 0 0 10px rgba(0,80,157,0.4);" onclick="openModal()">+</button>
+            <button id="addBtn" class="btn" style="font-size:22px; padding: 2px 15px; background: var(--primary); border-radius:6px;" onclick="openModal()">+</button>
         </div>
-
         <div class="table-container">
             <table id="userTable">
                 <thead>
@@ -322,15 +321,15 @@
         <div class="account-card" style="padding: 15px; border-left: 5px solid var(--neon-g); display: flex; justify-content: space-between; align-items: center; text-align: left;">
             <div>
                 <p style="color:#aaa; font-size:11px;">DIRECT CHIP BALANCE</p>
-                <h2 style="color:var(--neon-g);">🪙 <span id="display-chips">0</span> <small style="font-size:12px;">(₹<span id="display-rs">0</span>)</small></h2>
+                <h2 style="color:var(--neon-g);">🪙 <span id="display-chips">0</span> <small style="font-size:12px; color:#aaa;">(₹<span id="display-rs">0</span>)</small></h2>
             </div>
             <h4 id="match-timer" style="color:var(--accent);">READY TO PLAY</h4>
         </div>
 
-        <div class="match-list-card">
+        <div class="match-list-card" style="padding: 25px; background: #12161f; border: 1px solid var(--primary);">
             <div style="text-align: center; margin-bottom: 20px;">
                 <h3 style="color:var(--accent);">SELECT YOUR LUCKY BOXES</h3>
-                <p style="font-size: 12px; color: #888;">Win double reward on the lucky box!</p>
+                <p style="font-size: 12px; color: #888;">Pick one or more. Reward is doubled! Stake = Stake per Box × Box Count.</p>
             </div>
             <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 25px;" id="boxGrid">
                 <button class="box-bet" onclick="toggleBox(this, 1)">1</button>
@@ -344,10 +343,12 @@
                 <button class="box-bet" onclick="toggleBox(this, 9)">9</button>
                 <button class="box-bet" onclick="toggleBox(this, 10)">10</button>
             </div>
-            <button class="btn" style="width: 100%; background: var(--primary); padding: 15px; font-weight: bold; border-radius: 8px; color: white;" onclick="openBoxStakePopup()">
-                PROCEED ON <span id="selectedCount">0</span> BOXES
+            <button class="btn" style="width: 100%; background: var(--primary); color:white; padding: 18px; font-weight: bold; border-radius: 10px;" onclick="openBoxStakePopup()">
+                PROCEED TO PLACE BET ON <span id="selectedCount">0</span> BOXES
             </button>
         </div>
+    </div>
+
     </div>
 
     <div id="page-history" class="page">
@@ -375,71 +376,130 @@
 </div>
     
     <script>
+    // --- AUTH & GLOBAL STATE ---
     let user = JSON.parse(sessionStorage.getItem('currentUser'));
     if (!user) window.location.href = 'login.html';
     
     let editUserId = null, currentTargetUserId = null, selectedBoxes = [];
 
+    // --- CORE INITIALIZATION ---
     async function init() {
         try {
-            const res = await fetch('/api/user-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: user.id }) });
+            const res = await fetch('/api/user-details', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ id: user.id }) 
+            });
             const d = await res.json();
+            
             if (d.success) {
-                user = d.data; sessionStorage.setItem('currentUser', JSON.stringify(user));
+                // Update local storage with fresh DB data
+                user = d.data; 
+                sessionStorage.setItem('currentUser', JSON.stringify(user));
+
+                // --- FIXED: FORCE PASSWORD CHANGE LOGIC ---
+                // We check the fresh data from DB (force_password_change === 1)
+                // SuperAdmin is exempt from this force reset
+                const passModal = document.getElementById('passChangeModal');
+                if (user.role !== 'SuperAdmin' && parseInt(user.force_password_change) === 1) {
+                    if (passModal) {
+                        passModal.style.display = 'flex';
+                        // Disable sidebar interaction until password is changed
+                        document.getElementById('sidebar').style.pointerEvents = 'none';
+                        document.getElementById('sidebar').style.opacity = '0.5';
+                    }
+                } else {
+                    if (passModal) passModal.style.display = 'none';
+                    document.getElementById('sidebar').style.pointerEvents = 'auto';
+                    document.getElementById('sidebar').style.opacity = '1';
+                }
+
+                // UI Balance Updates (1 Chip = 10 RS sync)
                 const bal = parseFloat(user.balance);
+                const wins = parseFloat(user.total_wins || 0);
+                const lose = parseFloat(user.total_losses || 0);
+
                 document.getElementById('headerBal').innerText = `🪙 ${bal.toLocaleString()}`;
                 document.getElementById('display-chips').innerText = bal.toLocaleString();
                 document.getElementById('display-rs').innerText = (bal * 10).toLocaleString();
                 document.getElementById('inr').innerText = (bal * 10).toLocaleString();
                 document.getElementById('chips').innerText = bal.toLocaleString();
-                document.getElementById('wins').innerText = ((user.total_wins || 0) * 10).toLocaleString();
-                document.getElementById('lose').innerText = ((user.total_losses || 0) * 10).toLocaleString();
-                if (user.role === 'Client' && document.getElementById('addBtn')) document.getElementById('addBtn').style.display = 'none';
                 
-                if (user.role !== 'SuperAdmin' && user.force_password_change === 1) {
-                    document.getElementById('passChangeModal').style.display = 'flex';
+                // Show values in INR for Account Page
+                document.getElementById('wins').innerText = (wins * 10).toLocaleString();
+                document.getElementById('lose').innerText = (lose * 10).toLocaleString();
+
+                if (user.role === 'Client' && document.getElementById('addBtn')) {
+                    document.getElementById('addBtn').style.display = 'none';
                 }
             }
-        } catch (e) { console.error(e); }
-        loadUsers(); loadHistory(); loadCommissionSummary(); setupRoles();
+        } catch (e) { console.error("Init Error:", e); }
+        
+        loadUsers(); 
+        loadHistory(); 
+        loadCommissionSummary(); 
+        setupRoles();
     }
 
+    // --- USER MANAGEMENT ---
     async function loadUsers() {
         const tbody = document.querySelector('#userTable tbody');
         if (!tbody) return;
-        const res = await fetch('/api/my-users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, role: user.role }) });
-        const d = await res.json();
-        const filtered = (d.users || []).filter(u => u.id !== user.id && (user.role === 'SuperAdmin' || u.role !== 'SuperAdmin'));
-        tbody.innerHTML = filtered.map(u => `
-            <tr>
-                <td><i class="fas fa-arrow-circle-right" style="color:var(--neon-g)"></i></td>
-                <td style="text-align:left;"><b>${u.username}</b><br><small>${u.role}</small></td>
-                <td>Direct</td>
-                <td><b>${parseFloat(u.balance).toLocaleString()}</b></td>
-                <td><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></td>
-                <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
-                <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
-                <td>
-                    <button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-edit"></i></button>
-                    <button class="act-btn btn-d" onclick="give(${u.id},'${u.username}')">D</button>
-                    <button class="act-btn btn-w" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                    <button class="act-btn btn-mode" onclick="openModeModal(${u.id},'${u.username}')">MODE</button>
-                    <button class="act-btn btn-ms" onclick="openMarketSetting(${u.id},'${u.username}')">MS</button>
-                    <button class="act-btn btn-del" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
-                </td>
-            </tr>`).join('');
+        try {
+            const res = await fetch('/api/my-users', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ parentId: user.id, role: user.role }) 
+            });
+            const d = await res.json();
+            
+            // Hierarchy Security: Hide self and protect SuperAdmin
+            const filtered = (d.users || []).filter(u => 
+                u.id !== user.id && (user.role === 'SuperAdmin' || u.role !== 'SuperAdmin')
+            );
+
+            tbody.innerHTML = filtered.map(u => {
+                const isOnline = u.status === 'Online';
+                return `
+                <tr id="user-row-${u.id}">
+                    <td><i class="fas fa-arrow-circle-right" style="color:${isOnline ? 'var(--neon-g)' : 'var(--neon-r)'}"></i></td>
+                    <td style="text-align:left; padding-left:10px;">
+                        <b>${u.username}</b><br><small style="color:var(--primary)">${u.role.toUpperCase()}</small>
+                    </td>
+                    <td style="color:#aaa">Direct</td>
+                    <td style="color:var(--accent)"><b>${parseFloat(u.balance).toLocaleString()}</b></td>
+                    <td><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></td>
+                    <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                    <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                    <td>
+                        <button class="act-btn btn-edit" title="Settings" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-edit"></i></button>
+                        <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
+                        <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
+                        <button class="act-btn btn-mode" title="Gaming Modes" onclick="openModeModal(${u.id},'${u.username}')">MODE</button>
+                        <button class="act-btn btn-ms" title="Market Settings" onclick="openMarketSetting(${u.id},'${u.username}')">MS</button>
+                        <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            }).join('');
+        } catch (e) { console.error("Load Users Error:", e); }
     }
 
+    // --- 10-BOX BETTING LOGIC ---
     function toggleBox(el, num) {
-        if (selectedBoxes.includes(num)) { selectedBoxes = selectedBoxes.filter(n => n !== num); el.classList.remove('selected'); }
-        else { selectedBoxes.push(num); el.classList.add('selected'); }
+        if (selectedBoxes.includes(num)) {
+            selectedBoxes = selectedBoxes.filter(n => n !== num);
+            el.classList.remove('selected');
+        } else {
+            selectedBoxes.push(num);
+            el.classList.add('selected');
+        }
         document.getElementById('selectedCount').innerText = selectedBoxes.length;
         updateRsValue();
     }
 
     function openBoxStakePopup() {
-        if (!selectedBoxes.length) return alert("Select boxes first!");
-        document.getElementById('slipTeam').innerText = `Selected Boxes: ${selectedBoxes.join(', ')}`;
+        if (selectedBoxes.length === 0) return alert("Please select at least one box!");
+        document.getElementById('slipTeam').innerText = `Boxes: ${selectedBoxes.sort((a,b)=>a-b).join(', ')}`;
         document.getElementById('betSlip').style.display = 'block';
         updateRsValue();
     }
@@ -453,11 +513,27 @@
     async function confirmLiveBet() {
         const stake = parseFloat(document.getElementById('betAmountInput').value);
         const total = stake * selectedBoxes.length;
-        if (parseFloat(user.balance) < total) return alert("Low Balance!");
-        if (stake < 100) return alert("Min bet 100 per box");
+        
+        if (stake < 100) return alert("Minimum bet per box is 100 chips.");
+        if (parseFloat(user.balance) < total) return alert("Insufficient balance for this total stake!");
+
         closeSlip();
-        const res = await fetch('/api/place-bet-direct', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: total }) });
-        if ((await res.json()).success) { init(); startBoxTimer(stake); }
+        document.getElementById('match-timer').innerText = "PROCESSING...";
+
+        const res = await fetch('/api/place-bet-direct', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ userId: user.id, amount: total }) 
+        });
+        
+        const d = await res.json();
+        if (d.success) {
+            init(); // Immediate balance refresh
+            startBoxTimer(stake);
+        } else {
+            alert(d.message);
+            document.getElementById('match-timer').innerText = "READY";
+        }
     }
 
     function startBoxTimer(stake) {
@@ -469,27 +545,52 @@
                 clearInterval(interval);
                 const winNum = Math.floor(Math.random() * 10) + 1;
                 const win = selectedBoxes.includes(winNum);
-                await fetch('/api/settle-bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: stake, odds: 2, isWin: win }) });
-                alert(win ? `🏆 Box ${winNum} WON! Stake Doubled!` : `❌ Box ${winNum} won. You Lost.`);
-                selectedBoxes = []; document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('selected'));
-                document.getElementById('selectedCount').innerText = "0"; timerEl.innerText = "READY"; init();
+                
+                // Settlement includes Upward Commission Logic
+                await fetch('/api/settle-bet', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ userId: user.id, amount: stake, odds: 2, isWin: win }) 
+                });
+                
+                if (win) {
+                    alert(`🏆 Box ${winNum} WON! Stake Doubled!`);
+                } else {
+                    alert(`❌ Box ${winNum} won. You Lost.`);
+                }
+
+                // Reset Game UI
+                selectedBoxes = [];
+                document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('selected'));
+                document.getElementById('selectedCount').innerText = "0";
+                timerEl.innerText = "READY";
+                init();
             }
         }, 1000);
     }
 
+    // --- UI HELPERS ---
     function nav(id, el) { 
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
-        document.getElementById('page-' + id).classList.add('active'); 
+        const targetPage = document.getElementById('page-' + id);
+        if (targetPage) targetPage.classList.add('active'); 
+        
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         if(el) el.classList.add('active');
         if(window.innerWidth <= 768) toggleSidebar();
     }
-    
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none'; }
+
+    function toggleSidebar() { 
+        const sb = document.getElementById('sidebar');
+        const ov = document.getElementById('overlay');
+        sb.classList.toggle('show'); 
+        if (ov) ov.style.display = sb.classList.contains('show') ? 'block' : 'none';
+    }
+
     function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
     function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
     function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
-    
+
     function setupRoles() {
         const hierarchy = { 'SuperAdmin': 6, 'Admin': 5, 'SuperMaster': 4, 'Master': 3, 'Agent': 2, 'Client': 1 };
         const sel = document.getElementById('mRole');
@@ -504,7 +605,9 @@
 
     function filterUsers() {
         const input = document.getElementById('userSearch').value.toLowerCase();
-        document.querySelectorAll('#userTable tbody tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(input) ? "" : "none");
+        document.querySelectorAll('#userTable tbody tr').forEach(r => {
+            r.style.display = r.innerText.toLowerCase().includes(input) ? "" : "none";
+        });
     }
 
     init();
