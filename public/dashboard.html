@@ -26,8 +26,8 @@
         @media (max-width: 768px) {
             .sidebar { position: fixed; left: -260px; height: 100vh; }
             .sidebar.show { transform: translateX(260px); }
-            /* Logout visible at bottom on mobile */
-            .sidebar .logout-btn { margin-top: auto !important; border-top: 1px solid #1a202c; }
+            /* FIXED: Ensure logout visibility at bottom */
+            .sidebar .logout-btn { margin-top: auto !important; display: flex !important; border-top: 1px solid #1a202c; }
         }
         .logout-btn { margin-top: auto; color: var(--neon-r) !important; }
 
@@ -39,7 +39,6 @@
         .page.active { display:block; }
         @keyframes slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
 
-        /* NEON TABLE & UI */
         .table-container { background: #12161f; border-radius: 12px; overflow-x: auto; margin-top: 10px; border: 1px solid var(--primary); }
         table { width:100%; border-collapse:collapse; min-width: 900px; }
         th { background: #011627; color: var(--accent); padding: 15px; font-size: 13px; text-transform: uppercase; border-bottom: 1px solid var(--primary); }
@@ -56,7 +55,6 @@
         .box-bet.winner-set { background: var(--neon-g); color: black; border-color: white; box-shadow: 0 0 20px var(--neon-g); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        /* MODALS & FIELDS */
         .modal { display:none; position:fixed; inset: 0; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
         .modal-content { background:#12161f; width:90%; max-width:600px; border-radius:12px; border: 1px solid var(--primary); overflow:hidden; }
         .modal-header { background:#011627; padding:15px; border-bottom: 2px solid var(--neon-r); display: flex; justify-content: space-between; align-items: center; }
@@ -66,7 +64,7 @@
         .modal-body input, .modal-body select { width: 100%; padding: 12px; background: #0b0e14; border: 1px solid #333; border-radius: 8px; color: white; font-size: 14px; outline: none; }
         .btn-submit-neon { grid-column: span 2; background: linear-gradient(135deg, var(--neon-g), #2ecc71); color: black; padding: 15px; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; margin-top: 10px; box-shadow: 0 4px 15px rgba(57, 255, 20, 0.2); }
 
-        #timer-display { font-size: 45px; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px var(--accent); }
+        #timer-display { font-size: 45px; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px var(--accent); margin-bottom: 10px; }
         .bet-popup-slip { position: fixed; bottom: 20px; right: 20px; width: 320px; background: #011627; border: 2px solid var(--accent); border-radius: 15px; z-index: 5000; display: none; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
         .slip-head { background: var(--accent); color: black; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; border-radius: 12px 12px 0 0; }
 
@@ -109,8 +107,9 @@
         <div id="page-mgmt" class="page">
             <div class="account-card" style="border-top: 4px solid var(--accent);">
                 <h2 style="color:var(--accent);">HOUSE CONTROL</h2>
-                <p style="color:#aaa; font-size:12px; margin-bottom: 25px;">Admin: Manually set the winner box to settle all active bets manually.</p>
+                <p style="color:#aaa; font-size:12px; margin-bottom: 25px;">Admin: Set winner (expires in 25s, then reverts to random).</p>
                 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="houseGrid"></div>
+                <div id="adminStatus" style="font-size:11px; color:var(--neon-g); margin-bottom:10px; font-weight: bold;">MODE: RANDOM WINNING</div>
                 <button class="btn-submit-neon" style="width:100%;" onclick="confirmHouseResult()">REVEAL & SETTLE ALL BETS</button>
             </div>
         </div>
@@ -148,22 +147,21 @@
 
     <div class="modal" id="passChangeModal">
         <div class="modal-content" style="max-width: 450px;"><div class="modal-header"><h3>Security Reset Required</h3></div><div class="modal-body" style="grid-template-columns: 1fr;">
-            <p style="font-size:12px; color:#aaa;">Update your temporary password to unlock the dashboard.</p>
+            <p style="font-size:12px; color:#aaa; margin-bottom:10px;">Update your temporary password to unlock the dashboard.</p>
             <div class="form-group"><label>Old Password</label><input type="password" id="oldSecurePass" maxlength="6"></div>
-            <div class="form-group"><label>New Password</label><input type="password" id="newSecurePass" maxlength="6"></div>
+            <div class="form-group"><label>New Password (6 Digits)</label><input type="password" id="newSecurePass" maxlength="6"></div>
             <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmSecurePass" maxlength="6"></div>
-            <button class="btn-submit-neon" onclick="forceUpdatePass()">Update & Unlock</button>
+            <button class="btn-submit-neon" onclick="forceUpdatePass()">Update & Unlock Dashboard</button>
         </div></div>
     </div>
 
     <div class="modal" id="userModal">
         <div class="modal-content"><div class="modal-header"><h3 id="mTitle">Settings</h3><i class="fas fa-times" onclick="closeModal()" style="cursor:pointer; color:var(--neon-r);"></i></div><div class="modal-body">
             <div class="form-group"><label>Username</label><input type="text" id="mUName" placeholder="Unique name"></div>
-            <div class="form-group" id="passDivGrp"><label>Password (6 Digits)</label><input type="password" id="mPass" maxlength="6"></div>
-            <div class="form-group" id="cPassDivGrp"><label>Confirm Password</label><input type="password" id="mCPass" maxlength="6"></div>
-            <div class="form-group" id="roleDiv"><label>Role</label><select id="mRole"></select></div>
+            <div id="passDivGrp" style="display:contents"><div class="form-group"><label>Password (6 Digits)</label><input type="password" id="mPass" maxlength="6"></div><div class="form-group"><label>Confirm Password</label><input type="password" id="mCPass" maxlength="6"></div></div>
+            <div class="form-group"><label>Role</label><select id="mRole"></select></div>
             <div class="form-group"><label>Comm %</label><input type="number" id="mComm" value="0" step="0.1"></div>
-            <div class="form-group" id="depoDiv"><label>Initial Balance</label><input type="number" id="mDeposit" value="0"></div>
+            <div id="depoDiv" style="display:contents"><div class="form-group"><label>Initial Balance</label><input type="number" id="mDeposit" value="0"></div></div>
             <button class="btn-submit-neon" onclick="submitUser()">Submit Details</button>
         </div></div>
     </div>
@@ -171,7 +169,7 @@
     <script>
         let user = JSON.parse(sessionStorage.getItem('currentUser'));
         if (!user) window.location.href = 'login.html';
-        let editUserId = null, currentTargetUserId = null, selectedBoxes = [], houseWinner = null;
+        let editUserId = null, selectedBoxes = [], houseWinner = null, adminLockTime = 0;
 
         async function init() {
             try {
@@ -210,7 +208,16 @@
             loadUsers(); loadHistory(); loadCommissionSummary(); setupRoles();
         }
 
-        // --- 10S REVEAL ---
+        // --- ENHANCED 25S WINNER SYSTEM ---
+        function setWinnerBox(el, num) {
+            document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('winner-set'));
+            el.classList.add('winner-set');
+            houseWinner = num;
+            adminLockTime = Date.now() + 25000; // 25s Expiration
+            document.getElementById('adminStatus').innerText = `MODE: ADMIN SET (Box ${num}) - EXPIRES IN 25s`;
+            document.getElementById('adminStatus').style.color = "var(--accent)";
+        }
+
         function runCountdown(stakePerBox) {
             let sec = 10;
             const timerText = document.getElementById('timer-display');
@@ -221,80 +228,73 @@
 
             const interval = setInterval(async () => {
                 timerText.innerText = sec;
-                subText.innerText = "CALCULATING...";
+                subText.innerText = "WAITING FOR RESULT...";
                 if (--sec < 0) {
                     clearInterval(interval);
-                    const winNum = Math.floor(Math.random() * 10) + 1;
-                    const win = selectedBoxes.includes(winNum);
-                    // Settles wallet & stores results in database
+                    // Determine final winner
+                    let finalWinner;
+                    if (Date.now() < adminLockTime && houseWinner !== null) {
+                        finalWinner = houseWinner; 
+                    } else {
+                        finalWinner = Math.floor(Math.random() * 10) + 1;
+                        if(user.role === 'SuperAdmin') document.getElementById('adminStatus').innerText = "MODE: RANDOM WINNING";
+                    }
+                    const win = selectedBoxes.includes(finalWinner);
                     await fetch('/api/settle-bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: stakePerBox, odds: 2, isWin: win }) });
                     timerText.innerText = win ? "WIN!" : "LOSS";
                     timerText.style.color = win ? "var(--neon-g)" : "var(--neon-r)";
-                    alert(win ? `🏆 Box ${winNum} WON! Chips added.` : `❌ Box ${winNum} won. Better luck next time!`);
+                    alert(win ? `🏆 Box ${finalWinner} WON! Chips added.` : `❌ Box ${finalWinner} won. Better luck next time!`);
                     selectedBoxes = []; setTimeout(() => init(), 2000);
                 }
             }, 1000);
         }
 
         // --- HOUSE CONTROL SETTLEMENT ---
-        function setWinnerBox(el, num) { document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('winner-set')); el.classList.add('winner-set'); houseWinner = num; }
         async function confirmHouseResult() {
-            if (!houseWinner) return alert("Select winner box first!");
+            if (!houseWinner) return alert("Select winner box!");
             const res = await fetch('/api/house-settle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ winnerBox: houseWinner }) });
-            if ((await res.json()).success) { alert("Round Settled!"); location.reload(); }
+            if ((await res.json()).success) { alert("Settled!"); location.reload(); }
         }
 
-        // --- UI & LOGIC ---
+        // --- UI & MGMT ---
         function toggleBox(el, num) { if (selectedBoxes.includes(num)) { selectedBoxes = selectedBoxes.filter(n => n !== num); el.classList.remove('selected'); } else { selectedBoxes.push(num); el.classList.add('selected'); } document.getElementById('selectedCount').innerText = selectedBoxes.length; updateRsValue(); }
-        function openBoxStakePopup() { if (!selectedBoxes.length) return alert("Select boxes!"); document.getElementById('slipTeam').innerText = `Boxes: ${selectedBoxes.join(', ')}`; document.getElementById('betSlip').style.display = 'block'; updateRsValue(); }
+        function openBoxStakePopup() { if (!selectedBoxes.length) return alert("Select boxes!"); document.getElementById('slipTeam').innerText = `Selected: ${selectedBoxes.join(', ')}`; document.getElementById('betSlip').style.display = 'block'; updateRsValue(); }
         function updateRsValue() { const s = document.getElementById('betAmountInput').value || 0; const t = s * selectedBoxes.length; document.getElementById('rsVal').innerText = `TOTAL DEDUCTION: ${t} Chips (₹${(t*10).toLocaleString()})`; }
         async function confirmLiveBet() {
-            const stake = parseFloat(document.getElementById('betAmountInput').value); const total = stake * selectedBoxes.length;
-            if (parseFloat(user.balance) < total) return alert("Insufficient Chips!");
+            const s = parseFloat(document.getElementById('betAmountInput').value); const t = s * selectedBoxes.length;
+            if (parseFloat(user.balance) < t) return alert("Insufficient Balance!");
             closeSlip();
-            const res = await fetch('/api/place-bet-direct', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: total, boxes: selectedBoxes, stakePerBox: stake }) });
-            if ((await res.json()).success) runCountdown(stake);
+            const res = await fetch('/api/place-bet-direct', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: t, boxes: selectedBoxes, stakePerBox: s }) });
+            if ((await res.json()).success) runCountdown(s);
         }
-
-        async function forceUpdatePass() {
-            const oldP = document.getElementById('oldSecurePass').value, newP = document.getElementById('newSecurePass').value, cP = document.getElementById('confirmSecurePass').value;
-            if(newP !== cP || newP.length !== 6) return alert("Check password matches and length!");
-            const res = await fetch('/api/update-password-secure', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, oldPass: oldP, newPass: newP }) });
-            if ((await res.json()).success) location.reload(); else alert("Error updating security!");
-        }
-
-        async function loadUsers() {
-            const res = await fetch('/api/my-users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, role: user.role }) });
-            const d = await res.json();
-            const filtered = (d.users || []).filter(u => u.id !== user.id && (user.role === 'SuperAdmin' || u.role !== 'SuperAdmin'));
-            document.querySelector('#userTable tbody').innerHTML = filtered.map(u => `<tr><td><i class="fas fa-circle" style="color:var(--neon-g); font-size:8px;"></i></td><td style="text-align:left;"><b>${u.username}</b><br><small>${u.role}</small></td><td>Direct</td><td><b>${parseFloat(u.balance).toLocaleString()}</b></td><td><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></td><td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td><td><button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-pen"></i></button><button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button><button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button><button class="act-btn btn-del" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button></td></tr>`).join('');
-        }
-
-        async function submitUser() {
-            const u = document.getElementById('mUName').value, p = document.getElementById('mPass').value, cp = document.getElementById('mCPass').value, r = document.getElementById('mRole').value, c = document.getElementById('mComm').value, d = document.getElementById('mDeposit').value;
-            if(!editUserId && (p !== cp || p.length !== 6)) return alert("Password mismatch or length error!");
-            const res = await fetch(editUserId ? '/api/update-user' : '/api/create-user-advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uName: u, pass: p, role: r, commission: c, deposit: d, creatorId: user.id, id: editUserId }) });
-            if ((await res.json()).success) { closeModal(); init(); }
-        }
-
         function nav(id, el) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); if(el) el.classList.add('active'); if(window.innerWidth <= 768) toggleSidebar(); }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none'; }
         function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
         function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
         function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
-        function openEdit(id, name, comm) { editUserId = id; document.getElementById('mTitle').innerText = "Edit Account"; document.getElementById('mUName').value = name; document.getElementById('mComm').value = comm; document.getElementById('passDivGrp').style.display = 'none'; document.getElementById('cPassDivGrp').style.display = 'none'; document.getElementById('depoDiv').style.display = 'none'; document.getElementById('userModal').style.display = 'flex'; }
+        function openEdit(id, name, comm) { editUserId = id; document.getElementById('mTitle').innerText = "Edit Account"; document.getElementById('mUName').value = name; document.getElementById('mComm').value = comm; document.getElementById('passDivGrp').style.display = 'none'; document.getElementById('depoDiv').style.display = 'none'; document.getElementById('userModal').style.display = 'flex'; }
         function openModal() { editUserId = null; document.getElementById('mTitle').innerText = "New Account"; document.getElementById('mUName').value = ""; document.getElementById('passDivGrp').style.display = 'contents'; document.getElementById('depoDiv').style.display = 'contents'; document.getElementById('userModal').style.display = 'flex'; }
         async function give(id, name) { const amt = prompt(`Deposit to ${name}:`); if(amt) await fetch('/api/transfer-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) }) }); init(); }
         async function withdraw(id, name) { const amt = prompt(`Withdraw from ${name}:`); if(amt) await fetch('/api/withdraw-chips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) }) }); init(); }
-        async function deleteUser(id) { if(!confirm("Perm delete? Must have 0 balance.")) return; const res = await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); if((await res.json()).success) init(); }
+        async function deleteUser(id) { if(!confirm("Perm delete? Chips must be 0.")) return; const res = await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); if((await res.json()).success) init(); }
         async function loadHistory() { const res = await fetch('/api/history', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }); const d = await res.json(); if (d.success) { document.querySelector('#histTable tbody').innerHTML = d.history.map(h => `<tr><td>${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type.toUpperCase()}</b></td><td style="color:${parseFloat(h.amount) >= 0 ? 'var(--neon-g)' : 'var(--neon-r)'};">+${parseFloat(h.amount).toLocaleString()}</td><td>${h.description}</td></tr>`).join(''); } }
         async function loadCommissionSummary() { const res = await fetch('/api/commission-summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }); const d = await res.json(); if (d.success && d.summary.length > 0) { document.getElementById('commBody').innerHTML = d.summary.map(s => `<tr><td style="text-align:left; padding-left:15px;"><b>${s.downline_name}</b></td><td style="color:var(--neon-g);">+${parseFloat(s.total_earned).toLocaleString()}</td><td>₹${(parseFloat(s.total_earned) * 10).toLocaleString()}</td></tr>`).join(''); } }
         function setupRoles() { const h = { 'SuperAdmin': 6, 'Admin': 5, 'SuperMaster': 4, 'Master': 3, 'Agent': 2, 'Client': 1 }; const sel = document.getElementById('mRole'); if (sel && sel.options.length === 0) ['Admin', 'SuperMaster', 'Master', 'Agent', 'Client'].forEach(r => { if (h[r] < h[user.role]) { const o = document.createElement('option'); o.value = r; o.innerText = r; sel.appendChild(o); }}); }
         function filterUsers() { const i = document.getElementById('userSearch').value.toLowerCase(); document.querySelectorAll('#userTable tbody tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(i) ? "" : "none"); }
+        async function forceUpdatePass() {
+            const oldP = document.getElementById('oldSecurePass').value, newP = document.getElementById('newSecurePass').value, cP = document.getElementById('confirmSecurePass').value;
+            if(newP !== cP || newP.length !== 6) return alert("Security Reset Error!");
+            const res = await fetch('/api/update-password-secure', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, oldPass: oldP, newPass: newP }) });
+            if ((await res.json()).success) location.reload();
+        }
+        async function loadUsers() {
+            const res = await fetch('/api/my-users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, role: user.role }) });
+            const d = await res.json();
+            const filtered = (d.users || []).filter(u => u.id !== user.id && (user.role === 'SuperAdmin' || u.role !== 'SuperAdmin'));
+            document.querySelector('#userTable tbody').innerHTML = filtered.map(u => `<tr><td><i class="fas fa-circle" style="color:var(--neon-g); font-size:8px;"></i></td><td style="text-align:left;"><b>${u.username}</b><br><small>${u.role}</small></td><td>Direct</td><td><b>${parseFloat(u.balance).toLocaleString()}</b></td><td><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></td><td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td><td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td><td><button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-pen"></i></button><button class="act-btn btn-d" onclick="give(${u.id},'${u.username}')">D</button><button class="act-btn btn-w" onclick="withdraw(${u.id},'${u.username}')">W</button><button class="act-btn btn-del" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+        }
 
         init();
     </script>
 </body>
 </html>
-
-
