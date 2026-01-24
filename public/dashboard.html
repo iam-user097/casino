@@ -140,8 +140,9 @@ input:focus { border-color: var(--primary); background: #12161f; }
                 <h2 style="color:var(--accent);">HOUSE CONTROL</h2>
                 <p style="color:#aaa; font-size:12px; margin-bottom: 20px;">Set the PERMANENT winning box for the next rounds.</p>
                 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;" id="houseGrid"></div>
+                <br>
                 <button class="btn-action-main" onclick="savePermanentWinner()">LOCK WINNING BOX</button>
-                <div id="adminStatus" style="margin-top:15px; color:var(--neon-g); font-weight:bold;">MODE: RANDOM</div>
+                <div id="adminStatus" style="margin-top:15px; color:var(--neon-g); font-weight:bold;">MODE: MANUAL</div>
             </div>
         </div>
 
@@ -188,7 +189,7 @@ input:focus { border-color: var(--primary); background: #12161f; }
             <select id="mRole"></select>
             <input type="number" id="mComm" placeholder="Commission %">
             <input type="number" id="mDeposit" placeholder="Initial chips">
-            <button class="btn-action-main" onclick="submitUser()">CREATE USER</button>
+            <button class="btn-action-main" onclick="submitUser()"><i class=fas fa-plus></i> CREATE USER</button>
             <button style="width:100%; margin-top:10px; background:#444; border:none; padding:12px; border-radius:8px; color:white;" onclick="closeModal()">CANCEL</button>
         </div>
     </div>
@@ -274,6 +275,8 @@ input:focus { border-color: var(--primary); background: #12161f; }
     }
 
     async function submitUser() {
+    try {
+        // 1. Get Values (Ensuring IDs match your HTML precisely)
         const name = document.getElementById('mName').value;
         const uname = document.getElementById('mUName').value;
         const pass = document.getElementById('mPass').value;
@@ -282,14 +285,53 @@ input:focus { border-color: var(--primary); background: #12161f; }
         const comm = document.getElementById('mComm').value;
         const depo = document.getElementById('mDeposit').value;
 
-        if(pass.length !== 6) return alert("PIN must be exactly 6 digits!");
-        if(pass !== cpass) return alert("Confirm PIN does not match!");
+        // 2. Basic Validation Logic
+        if (!uname || !pass || !role) {
+            alert("Sir, Username and Password are required!");
+            return;
+        }
 
-        const body = { uName: uname, fullName: name, pass, role, commission: comm, deposit: depo, creatorId: user.id };
-        const res = await fetch('/api/create-user-advanced', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
-        if((await res.json()).success) { closeModal(); init(); }
+        if (pass.length !== 6) {
+            alert("Security Error: PIN must be exactly 6 digits!");
+            return;
+        }
+
+        if (pass !== cpass) {
+            alert("Error: Confirm PIN does not match!");
+            return;
+        }
+
+        // 3. Send Data to Server
+        const res = await fetch('/api/create-user-advanced', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ 
+                uName: uname, 
+                fullName: name, 
+                pass: pass, 
+                role: role, 
+                commission: comm, 
+                deposit: depo, 
+                creatorId: user.id 
+            })
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+            alert("User Created Successfully, Sir!");
+            closeModal();
+            init(); // Refresh the table and balance
+        } else {
+            alert("Server Error: " + (result.message || "Failed to create user."));
+        }
+
+    } catch (error) {
+        console.error("Critical JS Error:", error);
+        alert("JavaScript Error: Check Console.");
     }
-
+}
+        
     // --- HOUSE CONTROL (MANUAL WINNER) ---
     function setupHouseControl() {
         const grid = document.getElementById('houseGrid');
