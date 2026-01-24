@@ -24,7 +24,7 @@
 
 body { display:flex; height:100vh; background:var(--bg); color: white; overflow:hidden; }
 
-/* --- PREMIUM SIDEBAR --- */
+/* --- SIDEBAR --- */
 .sidebar { 
     width:260px; 
     background: linear-gradient(180deg, #12161f 0%, #0b0e14 100%);
@@ -36,261 +36,71 @@ body { display:flex; height:100vh; background:var(--bg); color: white; overflow:
 }
 
 .logo { 
-    background:black; 
-    padding:25px; 
-    text-align:center; 
-    color:var(--accent); 
-    font-weight:bold; 
-    font-size:24px; 
-    border-bottom: 2px solid var(--primary); 
-    text-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
-    letter-spacing: 2px;
+    background:black; padding:25px; text-align:center; color:var(--accent); font-weight:bold; font-size:24px; 
+    border-bottom: 2px solid var(--primary); text-shadow: 0 0 15px rgba(255, 204, 0, 0.5); letter-spacing: 2px;
 }
 
-.nav-item { 
-    padding:16px 25px; 
-    color: rgba(255,255,255,0.6); 
-    cursor:pointer; 
-    display:flex; 
-    align-items:center; 
-    gap:12px; 
-    border-bottom: 1px solid rgba(255,255,255,0.02);
-}
+.nav-item { padding:16px 25px; color: rgba(255,255,255,0.6); cursor:pointer; display:flex; align-items:center; gap:12px; border-bottom: 1px solid rgba(255,255,255,0.02); }
+.nav-item:hover { color: white; background: rgba(0, 80, 157, 0.15); padding-left: 35px; }
+.nav-item.active { background: linear-gradient(90deg, rgba(0, 80, 157, 0.4), transparent); color:var(--accent); border-left: 4px solid var(--accent); font-weight: bold; }
+.logout-btn { margin-top: auto; color: var(--neon-r) !important; }
 
-.nav-item i { font-size: 18px; width: 25px; text-align: center; }
-
-.nav-item:hover { 
-    color: white; 
-    background: rgba(0, 80, 157, 0.15); 
-    padding-left: 35px;
-    text-shadow: 0 0 10px white;
-}
-
-.nav-item.active { 
-    background: linear-gradient(90deg, rgba(0, 80, 157, 0.4), transparent); 
-    color:var(--accent); 
-    border-left: 4px solid var(--accent); 
-    font-weight: bold;
-    box-shadow: inset 10px 0 20px rgba(0,0,0,0.2);
-}
-
-.logout-btn { margin-top: auto; color: var(--neon-r) !important; opacity: 0.8; }
-.logout-btn:hover { opacity: 1; background: rgba(255, 49, 49, 0.1) !important; }
-
-.sidebar-overlay { 
-    display: none; 
-    position: fixed; 
-    inset: 0; 
-    background: rgba(0,0,0,0.8); 
-    z-index: 1500; 
-    backdrop-filter: blur(8px); 
-    animation: fadeIn 0.3s ease;
-}
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease; }
+.sidebar-overlay.show { display: block; }
 
 /* --- MAIN INTERFACE --- */
 .main { flex:1; display:flex; flex-direction:column; width:100%; overflow:hidden; position: relative; }
+.header { background:#12161f; color:white; padding:15px 25px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(0, 80, 157, 0.3); }
 
-.header { 
-    background:#12161f; 
-    color:white; 
-    padding:15px 25px; 
-    display:flex; 
-    justify-content:space-between; 
-    align-items:center; 
-    border-bottom: 1px solid rgba(0, 80, 157, 0.3);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-}
+#headerBal { font-weight: 800; color: var(--accent); background: rgba(255, 204, 0, 0.08); padding: 10px 22px; border-radius: 50px; border: 1px solid rgba(255, 204, 0, 0.3); }
 
-#headerBal {
-    font-weight: 800;
-    color: var(--accent);
-    background: rgba(255, 204, 0, 0.08);
-    padding: 10px 22px;
-    border-radius: 50px;
-    border: 1px solid rgba(255, 204, 0, 0.3);
-    box-shadow: 0 0 15px rgba(255, 204, 0, 0.1);
-}
+/* --- PAGE & CARDS --- */
+.page { display:none; padding:25px; overflow-y:auto; flex:1; }
+.page.active { display:block; animation: slideInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1); }
 
-/* --- PAGE ANIMATIONS --- */
-.page { 
-    display:none; 
-    padding:25px; 
-    overflow-y:auto; 
-    flex:1; 
-    scrollbar-width: thin;
-    scrollbar-color: var(--primary) transparent;
-}
+@keyframes slideInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 
-.page.active { 
-    display:block; 
-    animation: slideInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-@keyframes slideInUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-/* --- CARDS & WATERFALL --- */
-.account-card { 
-    background: linear-gradient(145deg, #161b26, #0d111a);
-    border-radius:20px; 
-    padding:25px; 
-    text-align:center; 
-    margin-bottom:20px; 
-    border: 1px solid rgba(255,255,255,0.05);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-}
-
-.waterfall-card { 
-    background: var(--glass);
-    border-radius: 15px; 
-    padding: 20px; 
-    margin-top: 15px; 
-    border: 1px dashed rgba(0, 80, 157, 0.4); 
-}
-
-.wf-row { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    padding: 12px 10px; 
-    border-bottom: 1px solid rgba(255,255,255,0.03); 
-    position: relative; 
-}
-
-.wf-row:hover { background: rgba(255,255,255,0.02); border-radius: 8px; }
-
-.wf-row:not(:last-child)::after { 
-    content: '↓'; 
-    position: absolute; 
-    bottom: -10px; 
-    left: 50%; 
-    color: var(--primary); 
-    font-weight: bold;
-    font-size: 14px;
-    opacity: 0.7;
-}
+.account-card { background: linear-gradient(145deg, #161b26, #0d111a); border-radius:20px; padding:25px; text-align:center; margin-bottom:20px; border: 1px solid rgba(255,255,255,0.05); }
 
 /* --- TABLES --- */
-.table-container { 
-    background: #12161f; 
-    border-radius: 15px; 
-    overflow-x: auto; 
-    border: 1px solid rgba(0, 80, 157, 0.2);
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
-}
-
+.table-container { background: #12161f; border-radius: 15px; overflow-x: auto; border: 1px solid rgba(0, 80, 157, 0.2); }
 table { width:100%; border-collapse:collapse; min-width: 1000px; }
-th { background: #011627; color: var(--accent); padding: 18px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+th { background: #011627; color: var(--accent); padding: 18px; font-size: 13px; text-transform: uppercase; }
 td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 14px; }
-tr:hover { background: rgba(255,255,255,0.02); }
 
-/* --- BUTTONS & MODALS --- */
-.act-btn { 
-    width: 36px; height: 36px; 
-    border-radius: 10px; 
-    border: none; 
-    color: white; 
-    cursor: pointer; 
-    margin: 0 3px; 
-    display: inline-flex; 
-    align-items: center; 
-    justify-content: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}
+/* --- BUTTONS --- */
+.act-btn { width: 36px; height: 36px; border-radius: 10px; border: none; color: white; cursor: pointer; margin: 0 3px; display: inline-flex; align-items: center; justify-content: center; }
+.act-btn:hover { transform: translateY(-3px); filter: brightness(1.2); }
 
-.act-btn:hover { transform: translateY(-3px) scale(1.1); filter: brightness(1.2); }
+.btn-action-main { background: linear-gradient(135deg, var(--neon-g), #2ecc71); color: #000; padding: 16px; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; width: 100%; text-transform: uppercase; box-shadow: 0 5px 20px rgba(57, 255, 20, 0.2); }
 
-.btn-action-main { 
-    background: linear-gradient(135deg, var(--neon-g), #2ecc71); 
-    color: #000; 
-    padding: 16px; 
-    font-weight: 800; 
-    border: none; 
-    border-radius: 12px; 
-    cursor: pointer; 
-    width: 100%; 
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    box-shadow: 0 5px 20px rgba(57, 255, 20, 0.2);
-}
-
-.btn-action-main:hover { 
-    box-shadow: 0 8px 25px rgba(57, 255, 20, 0.4); 
-    transform: translateY(-2px);
-}
-
-.btn-action-main:active { transform: scale(0.98); }
-
-.box-bet { 
-    height: 70px; 
-    background: #1a202c; 
-    border: 2px solid #333; 
-    border-radius: 12px; 
-    color: white; 
-    font-size: 24px; 
-    font-weight: 900; 
-    cursor: pointer; 
-}
-
-.box-bet:hover { border-color: var(--accent); background: rgba(255, 204, 0, 0.05); }
-
-.box-bet.selected { 
-    background: var(--accent); 
-    color: black; 
-    box-shadow: 0 0 25px var(--accent);
-    border-color: white;
-}
-
-.box-bet.winner-set { 
-    background: var(--neon-g); 
-    color: black; 
-    animation: neonPulse 1.5s infinite; 
-    border-color: white;
-}
+/* --- MANUAL HOUSE CONTROL GRID --- */
+.box-bet { height: 70px; background: #1a202c; border: 2px solid #333; border-radius: 12px; color: white; font-size: 24px; font-weight: 900; cursor: pointer; }
+.box-bet:hover { border-color: var(--accent); }
+.box-bet.manual-selected { background: var(--neon-g) !important; color: black !important; border-color: white; box-shadow: 0 0 20px var(--neon-g); }
+.box-bet.winner-set { background: var(--neon-g); color: black; animation: neonPulse 1.5s infinite; }
 
 @keyframes neonPulse {
-    0% { box-shadow: 0 0 5px var(--neon-g); transform: scale(1); }
+    0%, 100% { box-shadow: 0 0 5px var(--neon-g); transform: scale(1); }
     50% { box-shadow: 0 0 25px var(--neon-g); transform: scale(1.05); }
-    100% { box-shadow: 0 0 5px var(--neon-g); transform: scale(1); }
 }
 
-.modal-content { 
-    background: #12161f; 
-    width:90%; 
-    max-width:450px; 
-    border-radius:20px; 
-    border: 1px solid var(--primary); 
-    padding: 30px; 
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-}
+/* --- MODALS (FIXED) --- */
+.modal { display:none; position:fixed; inset: 0; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(8px); }
+.modal-content { background:#12161f; width:95%; max-width:450px; border-radius:20px; border: 1px solid var(--primary); padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); overflow: hidden; }
 
-input, select { 
-    width:100%; 
-    margin:10px 0; 
-    padding:14px; 
-    background:#0b0e14; 
-    color:white; 
-    border:1px solid rgba(255,255,255,0.1); 
-    border-radius:12px; 
-    outline: none; 
-    text-align: center;
-    font-size: 16px;
-}
-
+input, select { width:100%; margin:10px 0; padding:14px; background:#0b0e14; color:white; border:1px solid rgba(255,255,255,0.1); border-radius:12px; outline: none; text-align: center; font-size: 16px; }
 input:focus { border-color: var(--primary); background: #12161f; }
 
-.secure-pin { letter-spacing: 8px; font-weight: 900; font-size: 22px; color: var(--accent); }
+/* PINPad Specific (No Cutoff) */
+.secure-pin { letter-spacing: 4px; font-weight: 900; font-size: 18px; color: var(--accent); width: 100% !important; }
 
 @media (max-width: 768px) {
     .sidebar { position: fixed; left: -260px; height: 100vh; }
     .sidebar.show { transform: translateX(260px); }
     .sidebar-overlay.show { display: block; }
 }
-    </style>
+</style>
 </head>
 <body>
 
@@ -384,98 +194,162 @@ input:focus { border-color: var(--primary); background: #12161f; }
     </div>
 
     <script>
-        const ROLES = { 'SuperAdmin':6, 'Admin':5, 'SuperMaster':4, 'Master':3, 'Agent':2, 'Client':1 };
-        const DEFAULTS = ['123456', '654321', '111111', '222222', '333333', '444444', '555555', '666666', '112233', '123654', '456321', '000000', '543210', '012345', '332211'];
-        let user = JSON.parse(sessionStorage.getItem('currentUser'));
-        if (!user) window.location.href = 'login.html';
+    const ROLES = { 'SuperAdmin':6, 'Admin':5, 'SuperMaster':4, 'Master':3, 'Agent':2, 'Client':1 };
+    const DEFAULTS = ['123456', '654321', '111111', '222222', '333333', '444444', '555555', '666666', '112233', '123654', '456321', '000000', '543210', '012345', '332211'];
+    
+    let user = JSON.parse(sessionStorage.getItem('currentUser'));
+    if (!user) window.location.href = 'login.html';
 
-        async function init() {
-            try {
-                const res = await fetch('/api/user-details', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id: user.id}) });
-                const d = await res.json();
-                if(d.success) {
-                    user = d.data;
-                    sessionStorage.setItem('currentUser', JSON.stringify(user));
-                    if(user.role !== 'SuperAdmin' && DEFAULTS.includes(user.password)) document.getElementById('forcePassModal').style.display = 'flex';
-                    updateUI(); 
-                    renderWaterfall(); // FIXED: Called waterfall here
-                }
-            } catch(e){}
-            loadUsers(); setupRoleOptions();
-        }
+    let manualWinnerBox = null; // Track manual selection for SuperAdmin
 
-        function updateUI() {
-            document.getElementById('headerBal').innerText = `🪙 ${parseFloat(user.balance).toLocaleString()}`;
-            document.getElementById('disp-chips').innerText = parseFloat(user.balance).toLocaleString();
-            document.getElementById('disp-inr').innerText = (parseFloat(user.balance) * 10).toLocaleString();
-            document.getElementById('addBtn').style.display = user.role === 'Client' ? 'none' : 'block';
-            document.getElementById('nav-bet-client').style.display = user.role === 'Client' ? 'flex' : 'none';
-            document.getElementById('nav-mgmt-sa').style.display = user.role === 'SuperAdmin' ? 'flex' : 'none';
-        }
-
-        function nav(id, el) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById('page-' + id).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            if(el) el.classList.add('active');
-            if(window.innerWidth <= 768) {
-                const sb = document.getElementById('sidebar');
-                if(sb.classList.contains('show')) toggleSidebar();
-            }
-        }
-
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('show');
-            document.getElementById('overlay').classList.toggle('show');
-        }
-
-        function renderWaterfall() {
-            const container = document.getElementById('waterfall-display');
-            const roles_arr = ['SuperAdmin', 'Admin', 'SuperMaster', 'Master', 'Agent', 'Client'];
-            const myRank = roles_arr.indexOf(user.role);
-            container.innerHTML = roles_arr.slice(0, myRank + 1).map((r, i) => `
-                <div class="wf-row"><span>${r} ${r===user.role?'(YOU)':''}</span><span>${100 - (i*15)}% Share</span></div>
-            `).join('');
-        }
-
-        async function loadUsers() {
-            const res = await fetch('/api/my-users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({parentId: user.id, role: user.role}) });
+    // --- CORE ENGINE ---
+    async function init() {
+        try {
+            const res = await fetch('/api/user-details', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id: user.id}) });
             const d = await res.json();
-            let list = (user.role === 'SuperAdmin') ? d.users : d.users.filter(u => u.creator_id == user.id);
-            document.querySelector('#userTable tbody').innerHTML = list.map(u => `
-                <tr>
-                    <td><i class="fas fa-circle" style="color:var(--neon-g); font-size:10px;"></i></td>
-                    <td><b>${u.username}</b></td><td>${u.role}</td>
-                    <td>🪙 ${parseFloat(u.balance).toLocaleString()}</td><td>${u.commission_percentage}%</td>
-                    <td>
-                        <button class="act-btn btn-edit" onclick="openEdit(${u.id})"><i class="fas fa-pen"></i></button>
-                        <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
-                        <button class="act-btn btn-w" onclick="chipAction(${u.id},'withdraw')">W</button>
-                        <button class="act-btn btn-del" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`).join('');
+            if(d.success) {
+                user = d.data;
+                sessionStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // Security Gating
+                if(user.role !== 'SuperAdmin' && DEFAULTS.includes(user.password)) {
+                    document.getElementById('forcePassModal').style.display = 'flex';
+                }
+                
+                updateUI(); 
+                renderWaterfall();
+            }
+        } catch(e){}
+        loadUsers(); 
+        setupRoleOptions();
+        if(user.role === 'SuperAdmin') setupHouseControl();
+    }
+
+    function updateUI() {
+        const bal = parseFloat(user.balance);
+        document.getElementById('headerBal').innerText = `🪙 ${bal.toLocaleString()}`;
+        document.getElementById('disp-chips').innerText = bal.toLocaleString();
+        document.getElementById('disp-inr').innerText = (bal * 10).toLocaleString();
+        
+        document.getElementById('addBtn').style.display = user.role === 'Client' ? 'none' : 'block';
+        document.getElementById('nav-bet-client').style.display = user.role === 'Client' ? 'flex' : 'none';
+        document.getElementById('nav-mgmt-sa').style.display = user.role === 'SuperAdmin' ? 'flex' : 'none';
+    }
+
+    // --- NAVIGATION & SIDEBAR ---
+    function nav(id, el) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-' + id).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        if(el) el.classList.add('active');
+        
+        if(window.innerWidth <= 768) {
+            const sb = document.getElementById('sidebar');
+            if(sb.classList.contains('show')) toggleSidebar();
         }
+    }
 
-        async function chipAction(id, type) {
-            const amt = prompt(`Enter chip amount for ${type}:`);
-            if(!amt) return;
-            const body = type === 'deposit' ? { senderId: user.id, receiverId: id, amount: amt } : { adminId: user.id, userId: id, amount: amt };
-            await fetch(type === 'deposit' ? '/api/transfer-credits' : '/api/withdraw-chips', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
-            init();
-        }
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('show');
+        document.getElementById('overlay').classList.toggle('show');
+    }
 
-        function setupRoleOptions() {
-            const sel = document.getElementById('mRole');
-            if(sel.options.length > 0) return;
-            Object.keys(ROLES).forEach(r => { if(ROLES[r] < ROLES[user.role]) { let opt = document.createElement('option'); opt.value = r; opt.innerText = r; sel.appendChild(opt); }});
-        }
+    // --- USER MANAGEMENT ---
+    async function loadUsers() {
+        const res = await fetch('/api/my-users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({parentId: user.id, role: user.role}) });
+        const d = await res.json();
+        let list = (user.role === 'SuperAdmin') ? d.users : d.users.filter(u => u.creator_id == user.id);
+        document.querySelector('#userTable tbody').innerHTML = list.map(u => `
+            <tr>
+                <td><i class="fas fa-circle" style="color:var(--neon-g); font-size:10px;"></i></td>
+                <td><b>${u.username}</b></td><td>${u.role}</td>
+                <td>🪙 ${parseFloat(u.balance).toLocaleString()}</td><td>${u.commission_percentage}%</td>
+                <td>
+                    <button class="act-btn btn-edit" onclick="alert('Edit '+${u.id})"><i class="fas fa-pen"></i></button>
+                    <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
+                    <button class="act-btn btn-w" onclick="chipAction(${u.id},'withdraw')">W</button>
+                    <button class="act-btn btn-del" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`).join('');
+    }
 
-        function closeModal() { document.getElementById('userModal').style.display = 'none'; }
-        function openAddModal() { document.getElementById('userModal').style.display = 'flex'; }
-        function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+    async function submitUser() {
+        const name = document.getElementById('mName').value;
+        const uname = document.getElementById('mUName').value;
+        const pass = document.getElementById('mPass').value;
+        const cpass = document.getElementById('mCPass').value;
+        const role = document.getElementById('mRole').value;
+        const comm = document.getElementById('mComm').value;
+        const depo = document.getElementById('mDeposit').value;
 
+        if(pass.length !== 6) return alert("PIN must be exactly 6 digits!");
+        if(pass !== cpass) return alert("Confirm PIN does not match!");
+
+        const body = { uName: uname, fullName: name, pass, role, commission: comm, deposit: depo, creatorId: user.id };
+        const res = await fetch('/api/create-user-advanced', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+        if((await res.json()).success) { closeModal(); init(); }
+    }
+
+    // --- HOUSE CONTROL (MANUAL WINNER) ---
+    function setupHouseControl() {
+        const grid = document.getElementById('houseGrid');
+        if(!grid) return;
+        grid.innerHTML = Array.from({length: 10}, (_, i) => `
+            <button class="box-bet" onclick="selectManualWinner(this, ${i+1})">${i+1}</button>
+        `).join('');
+    }
+
+    function selectManualWinner(el, num) {
+        document.querySelectorAll('#houseGrid .box-bet').forEach(b => b.classList.remove('manual-selected'));
+        el.classList.add('manual-selected');
+        manualWinnerBox = num;
+    }
+
+    async function savePermanentWinner() {
+        if(!manualWinnerBox) return alert("Select a box first, Sir!");
+        localStorage.setItem('magicWinner', manualWinnerBox);
+        document.getElementById('adminStatus').innerText = `MODE: MANUAL (Box ${manualWinnerBox})`;
+        alert(`Box ${manualWinnerBox} locked as winner!`);
+    }
+
+    // --- UTILS ---
+    function renderWaterfall() {
+        const container = document.getElementById('waterfall-display');
+        if(!container) return;
+        const roles_arr = ['SuperAdmin', 'Admin', 'SuperMaster', 'Master', 'Agent', 'Client'];
+        const myRank = roles_arr.indexOf(user.role);
+        container.innerHTML = roles_arr.slice(0, myRank + 1).map((r, i) => `
+            <div class="wf-row"><span>${r} ${r===user.role?'(YOU)':''}</span><span>${100 - (i*15)}% Share</span></div>
+        `).join('');
+    }
+
+    async function chipAction(id, type) {
+        const amt = prompt(`Enter chip amount for ${type}:`);
+        if(!amt) return;
+        const body = type === 'deposit' ? { senderId: user.id, receiverId: id, amount: amt } : { adminId: user.id, userId: id, amount: amt };
+        await fetch(type === 'deposit' ? '/api/transfer-credits' : '/api/withdraw-chips', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
         init();
-        setInterval(init, 15000); 
-    </script>
+    }
+
+    function setupRoleOptions() {
+        const sel = document.getElementById('mRole');
+        if(!sel || sel.options.length > 0) return;
+        Object.keys(ROLES).forEach(r => { if(ROLES[r] < ROLES[user.role]) { let opt = document.createElement('option'); opt.value = r; opt.innerText = r; sel.appendChild(opt); }});
+    }
+
+    async function updateForcePassword() {
+        const newP = document.getElementById('newForcePass').value;
+        if(newP.length !== 6) return alert("New PIN must be 6 digits!");
+        const res = await fetch('/api/update-password-secure', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id, newPass: newP }) });
+        if((await res.json()).success) { document.getElementById('forcePassModal').style.display = 'none'; init(); }
+    }
+
+    function closeModal() { document.getElementById('userModal').style.display = 'none'; }
+    function openAddModal() { document.getElementById('userModal').style.display = 'flex'; }
+    function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+
+    init();
+    setInterval(init, 15000); 
+</script>
 </body>
 </html>
