@@ -11,59 +11,53 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- NEON DARK THEME CORE --- */
         :root { --primary:#00509d; --dark:#011627; --accent:#ffcc00; --neon-g: #39ff14; --neon-r: #ff3131; --bg:#0b0e14; }
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif; transition: all 0.3s ease; }
         body { display:flex; height:100vh; background:var(--bg); color: white; overflow:hidden; }
 
+        /* Sidebar & Layout */
         .sidebar { width:260px; background:#12161f; border-right:1px solid var(--primary); display:flex; flex-direction:column; z-index:2000; box-shadow: 5px 0 15px rgba(0, 80, 157, 0.2); }
         .logo { background:black; padding:20px; text-align:center; color:var(--accent); font-weight:bold; font-size:22px; border-bottom:2px solid var(--primary); text-shadow: 0 0 10px var(--accent); }
         .nav-item { padding:15px 25px; color:#aaa; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #1a202c; }
-        .nav-item:hover { color: white; background: rgba(0, 80, 157, 0.1); padding-left: 35px; }
+        .nav-item:hover { color: white; background: rgba(0, 80, 157, 0.1); }
         .nav-item.active { background:linear-gradient(90deg, rgba(0, 80, 157, 0.3), transparent); color:var(--accent); border-left:4px solid var(--accent); font-weight: bold; }
-
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -260px; height: 100vh; }
-            .sidebar.show { transform: translateX(260px); }
-            /* Logout visible at bottom on mobile */
-            .sidebar .logout-btn { margin-top: auto !important; display: flex !important; border-top: 1px solid #1a202c; }
-        }
         .logout-btn { margin-top: auto; color: var(--neon-r) !important; }
 
-        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1500; backdrop-filter: blur(3px); }
         .main { flex:1; display:flex; flex-direction:column; width:100%; overflow:hidden; position: relative; }
-        .header { background:#12161f; color:white; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .header { background:#12161f; color:white; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--primary); }
         
-        .page { display:none; padding:20px; overflow-y:auto; flex:1; animation: slideUp 0.5s ease-out; }
+        .page { display:none; padding:20px; overflow-y:auto; flex:1; animation: slideUp 0.4s ease-out; }
         .page.active { display:block; }
-        @keyframes slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 
+        /* Tables */
         .table-container { background: #12161f; border-radius: 12px; overflow-x: auto; margin-top: 10px; border: 1px solid var(--primary); }
-        table { width:100%; border-collapse:collapse; min-width: 1150px; }
+        table { width:100%; border-collapse:collapse; min-width: 1000px; }
         th { background: #011627; color: var(--accent); padding: 15px; font-size: 13px; text-transform: uppercase; border-bottom: 1px solid var(--primary); }
         td { padding: 12px; border-bottom: 1px solid #1a202c; text-align: center; font-size: 13px; }
-        tr:hover { background: rgba(255,255,255,0.03); transform: scale(1.002); }
 
-        /* ACTION BUTTONS DESIGN */
-        .act-btn { width: 32px; height: 32px; border-radius: 6px; border: none; color: white; cursor: pointer; margin: 0 2px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; transition: 0.2s; }
-        .btn-edit { background: #007bff; } .btn-d { background: #28a745; } .btn-w { background: #fd7e14; } .btn-mode { background: #6f42c1; } .btn-ms { background: #17a2b8; } .btn-del { background: var(--neon-r); }
-        .act-btn:hover { filter: brightness(1.3); transform: scale(1.2) rotate(5deg); }
-
-        .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:20px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); box-shadow: 0 0 15px rgba(0, 80, 157, 0.2); }
-        .box-bet { height: 65px; background: #1a202c; border: 2px solid #333; border-radius: 10px; color: white; font-size: 22px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .box-bet.selected { background: var(--accent); color: black; border-color: white; box-shadow: 0 0 15px var(--accent); }
-        .box-bet.winner-set { background: var(--neon-g); color: black; border-color: white; box-shadow: 0 0 20px var(--neon-g); animation: pulse 1.5s infinite; }
+        /* UI Elements */
+        .act-btn { width: 32px; height: 32px; border-radius: 6px; border: none; color: white; cursor: pointer; margin: 0 2px; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-edit { background: #007bff; } .btn-d { background: #28a745; } .btn-w { background: #fd7e14; } .btn-del { background: var(--neon-r); }
+        
+        .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:20px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); }
+        .box-bet { height: 65px; background: #1a202c; border: 2px solid #333; border-radius: 10px; color: white; font-size: 22px; font-weight: bold; cursor: pointer; }
+        .box-bet.selected { background: var(--accent); color: black; box-shadow: 0 0 15px var(--accent); }
+        .box-bet.winner-set { background: var(--neon-g); color: black; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        .btn-action-main { background: linear-gradient(135deg, var(--neon-g), #2ecc71); color: black; padding: 15px; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; width: 100%; box-shadow: 0 4px 15px rgba(57, 255, 20, 0.2); margin-top: 15px; }
+        .btn-action-main { background: linear-gradient(135deg, var(--neon-g), #2ecc71); color: black; padding: 15px; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; width: 100%; margin-top: 15px; }
 
         .modal { display:none; position:fixed; inset: 0; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
         .modal-content { background:#12161f; width:90%; max-width:500px; border-radius:12px; border: 1px solid var(--primary); padding: 25px; }
 
-        #timer-display { font-size: 45px; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px var(--accent); margin-bottom: 10px; }
-        .bet-popup-slip { position: fixed; bottom: 20px; right: 20px; width: 320px; background: #011627; border: 2px solid var(--accent); border-radius: 15px; padding: 20px; z-index: 5000; display: none; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
-        
-        @media (max-width: 768px) { .modal-content { width: 95%; } }
+        /* Force Password Overlay */
+        #forcePassModal { display: none; z-index: 9999; }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: -260px; height: 100vh; }
+            .sidebar.show { transform: translateX(260px); }
+        }
     </style>
 </head>
 <body>
@@ -83,212 +77,223 @@
     <div class="main">
         <div class="header">
             <div style="display:flex; align-items:center;">
-                <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar(event)" style="cursor:pointer; font-size: 20px; margin-right:15px;"></i>
-                <h3 id="dashTitle">Magic9 Dashboard</h3>
+                <i class="fas fa-bars mobile-toggle" onclick="toggleSidebar()" style="cursor:pointer; font-size: 20px; margin-right:15px;"></i>
+                <h3 id="dashTitle">Welcome, Sir</h3>
             </div>
-            <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 8px 20px; border-radius: 50px; border: 1px solid var(--accent);">🪙 Loading...</div>
+            <div id="headerBal" style="font-weight:bold; color:var(--accent); background: rgba(255,204,0,0.1); padding: 8px 20px; border-radius: 50px; border: 1px solid var(--accent);">🪙 0.00</div>
         </div>
 
         <div id="page-user" class="page active">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search User..." style="padding:10px; border-radius:8px; background:#12161f; border:1px solid #333; color:white; width: 280px;">
-                <button id="addBtn" class="act-btn" style="width:100px; border-radius:8px; background:var(--primary); font-weight:bold; display:none;" onclick="openModal()">+ ADD</button>
+                <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search Downline..." style="padding:10px; border-radius:8px; background:#12161f; border:1px solid #333; color:white; width: 250px;">
+                <button id="addBtn" class="btn-action-main" style="width:120px; margin:0;" onclick="openModal()">+ ADD USER</button>
             </div>
-            <div class="table-container"><table id="userTable"><thead><tr><th>Status</th><th>Name</th><th>Role</th><th>Chips</th><th>Login</th><th>Lock</th><th>Active</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+            <div class="table-container">
+                <table id="userTable">
+                    <thead><tr><th>Status</th><th>Name</th><th>Role</th><th>Chips</th><th>Share %</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
 
         <div id="page-bet" class="page"><div id="bet-content-container"></div></div>
 
         <div id="page-mgmt" class="page">
-            <div class="account-card" style="border-top: 4px solid var(--accent);">
+            <div class="account-card">
                 <h2 style="color:var(--accent);">HOUSE CONTROL</h2>
-                <p style="color:#aaa; font-size:12px; margin-bottom: 25px;">Admin: Set the PERMANENT winning box below.</p>
-                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="houseGrid"></div>
-                <button class="btn-action-main" onclick="savePermanentWinner()">SET AS PERMANENT WINNER</button>
-                <div id="adminStatus" style="font-size:11px; color:var(--neon-g); margin-top:15px; font-weight: bold;">MODE: RANDOM WINNING</div>
+                <p style="color:#aaa; font-size:12px; margin-bottom: 20px;">Set the PERMANENT winning box for the next rounds.</p>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;" id="houseGrid"></div>
+                <button class="btn-action-main" onclick="savePermanentWinner()">LOCK WINNING BOX</button>
+                <div id="adminStatus" style="margin-top:15px; color:var(--neon-g); font-weight:bold;">MODE: RANDOM</div>
             </div>
         </div>
 
-        <div id="page-history" class="page"><div class="account-card"><h3>Transaction History</h3><div style="overflow-x: auto;"><table id="histTable"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr></thead><tbody></tbody></table></div></div></div>
+        <div id="page-history" class="page">
+            <div class="account-card">
+                <h3>Chip Log & Win/Loss History</h3>
+                <div class="table-container"><table id="histTable"><thead><tr><th>Date</th><th>Type</th><th>Chips</th><th>Details</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
 
         <div id="page-account" class="page">
             <div class="account-card" style="border: 2px solid var(--accent);">
-                <p style="color:#aaa; font-size:12px;">NET SAVED MONEY</p>
-                <h1 style="color:var(--accent); font-size:50px;">₹ <span id="inr">0</span></h1>
-                <p style="opacity: 0.8; margin-top: 10px;">Chips: <span id="chips">0</span></p>
+                <p style="color:#aaa;">NET BALANCE</p>
+                <h1 style="color:var(--accent); font-size:45px;">₹ <span id="inr">0</span></h1>
+                <p>Chips: <span id="chips">0</span></p>
             </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                <div class="account-card" style="border-color: var(--neon-g); color: var(--neon-g);">WINS (₹): <span id="wins">0</span></div>
-                <div class="account-card" style="border-color: var(--neon-r); color: var(--neon-r);">LOSSES (₹): <span id="lose">0</span></div>
-            </div>
-            <div class="account-card" style="margin-top: 20px;">
-                 <h3 style="color:var(--neon-g); text-align:left; margin-bottom:15px;"><i class="fas fa-percentage"></i> Commission Summary</h3>
-                 <div style="overflow-x:auto"><table id="commTable"><thead><tr><th>Source</th><th>Chips</th><th>INR</th></tr></thead><tbody id="commBody" style="color:#ddd"></tbody></table></div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="account-card" style="color: var(--neon-g);">TOTAL WINS: <span id="wins">0</span></div>
+                <div class="account-card" style="color: var(--neon-r);">TOTAL LOSS: <span id="lose">0</span></div>
             </div>
         </div>
     </div>
 
-    <div class="bet-popup-slip" id="betSlip" style="display:none; position: fixed; bottom: 20px; right: 20px; width: 320px; background: #011627; border: 2px solid var(--accent); border-radius: 15px; padding: 20px; z-index: 5000;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><b style="color:var(--accent)">PLACE BET</b><i class="fas fa-times" onclick="closeSlip()" style="cursor:pointer"></i></div>
-        <p id="slipBoxes" style="font-size:13px; margin-bottom:10px;"></p>
-        <input type="number" id="stakeInput" value="100" min="100" oninput="updateTotalStake()" style="width:100%; padding:10px; background:black; color:white; border:1px solid #333; margin-bottom:10px; border-radius: 8px;">
-        <p id="totalCost" style="font-size:11px; margin-bottom:15px; color:#aaa;"></p>
-        <button class="btn-action-main" onclick="confirmLiveBet()">CONFIRM BET</button>
+    <div class="modal" id="forcePassModal">
+        <div class="modal-content">
+            <h2 style="color:var(--neon-r)">Security Update</h2>
+            <p style="margin:10px 0; font-size:14px;">You must change your default password to continue.</p>
+            <input type="password" id="newForcePass" placeholder="Enter New 6-Digit Password" maxlength="6" style="width:100%; padding:12px; background:#0b0e14; color:white; border:1px solid var(--neon-r); border-radius:8px;">
+            <button class="btn-action-main" onclick="updateForcePassword()">UPDATE & SECURE</button>
+        </div>
     </div>
 
     <div class="modal" id="userModal">
-        <div class="modal-content"><h3 id="mTitle">Settings</h3>
+        <div class="modal-content">
+            <h3 id="mTitle">User Settings</h3>
             <input type="text" id="mUName" placeholder="Username" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
-            <div id="passDivGrp" style="display:contents"><input type="password" id="mPass" placeholder="Password" maxlength="6" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
+            <div id="passDivGrp"><input type="password" id="mPass" placeholder="Password" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
             <select id="mRole" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></select>
-            <input type="number" id="mComm" placeholder="Commission %" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
-            <div id="depoDiv" style="display:contents"><input type="number" id="mDeposit" value="0" placeholder="Initial Balance" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
-            <button class="btn-action-main" onclick="submitUser()">Submit Details</button>
-            <button style="width:100%; margin-top:10px; background:#444; color:white; border:none; padding:12px; border-radius:8px;" onclick="closeModal()">Close</button>
+            <input type="number" id="mComm" placeholder="Commission % (Share)" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
+            <div id="depoDiv"><input type="number" id="mDeposit" placeholder="Initial Deposit" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
+            <button class="btn-action-main" onclick="submitUser()">SAVE DETAILS</button>
+            <button style="width:100%; margin-top:10px; background:#444; color:white; border:none; padding:12px; border-radius:8px;" onclick="closeModal()">CANCEL</button>
         </div>
     </div>
 
     <script>
+        const ROLES = { 'SuperAdmin':6, 'Admin':5, 'SuperMaster':4, 'Master':3, 'Agent':2, 'Client':1 };
         let user = JSON.parse(sessionStorage.getItem('currentUser'));
         if (!user) window.location.href = 'login.html';
+
         let editUserId = null, selectedBoxes = [], tempAdminWinner = null;
 
+        // --- DYNAMIC INIT ENGINE ---
         async function init() {
-            try {
-                const res = await fetch('/api/user-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: user.id }) });
-                const d = await res.json();
-                if (d.success) {
-                    user = d.data; sessionStorage.setItem('currentUser', JSON.stringify(user));
-                    updateWalletUI(); // Clean sync logic
-                    
-                    if (user.role !== 'Client') document.getElementById('addBtn').style.display = 'block';
-
-                    if (user.role === 'Client') {
-                        document.getElementById('nav-bet-client').style.display = 'flex';
-                        document.getElementById('bet-content-container').innerHTML = `
-                            <div class="account-card" style="border-left: 5px solid var(--neon-g); text-align: left; display: flex; justify-content: space-between; padding: 15px;">
-                                <div><p style="color:#aaa; font-size:11px;">CHIP BALANCE</p><h2 style="color:var(--neon-g);">🪙 <span id="display-chips">${parseFloat(user.balance).toLocaleString()}</span></h2></div>
-                                <div style="text-align:right;"><div id="timer-display">READY</div><h4 id="match-timer" style="color:var(--accent); font-size:10px;">OPEN</h4></div>
-                            </div>
-                            <div class="account-card" style="padding: 30px; background: #12161f;">
-                                <h3 style="color:var(--accent); margin-bottom: 20px;">CHOOSE WINNING BOXES</h3>
-                                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 30px;" id="boxGrid">${Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="toggleBox(this, ${i+1})">${i+1}</button>`).join('')}</div>
-                                <button class="btn-action-main" onclick="openBetSlip()">PLACE BET (<span id="selectedCount">0</span> Boxes)</button>
-                            </div>`;
-                    } else if (user.role === 'SuperAdmin') {
-                        document.getElementById('nav-mgmt-sa').style.display = 'flex';
-                        document.getElementById('houseGrid').innerHTML = Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="selectWinnerUI(this, ${i+1})">${i+1}</button>`).join('');
-                        const saved = localStorage.getItem('magicWinner');
-                        if(saved) {
-                           const btns = document.querySelectorAll('#houseGrid .box-bet');
-                           btns[parseInt(saved)-1].classList.add('winner-set');
-                           tempAdminWinner = parseInt(saved);
-                           document.getElementById('adminStatus').innerText = `MODE: FIXED WINNER (Box ${saved})`;
-                        }
-                    }
+            const res = await fetch('/api/user-details', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id: user.id}) });
+            const d = await res.json();
+            if(d.success) {
+                user = d.data;
+                sessionStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // 1. Force Password Check (Requirement)
+                if(user.role !== 'SuperAdmin' && user.needs_password_change) {
+                    document.getElementById('forcePassModal').style.display = 'flex';
                 }
-            } catch (e) {}
-            loadUsers(); loadHistory(); loadCommissionSummary(); setupRoles();
+
+                updateUI();
+            }
+            loadUsers(); loadHistory(); setupRoleOptions();
         }
 
-        function updateWalletUI() {
-            const bal = parseFloat(user.balance);
-            document.getElementById('headerBal').innerText = `🪙 ${bal.toLocaleString()}`;
-            document.getElementById('inr').innerText = (bal * 10).toLocaleString();
-            document.getElementById('chips').innerText = bal.toLocaleString();
-            document.getElementById('wins').innerText = (parseFloat(user.total_wins || 0) * 10).toLocaleString();
-            document.getElementById('lose').innerText = (parseFloat(user.total_losses || 0) * 10).toLocaleString();
-            if(document.getElementById('display-chips')) document.getElementById('display-chips').innerText = bal.toLocaleString();
+        function updateUI() {
+            document.getElementById('headerBal').innerText = `🪙 ${parseFloat(user.balance).toLocaleString()}`;
+            document.getElementById('chips').innerText = parseFloat(user.balance).toLocaleString();
+            document.getElementById('inr').innerText = (parseFloat(user.balance) * 10).toLocaleString();
+            
+            // Show/Hide menus based on role
+            document.getElementById('addBtn').style.display = user.role === 'Client' ? 'none' : 'block';
+            document.getElementById('nav-bet-client').style.display = user.role === 'Client' ? 'flex' : 'none';
+            document.getElementById('nav-mgmt-sa').style.display = user.role === 'SuperAdmin' ? 'flex' : 'none';
+
+            if(user.role === 'Client') setupBettingPage();
+            if(user.role === 'SuperAdmin') setupHouseControl();
         }
 
-        // --- GLOBAL VS LOCAL FILTER ---
+        // --- HIERARCHY: CREATE DOWNLINE ---
         async function loadUsers() {
-            const res = await fetch('/api/my-users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, role: user.role }) });
+            const res = await fetch('/api/my-users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({parentId: user.id, role: user.role}) });
             const d = await res.json();
             
-            let filtered;
-            if (user.role === 'SuperAdmin') {
-                filtered = (d.users || []).filter(u => u.id !== user.id);
-            } else {
-                filtered = (d.users || []).filter(u => u.creator_id == user.id);
-            }
+            // Logic: SuperAdmin sees all, others see only their downline
+            let filtered = (user.role === 'SuperAdmin') ? d.users.filter(u => u.id !== user.id) : d.users.filter(u => u.creator_id == user.id);
 
             document.querySelector('#userTable tbody').innerHTML = filtered.map(u => `
                 <tr>
-                    <td><i class="fas fa-circle" style="color:var(--neon-g); font-size:8px;"></i></td>
-                    <td style="text-align:left;"><b>${u.username}</b></td>
+                    <td><i class="fas fa-circle" style="color:var(--neon-g); font-size:10px;"></i></td>
+                    <td><b>${u.username}</b></td>
                     <td>${u.role}</td>
-                    <td><b>${parseFloat(u.balance).toLocaleString()}</b></td>
-                    <td><label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label></td>
-                    <td><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
-                    <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                    <td>🪙 ${parseFloat(u.balance).toLocaleString()}</td>
+                    <td>${u.commission_percentage}%</td>
                     <td>
-                        <button class="act-btn btn-edit" title="Edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})">🖊️</button>
-                        <button class="act-btn btn-d" title="Deposit" onclick="give(${u.id},'${u.username}')">D</button>
-                        <button class="act-btn btn-w" title="Withdraw" onclick="withdraw(${u.id},'${u.username}')">W</button>
-                        <button class="act-btn btn-mode" title="Gaming Mode" onclick="alert('Algo updated for ID ${u.id}')">M</button>
-                        <button class="act-btn btn-ms" title="Market Setting" onclick="alert('Limits updated for ID ${u.id}')">S</button>
-                        <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id}, ${u.balance})">🗑️</button>
+                        <button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-pen"></i></button>
+                        <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
+                        <button class="act-btn btn-w" onclick="chipAction(${u.id},'withdraw')">W</button>
+                        <button class="act-btn btn-del" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>
                     </td>
-                </tr>`).join('');
+                </tr>
+            `).join('');
         }
 
-        function selectWinnerUI(el, num) { document.querySelectorAll('#houseGrid .box-bet').forEach(b => b.classList.remove('winner-set')); el.classList.add('winner-set'); tempAdminWinner = num; }
-        function savePermanentWinner() { if(!tempAdminWinner) return alert("Select a box first!"); localStorage.setItem('magicWinner', tempAdminWinner); document.getElementById('adminStatus').innerText = `MODE: FIXED WINNER (Box ${tempAdminWinner})`; alert("Winner Permanently Saved!"); }
-
-        function toggleBox(el, num) { if (selectedBoxes.includes(num)) { selectedBoxes = selectedBoxes.filter(n => n !== num); el.classList.remove('selected'); } else { selectedBoxes.push(num); el.classList.add('selected'); } document.getElementById('selectedCount').innerText = selectedBoxes.length; }
-        function openBetSlip() { if (!selectedBoxes.length) return alert("Select boxes first!"); document.getElementById('slipBoxes').innerText = "Selected: " + selectedBoxes.join(", "); document.getElementById('betSlip').style.display = 'block'; updateTotalStake(); }
-        function closeSlip() { document.getElementById('betSlip').style.display = 'none'; }
-        function updateTotalStake() { document.getElementById('totalCost').innerText = "Total: " + (selectedBoxes.length * document.getElementById('stakeInput').value) + " Chips"; }
-        
-        async function confirmLiveBet() {
-            const stake = parseFloat(document.getElementById('stakeInput').value); const total = stake * selectedBoxes.length;
-            if (parseFloat(user.balance) < total) return alert("Insufficient Balance!");
-            closeSlip();
-            runCountdown(stake);
+        // --- CLIENT BETTING SYSTEM ---
+        function setupBettingPage() {
+            const container = document.getElementById('bet-content-container');
+            container.innerHTML = `
+                <div class="account-card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="text-align:left;"><p>MY CHIPS</p><h2 style="color:var(--neon-g)">🪙 ${parseFloat(user.balance).toLocaleString()}</h2></div>
+                    <div id="timer-display" style="font-size:30px; color:var(--accent)">READY</div>
+                </div>
+                <div class="account-card">
+                    <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px;">
+                        ${Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="toggleBox(this, ${i+1})">${i+1}</button>`).join('')}
+                    </div>
+                    <button class="btn-action-main" onclick="openBetSlip()">PLACE BET (<span id="selectedCount">0</span>)</button>
+                </div>
+            `;
         }
 
-        function runCountdown(stakePerBox) {
-            let sec = 10; const timerText = document.getElementById('timer-display'); const btns = document.querySelectorAll('.box-bet');
-            btns.forEach(b => b.disabled = true);
-            const interval = setInterval(async () => {
-                timerText.innerText = sec;
-                if (--sec < 0) {
-                    clearInterval(interval);
-                    const savedWinner = localStorage.getItem('magicWinner');
-                    let finalWinner = savedWinner ? parseInt(savedWinner) : Math.floor(Math.random() * 10) + 1;
-                    const win = selectedBoxes.includes(finalWinner);
-                    // Settles wallet & distributes recursive commissions through parent_id path
-                    await fetch('/api/settle-bet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, amount: stakePerBox, totalStake: stakePerBox * selectedBoxes.length, isWin: win, winnerBox: finalWinner }) });
-                    timerText.innerText = win ? "WIN!" : "LOSS";
-                    timerText.style.color = win ? "var(--neon-g)" : "var(--neon-r)";
-                    alert(win ? `🏆 Box ${finalWinner} WON!` : `❌ Box ${finalWinner} won.`);
-                    selectedBoxes = []; setTimeout(() => init(), 2000);
+        // --- HOUSE CONTROL (SUPERADMIN) ---
+        function setupHouseControl() {
+            const grid = document.getElementById('houseGrid');
+            grid.innerHTML = Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="selectWinnerUI(this, ${i+1})">${i+1}</button>`).join('');
+            const saved = localStorage.getItem('magicWinner');
+            if(saved) document.getElementById('adminStatus').innerText = `MODE: FIXED (Box ${saved})`;
+        }
+
+        function selectWinnerUI(el, num) { 
+            document.querySelectorAll('#houseGrid .box-bet').forEach(b => b.classList.remove('winner-set')); 
+            el.classList.add('winner-set'); 
+            tempAdminWinner = num; 
+        }
+
+        function savePermanentWinner() { 
+            if(!tempAdminWinner) return alert("Select a box!"); 
+            localStorage.setItem('magicWinner', tempAdminWinner); 
+            document.getElementById('adminStatus').innerText = `MODE: FIXED (Box ${tempAdminWinner})`; 
+            alert("House Control Locked Successfully!"); 
+        }
+
+        // --- UTILS ---
+        function nav(id, el) { 
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
+            document.getElementById('page-' + id).classList.add('active'); 
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); 
+            if(el) el.classList.add('active'); 
+            if(window.innerWidth <= 768) toggleSidebar(); 
+        }
+
+        function toggleSidebar() { 
+            document.getElementById('sidebar').classList.toggle('show'); 
+            document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none'; 
+        }
+
+        async function updateForcePassword() {
+            const pass = document.getElementById('newForcePass').value;
+            if(pass.length < 6) return alert("Min 6 digits required");
+            await fetch('/api/change-password', { method: 'POST', body: JSON.stringify({userId: user.id, newPass: pass}) });
+            document.getElementById('forcePassModal').style.display = 'none';
+            init();
+        }
+
+        function setupRoleOptions() {
+            const sel = document.getElementById('mRole');
+            if(sel.options.length > 0) return;
+            const roles = ['Admin', 'SuperMaster', 'Master', 'Agent', 'Client'];
+            roles.forEach(r => {
+                if(ROLES[r] < ROLES[user.role]) {
+                    let opt = document.createElement('option');
+                    opt.value = r; opt.innerText = r;
+                    sel.appendChild(opt);
                 }
-            }, 1000);
+            });
         }
 
-        async function give(id, name) { const amt = prompt(`Deposit to ${name}:`); if(amt) await fetch('/api/transfer-credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: user.id, receiverId: id, amount: parseFloat(amt) }) }); init(); }
-        async function withdraw(id, name) { const amt = prompt(`Withdraw from ${name}:`); if(amt) await fetch('/api/withdraw-chips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminId: user.id, userId: id, amount: parseFloat(amt) }) }); init(); }
-        async function deleteUser(id, bal) { if(parseFloat(bal) > 0) return alert("Chips must be 0!"); if(confirm("Permanently Delete?")) { await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); init(); } }
-
-        function nav(id, el) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); if(el) el.classList.add('active'); if(window.innerWidth <= 768) toggleSidebar(); }
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none'; }
         function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
-        function closeModal() { document.getElementById('userModal').style.display = 'none'; }
-        function openEdit(id, name, comm) { editUserId = id; document.getElementById('mTitle').innerText = "Edit User"; document.getElementById('mUName').value = name; document.getElementById('mComm').value = comm; document.getElementById('passDivGrp').style.display = 'none'; document.getElementById('depoDiv').style.display = 'none'; document.getElementById('userModal').style.display = 'flex'; }
-        function openModal() { editUserId = null; document.getElementById('mTitle').innerText = "New User"; document.getElementById('mUName').value = ""; document.getElementById('passDivGrp').style.display = 'contents'; document.getElementById('depoDiv').style.display = 'contents'; document.getElementById('userModal').style.display = 'flex'; }
-        async function submitUser() {
-            const u = document.getElementById('mUName').value, p = document.getElementById('mPass').value, r = document.getElementById('mRole').value, c = document.getElementById('mComm').value, d = document.getElementById('mDeposit').value;
-            const res = await fetch(editUserId ? '/api/update-user' : '/api/create-user-advanced', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uName: u, pass: p, role: r, commission: c, deposit: d, creatorId: user.id, id: editUserId }) });
-            if ((await res.json()).success) { closeModal(); init(); }
-        }
-        async function loadHistory() { const res = await fetch('/api/history', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }); const d = await res.json(); if (d.success) document.querySelector('#histTable tbody').innerHTML = d.history.map(h => `<tr><td>${new Date(h.created_at).toLocaleString()}</td><td><b>${h.type.toUpperCase()}</b></td><td style="color:${parseFloat(h.amount) >= 0 ? 'var(--neon-g)' : 'var(--neon-r)'};">${h.amount}</td><td>${h.description}</td></tr>`).join(''); }
-        async function loadCommissionSummary() { const res = await fetch('/api/commission-summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }); const d = await res.json(); if (d.success && d.summary.length > 0) document.getElementById('commBody').innerHTML = d.summary.map(s => `<tr><td><b>${s.downline_name}</b></td><td>+${parseFloat(s.total_earned).toLocaleString()}</td><td>₹${(parseFloat(s.total_earned) * 10).toLocaleString()}</td></tr>`).join(''); }
-        function setupRoles() { const h = { 'SuperAdmin': 6, 'Admin': 5, 'SuperMaster': 4, 'Master': 3, 'Agent': 2, 'Client': 1 }; const sel = document.getElementById('mRole'); if (sel && sel.options.length === 0) ['Admin', 'SuperMaster', 'Master', 'Agent', 'Client'].forEach(r => { if (h[r] < h[user.role]) { const o = document.createElement('option'); o.value = r; o.innerText = r; sel.appendChild(o); }}); }
-        function filterUsers() { const i = document.getElementById('userSearch').value.toLowerCase(); document.querySelectorAll('#userTable tbody tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(i) ? "" : "none"); }
 
+        // Start engine
         init();
+        // Dynamic Update Interval (No reload)
+        setInterval(init, 15000); 
+
     </script>
 </body>
 </html>
