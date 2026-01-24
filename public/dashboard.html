@@ -4,60 +4,292 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Magic9 Pro Dashboard</title>
-    
     <link rel="icon" type="image/png" href="images/favicon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#00509d">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --primary:#00509d; --dark:#011627; --accent:#ffcc00; --neon-g: #39ff14; --neon-r: #ff3131; --bg:#0b0e14; }
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif; transition: all 0.3s ease; }
-        body { display:flex; height:100vh; background:var(--bg); color: white; overflow:hidden; }
+        :root { 
+    --primary: #00509d; 
+    --dark: #011627; 
+    --accent: #ffcc00; 
+    --neon-g: #39ff14; 
+    --neon-r: #ff3131; 
+    --bg: #0b0e14; 
+    --glass: rgba(255, 255, 255, 0.03);
+    --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); 
+}
 
-        /* Sidebar & Layout */
-        .sidebar { width:260px; background:#12161f; border-right:1px solid var(--primary); display:flex; flex-direction:column; z-index:2000; box-shadow: 5px 0 15px rgba(0, 80, 157, 0.2); }
-        .logo { background:black; padding:20px; text-align:center; color:var(--accent); font-weight:bold; font-size:22px; border-bottom:2px solid var(--primary); text-shadow: 0 0 10px var(--accent); }
-        .nav-item { padding:15px 25px; color:#aaa; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #1a202c; }
-        .nav-item:hover { color: white; background: rgba(0, 80, 157, 0.1); }
-        .nav-item.active { background:linear-gradient(90deg, rgba(0, 80, 157, 0.3), transparent); color:var(--accent); border-left:4px solid var(--accent); font-weight: bold; }
-        .logout-btn { margin-top: auto; color: var(--neon-r) !important; }
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; transition: var(--transition); }
 
-        .main { flex:1; display:flex; flex-direction:column; width:100%; overflow:hidden; position: relative; }
-        .header { background:#12161f; color:white; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--primary); }
-        
-        .page { display:none; padding:20px; overflow-y:auto; flex:1; animation: slideUp 0.4s ease-out; }
-        .page.active { display:block; }
-        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+body { display:flex; height:100vh; background:var(--bg); color: white; overflow:hidden; }
 
-        /* Tables */
-        .table-container { background: #12161f; border-radius: 12px; overflow-x: auto; margin-top: 10px; border: 1px solid var(--primary); }
-        table { width:100%; border-collapse:collapse; min-width: 1000px; }
-        th { background: #011627; color: var(--accent); padding: 15px; font-size: 13px; text-transform: uppercase; border-bottom: 1px solid var(--primary); }
-        td { padding: 12px; border-bottom: 1px solid #1a202c; text-align: center; font-size: 13px; }
+/* --- PREMIUM SIDEBAR --- */
+.sidebar { 
+    width:260px; 
+    background: linear-gradient(180deg, #12161f 0%, #0b0e14 100%);
+    border-right: 1px solid rgba(0, 80, 157, 0.3); 
+    display:flex; 
+    flex-direction:column; 
+    z-index:2000; 
+    box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+}
 
-        /* UI Elements */
-        .act-btn { width: 32px; height: 32px; border-radius: 6px; border: none; color: white; cursor: pointer; margin: 0 2px; display: inline-flex; align-items: center; justify-content: center; }
-        .btn-edit { background: #007bff; } .btn-d { background: #28a745; } .btn-w { background: #fd7e14; } .btn-del { background: var(--neon-r); }
-        
-        .account-card { background:linear-gradient(145deg, #12161f, #011627); border-radius:15px; padding:20px; text-align:center; margin-bottom:15px; border:1px solid var(--primary); }
-        .box-bet { height: 65px; background: #1a202c; border: 2px solid #333; border-radius: 10px; color: white; font-size: 22px; font-weight: bold; cursor: pointer; }
-        .box-bet.selected { background: var(--accent); color: black; box-shadow: 0 0 15px var(--accent); }
-        .box-bet.winner-set { background: var(--neon-g); color: black; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+.logo { 
+    background:black; 
+    padding:25px; 
+    text-align:center; 
+    color:var(--accent); 
+    font-weight:bold; 
+    font-size:24px; 
+    border-bottom: 2px solid var(--primary); 
+    text-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+    letter-spacing: 2px;
+}
 
-        .btn-action-main { background: linear-gradient(135deg, var(--neon-g), #2ecc71); color: black; padding: 15px; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; width: 100%; margin-top: 15px; }
+.nav-item { 
+    padding:16px 25px; 
+    color: rgba(255,255,255,0.6); 
+    cursor:pointer; 
+    display:flex; 
+    align-items:center; 
+    gap:12px; 
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+}
 
-        .modal { display:none; position:fixed; inset: 0; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
-        .modal-content { background:#12161f; width:90%; max-width:500px; border-radius:12px; border: 1px solid var(--primary); padding: 25px; }
+.nav-item i { font-size: 18px; width: 25px; text-align: center; }
 
-        /* Force Password Overlay */
-        #forcePassModal { display: none; z-index: 9999; }
+.nav-item:hover { 
+    color: white; 
+    background: rgba(0, 80, 157, 0.15); 
+    padding-left: 35px;
+    text-shadow: 0 0 10px white;
+}
 
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -260px; height: 100vh; }
-            .sidebar.show { transform: translateX(260px); }
-        }
+.nav-item.active { 
+    background: linear-gradient(90deg, rgba(0, 80, 157, 0.4), transparent); 
+    color:var(--accent); 
+    border-left: 4px solid var(--accent); 
+    font-weight: bold;
+    box-shadow: inset 10px 0 20px rgba(0,0,0,0.2);
+}
+
+.logout-btn { margin-top: auto; color: var(--neon-r) !important; opacity: 0.8; }
+.logout-btn:hover { opacity: 1; background: rgba(255, 49, 49, 0.1) !important; }
+
+.sidebar-overlay { 
+    display: none; 
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0,0,0,0.8); 
+    z-index: 1500; 
+    backdrop-filter: blur(8px); 
+    animation: fadeIn 0.3s ease;
+}
+
+/* --- MAIN INTERFACE --- */
+.main { flex:1; display:flex; flex-direction:column; width:100%; overflow:hidden; position: relative; }
+
+.header { 
+    background:#12161f; 
+    color:white; 
+    padding:15px 25px; 
+    display:flex; 
+    justify-content:space-between; 
+    align-items:center; 
+    border-bottom: 1px solid rgba(0, 80, 157, 0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+#headerBal {
+    font-weight: 800;
+    color: var(--accent);
+    background: rgba(255, 204, 0, 0.08);
+    padding: 10px 22px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 204, 0, 0.3);
+    box-shadow: 0 0 15px rgba(255, 204, 0, 0.1);
+}
+
+/* --- PAGE ANIMATIONS --- */
+.page { 
+    display:none; 
+    padding:25px; 
+    overflow-y:auto; 
+    flex:1; 
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+}
+
+.page.active { 
+    display:block; 
+    animation: slideInUp 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes slideInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* --- CARDS & WATERFALL --- */
+.account-card { 
+    background: linear-gradient(145deg, #161b26, #0d111a);
+    border-radius:20px; 
+    padding:25px; 
+    text-align:center; 
+    margin-bottom:20px; 
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.waterfall-card { 
+    background: var(--glass);
+    border-radius: 15px; 
+    padding: 20px; 
+    margin-top: 15px; 
+    border: 1px dashed rgba(0, 80, 157, 0.4); 
+}
+
+.wf-row { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 12px 10px; 
+    border-bottom: 1px solid rgba(255,255,255,0.03); 
+    position: relative; 
+}
+
+.wf-row:hover { background: rgba(255,255,255,0.02); border-radius: 8px; }
+
+.wf-row:not(:last-child)::after { 
+    content: '↓'; 
+    position: absolute; 
+    bottom: -10px; 
+    left: 50%; 
+    color: var(--primary); 
+    font-weight: bold;
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+/* --- TABLES --- */
+.table-container { 
+    background: #12161f; 
+    border-radius: 15px; 
+    overflow-x: auto; 
+    border: 1px solid rgba(0, 80, 157, 0.2);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+}
+
+table { width:100%; border-collapse:collapse; min-width: 1000px; }
+th { background: #011627; color: var(--accent); padding: 18px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 14px; }
+tr:hover { background: rgba(255,255,255,0.02); }
+
+/* --- BUTTONS & MODALS --- */
+.act-btn { 
+    width: 36px; height: 36px; 
+    border-radius: 10px; 
+    border: none; 
+    color: white; 
+    cursor: pointer; 
+    margin: 0 3px; 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.act-btn:hover { transform: translateY(-3px) scale(1.1); filter: brightness(1.2); }
+
+.btn-action-main { 
+    background: linear-gradient(135deg, var(--neon-g), #2ecc71); 
+    color: #000; 
+    padding: 16px; 
+    font-weight: 800; 
+    border: none; 
+    border-radius: 12px; 
+    cursor: pointer; 
+    width: 100%; 
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 5px 20px rgba(57, 255, 20, 0.2);
+}
+
+.btn-action-main:hover { 
+    box-shadow: 0 8px 25px rgba(57, 255, 20, 0.4); 
+    transform: translateY(-2px);
+}
+
+.btn-action-main:active { transform: scale(0.98); }
+
+.box-bet { 
+    height: 70px; 
+    background: #1a202c; 
+    border: 2px solid #333; 
+    border-radius: 12px; 
+    color: white; 
+    font-size: 24px; 
+    font-weight: 900; 
+    cursor: pointer; 
+}
+
+.box-bet:hover { border-color: var(--accent); background: rgba(255, 204, 0, 0.05); }
+
+.box-bet.selected { 
+    background: var(--accent); 
+    color: black; 
+    box-shadow: 0 0 25px var(--accent);
+    border-color: white;
+}
+
+.box-bet.winner-set { 
+    background: var(--neon-g); 
+    color: black; 
+    animation: neonPulse 1.5s infinite; 
+    border-color: white;
+}
+
+@keyframes neonPulse {
+    0% { box-shadow: 0 0 5px var(--neon-g); transform: scale(1); }
+    50% { box-shadow: 0 0 25px var(--neon-g); transform: scale(1.05); }
+    100% { box-shadow: 0 0 5px var(--neon-g); transform: scale(1); }
+}
+
+.modal-content { 
+    background: #12161f; 
+    width:90%; 
+    max-width:450px; 
+    border-radius:20px; 
+    border: 1px solid var(--primary); 
+    padding: 30px; 
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+}
+
+input, select { 
+    width:100%; 
+    margin:10px 0; 
+    padding:14px; 
+    background:#0b0e14; 
+    color:white; 
+    border:1px solid rgba(255,255,255,0.1); 
+    border-radius:12px; 
+    outline: none; 
+    text-align: center;
+    font-size: 16px;
+}
+
+input:focus { border-color: var(--primary); background: #12161f; }
+
+.secure-pin { letter-spacing: 8px; font-weight: 900; font-size: 22px; color: var(--accent); }
+
+@media (max-width: 768px) {
+    .sidebar { position: fixed; left: -260px; height: 100vh; }
+    .sidebar.show { transform: translateX(260px); }
+    .sidebar-overlay.show { display: block; }
+}
     </style>
 </head>
 <body>
@@ -86,14 +318,9 @@
         <div id="page-user" class="page active">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
                 <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search Downline..." style="padding:10px; border-radius:8px; background:#12161f; border:1px solid #333; color:white; width: 250px;">
-                <button id="addBtn" class="btn-action-main" style="width:120px; margin:0;" onclick="openModal()">+ ADD USER</button>
+                <button id="addBtn" class="btn-action-main" style="width:120px; margin:0;" onclick="openAddModal()">+ ADD USER</button>
             </div>
-            <div class="table-container">
-                <table id="userTable">
-                    <thead><tr><th>Status</th><th>Name</th><th>Role</th><th>Chips</th><th>Share %</th><th>Action</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+            <div class="table-container"><table id="userTable"><thead><tr><th>Status</th><th>Name</th><th>Role</th><th>Chips</th><th>Share %</th><th>Action</th></tr></thead><tbody></tbody></table></div>
         </div>
 
         <div id="page-bet" class="page"><div id="bet-content-container"></div></div>
@@ -118,8 +345,12 @@
         <div id="page-account" class="page">
             <div class="account-card" style="border: 2px solid var(--accent);">
                 <p style="color:#aaa;">NET BALANCE</p>
-                <h1 style="color:var(--accent); font-size:45px;">₹ <span id="inr">0</span></h1>
-                <p>Chips: <span id="chips">0</span></p>
+                <h1 style="color:var(--accent); font-size:45px;">₹ <span id="disp-inr">0</span></h1>
+                <p>Chips: <span id="disp-chips">0</span></p>
+            </div>
+            <div class="account-card">
+                <h3 style="text-align:left; color:var(--neon-g); margin-bottom:10px;"><i class="fas fa-sitemap"></i> Distribution Waterfall</h3>
+                <div id="waterfall-display" class="waterfall-card"></div>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <div class="account-card" style="color: var(--neon-g);">TOTAL WINS: <span id="wins">0</span></div>
@@ -130,170 +361,121 @@
 
     <div class="modal" id="forcePassModal">
         <div class="modal-content">
-            <h2 style="color:var(--neon-r)">Security Update</h2>
-            <p style="margin:10px 0; font-size:14px;">You must change your default password to continue.</p>
-            <input type="password" id="newForcePass" placeholder="Enter New 6-Digit Password" maxlength="6" style="width:100%; padding:12px; background:#0b0e14; color:white; border:1px solid var(--neon-r); border-radius:8px;">
+            <h2 style="color:var(--neon-r); text-align:center;">Security Update</h2>
+            <p style="margin:10px 0; font-size:14px; text-align:center;">You must change your default password to continue.</p>
+            <input type="password" id="newForcePass" placeholder="Enter New 6-Digit PIN" maxlength="6" class="secure-pin">
             <button class="btn-action-main" onclick="updateForcePassword()">UPDATE & SECURE</button>
         </div>
     </div>
 
     <div class="modal" id="userModal">
         <div class="modal-content">
-            <h3 id="mTitle">User Settings</h3>
-            <input type="text" id="mUName" placeholder="Username" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
-            <div id="passDivGrp"><input type="password" id="mPass" placeholder="Password" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
-            <select id="mRole" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></select>
-            <input type="number" id="mComm" placeholder="Commission % (Share)" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;">
-            <div id="depoDiv"><input type="number" id="mDeposit" placeholder="Initial Deposit" style="width:100%; margin:10px 0; padding:10px; background:#0b0e14; color:white; border:1px solid #333; border-radius:8px;"></div>
-            <button class="btn-action-main" onclick="submitUser()">SAVE DETAILS</button>
-            <button style="width:100%; margin-top:10px; background:#444; color:white; border:none; padding:12px; border-radius:8px;" onclick="closeModal()">CANCEL</button>
+            <h3 id="mTitle" style="color:var(--accent); margin-bottom:10px;">Create Downline</h3>
+            <input type="text" id="mName" placeholder="Full Name">
+            <input type="text" id="mUName" placeholder="Username">
+            <input type="password" id="mPass" class="secure-pin" placeholder="6-Digit PIN" maxlength="6">
+            <input type="password" id="mCPass" class="secure-pin" placeholder="Confirm PIN" maxlength="6">
+            <select id="mRole"></select>
+            <input type="number" id="mComm" placeholder="Commission %">
+            <input type="number" id="mDeposit" placeholder="Initial chips">
+            <button class="btn-action-main" onclick="submitUser()">CREATE USER</button>
+            <button style="width:100%; margin-top:10px; background:#444; border:none; padding:12px; border-radius:8px; color:white;" onclick="closeModal()">CANCEL</button>
         </div>
     </div>
 
     <script>
         const ROLES = { 'SuperAdmin':6, 'Admin':5, 'SuperMaster':4, 'Master':3, 'Agent':2, 'Client':1 };
+        const DEFAULTS = ['123456', '654321', '111111', '222222', '333333', '444444', '555555', '666666', '112233', '123654', '456321', '000000', '543210', '012345', '332211'];
         let user = JSON.parse(sessionStorage.getItem('currentUser'));
         if (!user) window.location.href = 'login.html';
 
-        let editUserId = null, selectedBoxes = [], tempAdminWinner = null;
-
-        // --- DYNAMIC INIT ENGINE ---
         async function init() {
-            const res = await fetch('/api/user-details', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id: user.id}) });
-            const d = await res.json();
-            if(d.success) {
-                user = d.data;
-                sessionStorage.setItem('currentUser', JSON.stringify(user));
-                
-                // 1. Force Password Check (Requirement)
-                if(user.role !== 'SuperAdmin' && user.needs_password_change) {
-                    document.getElementById('forcePassModal').style.display = 'flex';
+            try {
+                const res = await fetch('/api/user-details', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id: user.id}) });
+                const d = await res.json();
+                if(d.success) {
+                    user = d.data;
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    if(user.role !== 'SuperAdmin' && DEFAULTS.includes(user.password)) document.getElementById('forcePassModal').style.display = 'flex';
+                    updateUI(); 
+                    renderWaterfall(); // FIXED: Called waterfall here
                 }
-
-                updateUI();
-            }
-            loadUsers(); loadHistory(); setupRoleOptions();
+            } catch(e){}
+            loadUsers(); setupRoleOptions();
         }
 
         function updateUI() {
             document.getElementById('headerBal').innerText = `🪙 ${parseFloat(user.balance).toLocaleString()}`;
-            document.getElementById('chips').innerText = parseFloat(user.balance).toLocaleString();
-            document.getElementById('inr').innerText = (parseFloat(user.balance) * 10).toLocaleString();
-            
-            // Show/Hide menus based on role
+            document.getElementById('disp-chips').innerText = parseFloat(user.balance).toLocaleString();
+            document.getElementById('disp-inr').innerText = (parseFloat(user.balance) * 10).toLocaleString();
             document.getElementById('addBtn').style.display = user.role === 'Client' ? 'none' : 'block';
             document.getElementById('nav-bet-client').style.display = user.role === 'Client' ? 'flex' : 'none';
             document.getElementById('nav-mgmt-sa').style.display = user.role === 'SuperAdmin' ? 'flex' : 'none';
-
-            if(user.role === 'Client') setupBettingPage();
-            if(user.role === 'SuperAdmin') setupHouseControl();
         }
 
-        // --- HIERARCHY: CREATE DOWNLINE ---
-        async function loadUsers() {
-            const res = await fetch('/api/my-users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({parentId: user.id, role: user.role}) });
-            const d = await res.json();
-            
-            // Logic: SuperAdmin sees all, others see only their downline
-            let filtered = (user.role === 'SuperAdmin') ? d.users.filter(u => u.id !== user.id) : d.users.filter(u => u.creator_id == user.id);
+        function nav(id, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if(el) el.classList.add('active');
+            if(window.innerWidth <= 768) {
+                const sb = document.getElementById('sidebar');
+                if(sb.classList.contains('show')) toggleSidebar();
+            }
+        }
 
-            document.querySelector('#userTable tbody').innerHTML = filtered.map(u => `
-                <tr>
-                    <td><i class="fas fa-circle" style="color:var(--neon-g); font-size:10px;"></i></td>
-                    <td><b>${u.username}</b></td>
-                    <td>${u.role}</td>
-                    <td>🪙 ${parseFloat(u.balance).toLocaleString()}</td>
-                    <td>${u.commission_percentage}%</td>
-                    <td>
-                        <button class="act-btn btn-edit" onclick="openEdit(${u.id},'${u.username}',${u.commission_percentage})"><i class="fas fa-pen"></i></button>
-                        <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
-                        <button class="act-btn btn-w" onclick="chipAction(${u.id},'withdraw')">W</button>
-                        <button class="act-btn btn-del" onclick="deleteUser(${u.id}, ${u.balance})"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+
+        function renderWaterfall() {
+            const container = document.getElementById('waterfall-display');
+            const roles_arr = ['SuperAdmin', 'Admin', 'SuperMaster', 'Master', 'Agent', 'Client'];
+            const myRank = roles_arr.indexOf(user.role);
+            container.innerHTML = roles_arr.slice(0, myRank + 1).map((r, i) => `
+                <div class="wf-row"><span>${r} ${r===user.role?'(YOU)':''}</span><span>${100 - (i*15)}% Share</span></div>
             `).join('');
         }
 
-        // --- CLIENT BETTING SYSTEM ---
-        function setupBettingPage() {
-            const container = document.getElementById('bet-content-container');
-            container.innerHTML = `
-                <div class="account-card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="text-align:left;"><p>MY CHIPS</p><h2 style="color:var(--neon-g)">🪙 ${parseFloat(user.balance).toLocaleString()}</h2></div>
-                    <div id="timer-display" style="font-size:30px; color:var(--accent)">READY</div>
-                </div>
-                <div class="account-card">
-                    <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px;">
-                        ${Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="toggleBox(this, ${i+1})">${i+1}</button>`).join('')}
-                    </div>
-                    <button class="btn-action-main" onclick="openBetSlip()">PLACE BET (<span id="selectedCount">0</span>)</button>
-                </div>
-            `;
+        async function loadUsers() {
+            const res = await fetch('/api/my-users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({parentId: user.id, role: user.role}) });
+            const d = await res.json();
+            let list = (user.role === 'SuperAdmin') ? d.users : d.users.filter(u => u.creator_id == user.id);
+            document.querySelector('#userTable tbody').innerHTML = list.map(u => `
+                <tr>
+                    <td><i class="fas fa-circle" style="color:var(--neon-g); font-size:10px;"></i></td>
+                    <td><b>${u.username}</b></td><td>${u.role}</td>
+                    <td>🪙 ${parseFloat(u.balance).toLocaleString()}</td><td>${u.commission_percentage}%</td>
+                    <td>
+                        <button class="act-btn btn-edit" onclick="openEdit(${u.id})"><i class="fas fa-pen"></i></button>
+                        <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
+                        <button class="act-btn btn-w" onclick="chipAction(${u.id},'withdraw')">W</button>
+                        <button class="act-btn btn-del" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`).join('');
         }
 
-        // --- HOUSE CONTROL (SUPERADMIN) ---
-        function setupHouseControl() {
-            const grid = document.getElementById('houseGrid');
-            grid.innerHTML = Array.from({length:10}, (_,i)=> `<button class="box-bet" onclick="selectWinnerUI(this, ${i+1})">${i+1}</button>`).join('');
-            const saved = localStorage.getItem('magicWinner');
-            if(saved) document.getElementById('adminStatus').innerText = `MODE: FIXED (Box ${saved})`;
-        }
-
-        function selectWinnerUI(el, num) { 
-            document.querySelectorAll('#houseGrid .box-bet').forEach(b => b.classList.remove('winner-set')); 
-            el.classList.add('winner-set'); 
-            tempAdminWinner = num; 
-        }
-
-        function savePermanentWinner() { 
-            if(!tempAdminWinner) return alert("Select a box!"); 
-            localStorage.setItem('magicWinner', tempAdminWinner); 
-            document.getElementById('adminStatus').innerText = `MODE: FIXED (Box ${tempAdminWinner})`; 
-            alert("House Control Locked Successfully!"); 
-        }
-
-        // --- UTILS ---
-        function nav(id, el) { 
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
-            document.getElementById('page-' + id).classList.add('active'); 
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); 
-            if(el) el.classList.add('active'); 
-            if(window.innerWidth <= 768) toggleSidebar(); 
-        }
-
-        function toggleSidebar() { 
-            document.getElementById('sidebar').classList.toggle('show'); 
-            document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none'; 
-        }
-
-        async function updateForcePassword() {
-            const pass = document.getElementById('newForcePass').value;
-            if(pass.length < 6) return alert("Min 6 digits required");
-            await fetch('/api/change-password', { method: 'POST', body: JSON.stringify({userId: user.id, newPass: pass}) });
-            document.getElementById('forcePassModal').style.display = 'none';
+        async function chipAction(id, type) {
+            const amt = prompt(`Enter chip amount for ${type}:`);
+            if(!amt) return;
+            const body = type === 'deposit' ? { senderId: user.id, receiverId: id, amount: amt } : { adminId: user.id, userId: id, amount: amt };
+            await fetch(type === 'deposit' ? '/api/transfer-credits' : '/api/withdraw-chips', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
             init();
         }
 
         function setupRoleOptions() {
             const sel = document.getElementById('mRole');
             if(sel.options.length > 0) return;
-            const roles = ['Admin', 'SuperMaster', 'Master', 'Agent', 'Client'];
-            roles.forEach(r => {
-                if(ROLES[r] < ROLES[user.role]) {
-                    let opt = document.createElement('option');
-                    opt.value = r; opt.innerText = r;
-                    sel.appendChild(opt);
-                }
-            });
+            Object.keys(ROLES).forEach(r => { if(ROLES[r] < ROLES[user.role]) { let opt = document.createElement('option'); opt.value = r; opt.innerText = r; sel.appendChild(opt); }});
         }
 
+        function closeModal() { document.getElementById('userModal').style.display = 'none'; }
+        function openAddModal() { document.getElementById('userModal').style.display = 'flex'; }
         function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
 
-        // Start engine
         init();
-        // Dynamic Update Interval (No reload)
         setInterval(init, 15000); 
-
     </script>
 </body>
 </html>
