@@ -59,29 +59,25 @@ app.post('/api/user-details', (req, res) => {
     });
 });
 
-// --- USER MANAGEMENT (HIERARCHY PROTECTED) ---
+// --- USER MANAGEMENT (GLOBAL vs LOCAL) ---
 app.post('/api/my-users', (req, res) => {
     const { parentId, role } = req.body;
-    let query = `SELECT id, username, role, balance, commission_percentage, force_password_change,
+    
+    // Base query for online status and data
+    let query = `SELECT id, username, role, balance, commission_percentage, force_password_change, creator_id,
                 CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
                 FROM users WHERE id != ?`;
     let params = [parentId];
 
+    // Hierarchy Logic: SuperAdmin sees all globally. Others see only their downline.
     if (role !== 'SuperAdmin') {
-        query += ` AND parent_id = ?`;
+        query += ` AND creator_id = ?`; 
         params.push(parentId);
     }
 
     db.query(query, params, (err, r) => {
         if (err) return res.json({ users: [] });
-        let allUsers = r || [];
-
-        if (role !== 'SuperAdmin') {
-            db.query("SELECT id, username, role, balance, commission_percentage, 'Online' as status, 0 as force_password_change FROM users WHERE role = 'SuperAdmin' LIMIT 1", (err, saResult) => {
-                if (saResult && saResult.length > 0) allUsers.unshift(saResult[0]);
-                res.json({ users: allUsers });
-            });
-        } else res.json({ users: allUsers });
+        res.json({ users: r || [] });
     });
 });
 
@@ -92,8 +88,8 @@ app.post('/api/create-user-advanced', (req, res) => {
 
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
-            const sql = `INSERT INTO users(username, password, role, parent_id, balance, commission_percentage, force_password_change) VALUES(?,?,?,?,?,?,?)`;
-            conn.query(sql, [uName, pass, role, creatorId, depAmt, commission, force], (err) => {
+            const sql = `INSERT INTO users(username, password, role, parent_id, creator_id, balance, commission_percentage, force_password_change) VALUES(?,?,?,?,?,?,?,?)`;
+            conn.query(sql, [uName, pass, role, creatorId, creatorId, depAmt, commission, force], (err) => {
                 if (err) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'User exists' }); });
                 if (depAmt > 0) {
                     conn.query('UPDATE users SET balance = balance - ? WHERE id = ?', [depAmt, creatorId], () => {
@@ -108,17 +104,16 @@ app.post('/api/create-user-advanced', (req, res) => {
     });
 });
 
-// --- DIRECT BETTING & HOUSE CONTROL ENGINE ---
+// --- CASINO SETTLEMENT ENGINE ---
 app.post('/api/place-bet-direct', (req, res) => {
     const { userId, amount, boxes, stakePerBox } = req.body;
     const totalStake = parseFloat(amount);
     
     db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [totalStake, userId, totalStake], (err, r) => {
         if (r && r.affectedRows > 0) {
-            // Log deduction
-            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Bet Active', -totalStake, `Stake on ${boxes.length} boxes`]);
+            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
+                [userId, 'Bet Active', -totalStake, `Stake on ${boxes.length} boxes (Value: ₹${totalStake*10})`]);
             
-            // Queue for House Settle
             activeBets.push({ userId, boxes, stakePerBox });
             res.json({ success: true });
         } else res.json({ success: false, message: 'Insufficient Main Balance' });
@@ -131,25 +126,22 @@ app.post('/api/house-settle', async (req, res) => {
     
     try {
         await conn.query('START TRANSACTION');
-
         for (let bet of activeBets) {
             const isWin = bet.boxes.includes(parseInt(winnerBox));
             const stake = parseFloat(bet.stakePerBox);
-            const odds = 2; // Double payout rule
-            const profit = isWin ? (stake * odds) - stake : 0;
+            const profit = isWin ? (stake * 2) - stake : 0; // 2x Double payout rule
             
             const [uRows] = await conn.query('SELECT username FROM users WHERE id = ?', [bet.userId]);
             const clientName = uRows[0].username;
 
             if (isWin) {
-                // Return original stake + net profit
                 await conn.query('UPDATE users SET balance = balance + ?, total_wins = total_wins + 1 WHERE id = ?', [stake + profit, bet.userId]);
                 await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [bet.userId, 'Win', profit, `Winner Box: ${winnerBox}`]);
 
-                // Upward Commission Loop
+                // Recursive Upward Commission Loop
                 let currentChildId = bet.userId;
                 while (true) {
-                    const [pRows] = await conn.query('SELECT parent_id FROM users WHERE id = ?', [currentChildId]);
+                    const [pRows] = await conn.query('SELECT parent_id, username FROM users WHERE id = ?', [currentChildId]);
                     if (!pRows[0]?.parent_id) break;
 
                     const pid = pRows[0].parent_id;
@@ -171,8 +163,7 @@ app.post('/api/house-settle', async (req, res) => {
                 await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [bet.userId, 'Loss', 0, `Box ${winnerBox} won`]);
             }
         }
-
-        activeBets = []; // Clear queue
+        activeBets = []; // Flush queue
         await conn.query('COMMIT');
         res.json({ success: true });
     } catch (err) {
@@ -190,30 +181,36 @@ app.post('/api/history', (req, res) => {
     db.query('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 50', [req.body.userId], (_, r) => res.json({ success: true, history: r || [] }));
 });
 
-app.post('/api/transfer-credits', (req, res) => {
+app.post('/api/transfer-credits', async (req, res) => {
     const { senderId, receiverId, amount } = req.body;
-    db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amount, senderId, amount], (err, r) => {
-        if (r && r.affectedRows > 0) {
-            db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amount, receiverId], () => {
-                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [senderId, 'Sent', -amount, `To ID: ${receiverId}`]);
-                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [receiverId, 'Received', amount, `From ID: ${senderId}`]);
-                res.json({ success: true });
-            });
+    const conn = db.promise();
+    try {
+        const [rName] = await conn.query('SELECT username FROM users WHERE id = ?', [receiverId]);
+        const [sName] = await conn.query('SELECT username FROM users WHERE id = ?', [senderId]);
+        
+        const [update] = await conn.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amount, senderId, amount]);
+        if (update.affectedRows > 0) {
+            await conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amount, receiverId]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [senderId, 'Sent', -amount, `Sent to ${rName[0].username}`]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [receiverId, 'Received', amount, `From ${sName[0].username}`]);
+            res.json({ success: true });
         } else res.json({ success: false });
-    });
+    } catch (e) { res.json({ success: false }); }
 });
 
-app.post('/api/withdraw-chips', (req, res) => {
+app.post('/api/withdraw-chips', async (req, res) => {
     const { adminId, userId, amount } = req.body;
-    db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amount, userId, amount], (err, r) => {
-        if (r && r.affectedRows > 0) {
-            db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amount, adminId], () => {
-                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Withdrawal', -amount, `Recovered`]);
-                db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [adminId, 'Clawback', amount, `From ID: ${userId}`]);
-                res.json({ success: true });
-            });
+    const conn = db.promise();
+    try {
+        const [uName] = await conn.query('SELECT username FROM users WHERE id = ?', [userId]);
+        const [update] = await conn.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amount, userId, amount]);
+        if (update.affectedRows > 0) {
+            await conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amount, adminId]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Withdrawal', -amount, `Pulled by Admin`]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [adminId, 'Clawback', amount, `Recovered from ${uName[0].username}`]);
+            res.json({ success: true });
         } else res.json({ success: false });
-    });
+    } catch (e) { res.json({ success: false }); }
 });
 
 app.post('/api/delete-user', (req, res) => {
@@ -226,4 +223,4 @@ app.post('/api/delete-user', (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server Active on Port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server ${PORT} is Active !`));
