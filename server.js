@@ -80,7 +80,7 @@ app.post('/api/create-user-advanced', (req, res) => {
     const force = defaultPasswords.includes(pass) ? 1 : 0;
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
-            const sql = `INSERT INTO users(username, full_name, password, role, parent_id, creator_id, balance, commission_percentage, force_password_change) VALUES(?,?,?,?,?,?,?,?,?)`;
+            const sql = `INSERT INTO users(username, first_name, password, role, parent_id, creator_id, balance, commission_percentage, force_password_change) VALUES(?,?,?,?,?,?,?,?,?)`;
             conn.query(sql, [uName, fullName, pass, role, creatorId, creatorId, depAmt, commission, force], (err) => {
                 if (err) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'SQL Error' }); });
                 if (depAmt > 0) {
@@ -164,4 +164,3 @@ app.post('/api/delete-user', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server ${PORT} is ACTIVE !`));
-
