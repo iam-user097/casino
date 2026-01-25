@@ -147,7 +147,19 @@ input:focus { border-color: var(--primary); background: #12161f; }
             <div class="table-container"><table id="userTable"><thead><tr><th>Status</th><th>Name</th><th>Role</th><th>Chips</th><th>Share %</th><th>Action</th></tr></thead><tbody></tbody></table></div>
         </div>
 
-        <div id="page-bet" class="page"><div id="bet-content-container"></div></div>
+        <div id="page-bet" class="page">
+    <div class="account-card">
+        <h2 style="color:var(--accent); margin-bottom:10px;">LIVE BETTING</h2>
+        <p style="color:#aaa; font-size:12px; margin-bottom:20px;">Select multiple boxes and click Proceed to place your bet.</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;" id="clientBetGrid"></div>
+        
+        <div style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.02); border-radius:10px; display:flex; justify-content:space-between; align-items:center;">
+            <div>Selected: <span id="selectedCount" style="color:var(--accent); font-weight:bold;">0</span> Boxes</div>
+            <button class="btn-action-main" style="width:150px; margin:0;" onclick="proceedBet()">PROCEED</button>
+        </div>
+    </div>
+</div>
 
         <div id="page-mgmt" class="page">
             <div class="account-card">
@@ -211,6 +223,7 @@ input:focus { border-color: var(--primary); background: #12161f; }
     <script>
     const ROLES = { 'SuperAdmin':6, 'Admin':5, 'SuperMaster':4, 'Master':3, 'Agent':2, 'Client':1 };
     const DEFAULTS = ['123456', '654321', '111111', '222222', '333333', '444444', '555555', '666666', '112233', '123654', '456321', '000000', '543210', '012345', '332211'];
+    let selectedBetBoxes = [];
     
     let user = JSON.parse(sessionStorage.getItem('currentUser'));
     if (!user) window.location.href = 'login.html';
@@ -236,7 +249,10 @@ input:focus { border-color: var(--primary); background: #12161f; }
         } catch(e){}
         loadUsers(); 
         setupRoleOptions();
+        
+        // Context-aware grid setup
         if(user.role === 'SuperAdmin') setupHouseControl();
+        if(user.role === 'Client') setupClientBetGrid();
     }
 
     function updateUI() {
@@ -275,11 +291,13 @@ input:focus { border-color: var(--primary); background: #12161f; }
         document.getElementById('overlay').classList.toggle('show');
     }
 
-    // --- USER MANAGEMENT ---
+    // --- USER MANAGEMENT (HIERARCHY LOGIC) ---
     async function loadUsers() {
         const res = await fetch('/api/my-users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({parentId: user.id, role: user.role}) });
         const d = await res.json();
-        let list = (user.role === 'SuperAdmin') ? d.users : d.users.filter(u => u.creator_id == user.id);
+        
+        // Fixed Filter: SuperAdmin is Global. Others see only their created downline using parent_id.
+        let list = (user.role === 'SuperAdmin') ? d.users : d.users.filter(u => u.parent_id == user.id);
         
         document.querySelector('#userTable tbody').innerHTML = list.map(u => `
             <tr>
@@ -288,7 +306,7 @@ input:focus { border-color: var(--primary); background: #12161f; }
                 <td>🪙 ${parseFloat(u.balance).toLocaleString()}</td><td>${u.commission_percentage}%</td>
                 <td>
                     <div class="action-group">
-                        <button class="act-btn btn-edit" title="Edit" onclick="alert('Edit functionality coming soon for user ID: '+${u.id})"><i class="fas fa-pen"></i></button>
+                        <button class="act-btn btn-edit" title="Edit" onclick="alert('Edit functionality for ID: '+${u.id})"><i class="fas fa-pen"></i></button>
                         <button class="act-btn btn-d" title="Deposit" onclick="chipAction(${u.id},'deposit')">D</button>
                         <button class="act-btn btn-w" title="Withdraw" onclick="chipAction(${u.id},'withdraw')">W</button>
                         
@@ -303,80 +321,64 @@ input:focus { border-color: var(--primary); background: #12161f; }
             </tr>`).join('');
     }
 
-    // --- NEW: FIXED DELETE LOGIC ---
-    async function deleteUser(id) {
-        if(!confirm("Sir, are you sure? This will delete the user permanently.")) return;
-        try {
-            const res = await fetch('/api/delete-user', {
+    // --- CLIENT MULTI-BOX BETTING LOGIC ---
+    function setupClientBetGrid() {
+        const grid = document.getElementById('clientBetGrid');
+        if(!grid) return;
+        grid.innerHTML = Array.from({length: 10}, (_, i) => `
+            <button class="box-bet" data-num="${i+1}" onclick="toggleClientSelection(this, ${i+1})">${i+1}</button>
+        `).join('');
+    }
+
+    function toggleClientSelection(el, num) {
+        if(selectedBetBoxes.includes(num)) {
+            selectedBetBoxes = selectedBetBoxes.filter(n => n !== num);
+            el.classList.remove('manual-selected');
+        } else {
+            selectedBetBoxes.push(num);
+            el.classList.add('manual-selected');
+        }
+        const counter = document.getElementById('selectedCount');
+        if(counter) counter.innerText = selectedBetBoxes.length;
+    }
+
+    async function proceedBet() {
+        if(selectedBetBoxes.length === 0) return alert("Sir, please select at least one box!");
+        
+        const stake = prompt(`Enter chips per box (Min 100):`);
+        if(!stake || isNaN(stake) || parseInt(stake) < 100) return alert("Minimum bet is 100 chips.");
+        
+        const totalAmount = parseInt(stake) * selectedBetBoxes.length;
+        if(totalAmount > user.balance) return alert(`Insufficient Balance! Total needed: 🪙${totalAmount}`);
+
+        if(confirm(`Confirm Bet: ${selectedBetBoxes.length} boxes x ${stake} = Total 🪙${totalAmount}?`)) {
+            const res = await fetch('/api/place-bet-direct', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ id: id })
+                body: JSON.stringify({ 
+                    userId: user.id, 
+                    amount: totalAmount, 
+                    boxes: selectedBetBoxes, 
+                    stakePerBox: stake 
+                })
             });
             const d = await res.json();
             if(d.success) {
-                alert("User Deleted Successfully, Sir!");
-                init();
+                alert("Bet Placed Successfully, Good Luck Sir!");
+                
+                // Clear UI after success
+                selectedBetBoxes = [];
+                document.getElementById('selectedCount').innerText = "0";
+                document.querySelectorAll('#clientBetGrid .box-bet').forEach(b => b.classList.remove('manual-selected'));
+                
+                init(); // Refresh Balance
             } else {
-                alert("Error: " + (d.message || "Could not delete. Balance must be 0."));
+                alert("Bet failed: " + d.message);
             }
-        } catch(e) { alert("Server Connection Error"); }
+        }
     }
 
-    // --- NEW: FIXED CHIP ACTION ---
-    async function chipAction(id, type) {
-        const amt = prompt(`Enter chip amount for ${type}:`);
-        if(!amt || isNaN(amt) || parseFloat(amt) <= 0) return;
-        
-        const endpoint = type === 'deposit' ? '/api/transfer-credits' : '/api/withdraw-chips';
-        const body = type === 'deposit' 
-            ? { senderId: user.id, receiverId: id, amount: amt } 
-            : { adminId: user.id, userId: id, amount: amt };
-
-        try {
-            const res = await fetch(endpoint, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
-            const result = await res.json();
-            if(result.success) {
-                alert(`${type.toUpperCase()} Successful, Sir!`);
-                init();
-            } else {
-                alert("Failed: " + (result.message || "Check balance."));
-            }
-        } catch(e) { alert("Connection Error"); }
-    }
-
-    // --- USER CREATION ---
-    async function submitUser() {
-        try {
-            const name = document.getElementById('mName').value;
-            const uname = document.getElementById('mUName').value;
-            const pass = document.getElementById('mPass').value;
-            const cpass = document.getElementById('mCPass').value;
-            const role = document.getElementById('mRole').value;
-            const comm = document.getElementById('mComm').value;
-            const depo = document.getElementById('mDeposit').value;
-
-            if (!uname || !pass || !role) return alert("Username and PIN are required!");
-            if (pass.length !== 6) return alert("PIN must be 6 digits!");
-            if (pass !== cpass) return alert("Confirm PIN mismatch!");
-
-            const res = await fetch('/api/create-user-advanced', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ uName: uname, fullName: name, pass, role, commission: comm, deposit: depo, creatorId: user.id })
-            });
-
-            const result = await res.json();
-            if (result.success) {
-                alert("User Created Successfully, Sir!");
-                closeModal();
-                init();
-            } else {
-                alert("Error: " + result.message);
-            }
-        } catch (error) { alert("JS Error: Check Console."); }
-    }
-
-    // --- HOUSE CONTROL ---
+    // --- HOUSE CONTROL (SUPERADMIN) ---
     function setupHouseControl() {
         const grid = document.getElementById('houseGrid');
         if(!grid) return;
@@ -386,7 +388,7 @@ input:focus { border-color: var(--primary); background: #12161f; }
     }
 
     function selectManualWinner(el, num) {
-        document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('manual-selected'));
+        document.querySelectorAll('#houseGrid .box-bet').forEach(b => b.classList.remove('manual-selected'));
         el.classList.add('manual-selected');
         selectedWinner = num;
     }
@@ -405,27 +407,33 @@ input:focus { border-color: var(--primary); background: #12161f; }
         }
     }
 
+    // --- SYSTEM LOGIC ---
+    async function deleteUser(id) {
+        if(!confirm("Sir, delete user permanently?")) return;
+        const res = await fetch('/api/delete-user', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id }) });
+        const d = await res.json();
+        if(d.success) { alert("User Deleted Successfully, Sir!"); init(); }
+        else alert("Error: " + d.message);
+    }
+
+    async function chipAction(id, type) {
+        const amt = prompt(`Amount to ${type}:`);
+        if(!amt || isNaN(amt) || parseFloat(amt) <= 0) return;
+        const endpoint = type === 'deposit' ? '/api/transfer-credits' : '/api/withdraw-chips';
+        const body = type === 'deposit' ? { senderId: user.id, receiverId: id, amount: amt } : { adminId: user.id, userId: id, amount: amt };
+        const res = await fetch(endpoint, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+        if((await res.json()).success) { alert(`${type.toUpperCase()} Successful!`); init(); }
+    }
+
     async function marketSettle() {
         if(!confirm("Sir, Settle Market now?")) return;
-        try {
-            const res = await fetch('/api/house-settle', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ winnerBox: selectedWinner })
-            });
-            const d = await res.json();
-            if(d.success) {
-                alert("Market Settled, Sir!");
-                init();
-            }
-        } catch(e) { alert("Settle Error."); }
+        const res = await fetch('/api/house-settle', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ winnerBox: selectedWinner }) });
+        const d = await res.json();
+        if(d.success) { alert("Market Settled Perfectly, Sir!"); init(); }
     }
 
-    function toggleMode() {
-        alert("Mode switched! (Automatic/Manual logic updated on server)");
-    }
+    function toggleMode() { alert("Mode Toggled! (Automatic/Manual Logic Updated)"); }
 
-    // --- UTILS ---
     function renderWaterfall() {
         const container = document.getElementById('waterfall-display');
         if(!container) return;
@@ -449,12 +457,32 @@ input:focus { border-color: var(--primary); background: #12161f; }
         if((await res.json()).success) { document.getElementById('forcePassModal').style.display = 'none'; init(); }
     }
 
+    async function submitUser() {
+        try {
+            const name = document.getElementById('mName').value;
+            const uname = document.getElementById('mUName').value;
+            const pass = document.getElementById('mPass').value;
+            const cpass = document.getElementById('mCPass').value;
+            const role = document.getElementById('mRole').value;
+            const comm = document.getElementById('mComm').value;
+            const depo = document.getElementById('mDeposit').value;
+            if (!uname || !pass || !role) return alert("Sir, required fields are missing!");
+            const res = await fetch('/api/create-user-advanced', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ uName: uname, fullName: name, pass, role, commission: comm, deposit: depo, creatorId: user.id })
+            });
+            const result = await res.json();
+            if (result.success) { alert("User Created Successfully!"); closeModal(); init(); } else alert("Error: " + result.message);
+        } catch (error) { alert("JS Error: Check Console."); }
+    }
+
     function closeModal() { document.getElementById('userModal').style.display = 'none'; }
     function openAddModal() { document.getElementById('userModal').style.display = 'flex'; }
     function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
 
     init();
-    setInterval(init, 3000);
+    setInterval(init, 3000); 
 </script>
 </body>
 </html>
