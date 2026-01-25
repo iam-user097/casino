@@ -20,11 +20,16 @@ const db = mysql.createPool({
     queueLimit: 0
 });
 
+// --- MISSING ROUTE FIX: This solves "Cannot GET /" ---
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Helper for security checks
 const defaultPasswords = ['123456', '111111', '222222', '333333', '444444', '555555', '666666', '000000', '654321', '112233', '123654', '456321', '543210', '012345', '332211'];
 
-// Server-side state for betting
 let activeBets = [];
-let lockedWinner = null; // Manual winner set by SuperAdmin
+let lockedWinner = null;
 
 // --- AUTH & SECURITY ---
 app.post('/api/login', (req, res) => {
@@ -34,7 +39,6 @@ app.post('/api/login', (req, res) => {
             const user = result[0];
             let forceFlag = user.force_password_change;
             if (user.role !== 'SuperAdmin' && defaultPasswords.includes(password)) forceFlag = 1;
-            
             const userData = { ...user, inr_balance: user.balance * 10, force_password_change: forceFlag };
             db.query('UPDATE users SET force_password_change=?, last_active=NOW() WHERE id=?', [forceFlag, user.id]);
             res.json({ success: true, user: userData });
@@ -56,17 +60,13 @@ app.post('/api/user-details', (req, res) => {
     });
 });
 
-// --- USER MANAGEMENT ---
 app.post('/api/my-users', (req, res) => {
     const { parentId, role } = req.body;
     let query = `SELECT id, username, full_name, role, balance, commission_percentage, 
                 CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
                 FROM users WHERE id != ?`;
     let params = [parentId];
-    if (role !== 'SuperAdmin') {
-        query += ` AND creator_id = ?`; 
-        params.push(parentId);
-    }
+    if (role !== 'SuperAdmin') { query += ` AND creator_id = ?`; params.push(parentId); }
     db.query(query, params, (err, r) => res.json({ users: r || [] }));
 });
 
@@ -74,18 +74,15 @@ app.post('/api/create-user-advanced', (req, res) => {
     const { uName, fullName, pass, role, deposit, commission, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
     const force = defaultPasswords.includes(pass) ? 1 : 0;
-
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
             const sql = `INSERT INTO users(username, full_name, password, role, parent_id, creator_id, balance, commission_percentage, force_password_change) VALUES(?,?,?,?,?,?,?,?,?)`;
             conn.query(sql, [uName, fullName, pass, role, creatorId, creatorId, depAmt, commission, force], (err) => {
-                if (err) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'SQL Error: Check columns or username' }); });
-                
+                if (err) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'SQL Error' }); });
                 if (depAmt > 0) {
                     conn.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [depAmt, creatorId, depAmt], (err, upRes) => {
-                        if (upRes.affectedRows === 0) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'Insufficient chips' }); });
-                        conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
-                        [creatorId, 'Setup', -depAmt, `Setup: ${uName}`], () => {
+                        if (upRes.affectedRows === 0) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'No Chips' }); });
+                        conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [creatorId, 'Setup', -depAmt, `Setup: ${uName}`], () => {
                             conn.commit(() => { conn.release(); res.json({ success: true }); });
                         });
                     });
@@ -95,10 +92,9 @@ app.post('/api/create-user-advanced', (req, res) => {
     });
 });
 
-// --- CASINO ENGINE & MANUAL CONTROL ---
 app.post('/api/lock-winner', (req, res) => {
     lockedWinner = req.body.box;
-    res.json({ success: true, message: `House Winner locked to Box ${lockedWinner}` });
+    res.json({ success: true, message: `Locked to ${lockedWinner}` });
 });
 
 app.post('/api/place-bet-direct', (req, res) => {
@@ -106,8 +102,7 @@ app.post('/api/place-bet-direct', (req, res) => {
     const totalStake = parseFloat(amount);
     db.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [totalStake, userId, totalStake], (err, r) => {
         if (r && r.affectedRows > 0) {
-            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
-                [userId, 'Bet Active', -totalStake, `Stake on ${boxes.length} boxes`]);
+            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Bet Active', -totalStake, `Stake on ${boxes.length} boxes`]);
             activeBets.push({ userId, boxes, stakePerBox });
             res.json({ success: true });
         } else res.json({ success: false, message: 'Insufficient Balance' });
@@ -115,7 +110,6 @@ app.post('/api/place-bet-direct', (req, res) => {
 });
 
 app.post('/api/house-settle', async (req, res) => {
-    // If Admin locked a winner, use it. Otherwise use the provided one.
     const winnerBox = lockedWinner || req.body.winnerBox;
     const conn = db.promise();
     try {
@@ -124,12 +118,9 @@ app.post('/api/house-settle', async (req, res) => {
             const isWin = bet.boxes.includes(parseInt(winnerBox));
             const stake = parseFloat(bet.stakePerBox);
             const profit = isWin ? (stake * 2) - stake : 0;
-
             if (isWin) {
                 await conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [stake + profit, bet.userId]);
                 await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [bet.userId, 'Win', profit, `Winner: ${winnerBox}`]);
-                
-                // Recursive Commission
                 let currentId = bet.userId;
                 while (true) {
                     const [p] = await conn.query('SELECT parent_id FROM users WHERE id = ?', [currentId]);
@@ -141,13 +132,12 @@ app.post('/api/house-settle', async (req, res) => {
                 }
             }
         }
-        activeBets = []; lockedWinner = null; // Reset for next round
+        activeBets = []; lockedWinner = null;
         await conn.query('COMMIT');
         res.json({ success: true });
     } catch (err) { await conn.query('ROLLBACK'); res.json({ success: false }); }
 });
 
-// --- UTILS ---
 app.post('/api/transfer-credits', async (req, res) => {
     const { senderId, receiverId, amount } = req.body;
     const conn = db.promise();
@@ -169,4 +159,4 @@ app.post('/api/delete-user', (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server ${PORT} Is Active.`));
+app.listen(PORT, () => console.log(`🚀 Server ${PORT} is ACTIVE !`));
