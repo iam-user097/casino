@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#00509d">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { 
+:root { 
     --primary: #00509d; 
     --dark: #011627; 
     --accent: #ffcc00; 
@@ -68,16 +68,30 @@ table { width:100%; border-collapse:collapse; min-width: 1000px; }
 th { background: #011627; color: var(--accent); padding: 18px; font-size: 13px; text-transform: uppercase; }
 td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 14px; }
 
-/* --- BUTTONS --- */
-.act-btn { width: 36px; height: 36px; border-radius: 10px; border: none; color: white; cursor: pointer; margin: 0 3px; display: inline-flex; align-items: center; justify-content: center; }
-.act-btn:hover { transform: translateY(-3px); filter: brightness(1.2); }
+/* --- FIXED ACTION BUTTONS --- */
+.action-group { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: nowrap; min-width: 220px; }
+
+.act-btn { 
+    width: 32px; height: 32px; border-radius: 8px; border: none; cursor: pointer; 
+    display: inline-flex; align-items: center; justify-content: center; 
+    font-weight: bold; color: white; font-size: 14px;
+}
+
+.btn-edit { background: #3498db; }
+.btn-d { background: #39ff14; color: #000; } /* Neon Green */
+.btn-w { background: #ff3131; color: #fff; } /* Neon Red */
+.btn-del { background: #555; }
+.btn-mode { background: #6c757d; } /* Mode Gray */
+.btn-ms { background: #00509d; } /* Settle Blue */
+
+.act-btn:hover { transform: scale(1.1); filter: brightness(1.2); }
 
 .btn-action-main { background: linear-gradient(135deg, var(--neon-g), #2ecc71); color: #000; padding: 16px; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; width: 100%; text-transform: uppercase; box-shadow: 0 5px 20px rgba(57, 255, 20, 0.2); }
 
 /* --- MANUAL HOUSE CONTROL GRID --- */
 .box-bet { height: 70px; background: #1a202c; border: 2px solid #333; border-radius: 12px; color: white; font-size: 24px; font-weight: 900; cursor: pointer; }
 .box-bet:hover { border-color: var(--accent); }
-.box-bet.manual-selected { background: var(--neon-g) !important; color: black !important; border-color: white; box-shadow: 0 0 20px var(--neon-g); }
+.box-bet.manual-selected { background: var(--accent) !important; color: black !important; border-color: white; box-shadow: 0 0 20px var(--accent); }
 .box-bet.winner-set { background: var(--neon-g); color: black; animation: neonPulse 1.5s infinite; }
 
 @keyframes neonPulse {
@@ -255,25 +269,52 @@ input:focus { border-color: var(--primary); background: #12161f; }
         document.getElementById('overlay').classList.toggle('show');
     }
 
-    // --- USER MANAGEMENT ---
     async function loadUsers() {
-        const res = await fetch('/api/my-users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({parentId: user.id, role: user.role}) });
-        const d = await res.json();
-        let list = (user.role === 'SuperAdmin') ? d.users : d.users.filter(u => u.creator_id == user.id);
-        document.querySelector('#userTable tbody').innerHTML = list.map(u => `
-            <tr>
-                <td><i class="fas fa-circle" style="color:var(--neon-g); font-size:10px;"></i></td>
-                <td><b>${u.username}</b></td><td>${u.role}</td>
-                <td>🪙 ${parseFloat(u.balance).toLocaleString()}</td><td>${u.commission_percentage}%</td>
-                <td>
-                    <button class="act-btn btn-edit" onclick="alert('Edit '+${u.id})"><i class="fas fa-pen"></i></button>
-                    <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
-                    <button class="act-btn btn-w" onclick="chipAction(${u.id},'withdraw')">W</button>
-                    <button class="act-btn btn-del" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
-                </td>
-            </tr>`).join('');
-    }
+    const res = await fetch('/api/my-users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({parentId: user.id, role: user.role}) });
+    const d = await res.json();
+    let list = (user.role === 'SuperAdmin') ? d.users : d.users.filter(u => u.creator_id == user.id);
+    
+    document.querySelector('#userTable tbody').innerHTML = list.map(u => `
+        <tr>
+            <td><i class="fas fa-circle" style="color:var(--neon-g); font-size:10px;"></i></td>
+            <td><b>${u.username}</b></td><td>${u.role}</td>
+            <td>🪙 ${parseFloat(u.balance).toLocaleString()}</td><td>${u.commission_percentage}%</td>
+            <td>
+                <div class="action-group">
+                    <button class="act-btn btn-edit" title="Edit" onclick="alert('Edit '+${u.id})"><i class="fas fa-pen"></i></button>
+                    <button class="act-btn btn-d" title="Deposit" onclick="chipAction(${u.id},'deposit')">D</button>
+                    <button class="act-btn btn-w" title="Withdraw" onclick="chipAction(${u.id},'withdraw')">W</button>
+                    
+                    ${user.role === 'SuperAdmin' ? `
+                        <button class="act-btn btn-mode" title="Change Mode" onclick="toggleMode()"><i class="fas fa-sync"></i></button>
+                        <button class="act-btn btn-ms" title="Market Settle" onclick="marketSettle()"><i class="fas fa-check-circle"></i></button>
+                    ` : ''}
+                    
+                    <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
+                </div>
+            </td>
+        </tr>`).join('');
+}
 
+    async function marketSettle() {
+    if(!confirm("Sir, are you sure you want to Settle the Market now?")) return;
+    
+    try {
+        const res = await fetch('/api/house-settle', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ winnerBox: selectedWinner }) // Sends the locked box if set
+        });
+        const d = await res.json();
+        if(d.success) {
+            alert("Market Settled Successfully, Sir!");
+            init();
+        } else {
+            alert("Settle Failed: " + d.message);
+        }
+    } catch(e) { alert("Server error during settlement."); }
+}
+        
     async function submitUser() {
     try {
         // 1. Get Values (Ensuring IDs match your HTML precisely)
@@ -365,13 +406,26 @@ input:focus { border-color: var(--primary); background: #12161f; }
         `).join('');
     }
 
-    async function chipAction(id, type) {
-        const amt = prompt(`Enter chip amount for ${type}:`);
-        if(!amt) return;
-        const body = type === 'deposit' ? { senderId: user.id, receiverId: id, amount: amt } : { adminId: user.id, userId: id, amount: amt };
-        await fetch(type === 'deposit' ? '/api/transfer-credits' : '/api/withdraw-chips', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+    // --- FIXED WITHDRAWAL LOGIC ---
+async function chipAction(id, type) {
+    const amt = prompt(`Enter chip amount for ${type}:`);
+    if(!amt || isNaN(amt) || amt <= 0) return;
+    
+    const endpoint = type === 'deposit' ? '/api/transfer-credits' : '/api/withdraw-chips';
+    const body = type === 'deposit' 
+        ? { senderId: user.id, receiverId: id, amount: amt } 
+        : { adminId: user.id, userId: id, amount: amt };
+
+    const res = await fetch(endpoint, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+    const result = await res.json();
+    
+    if(result.success) {
+        alert(`${type.toUpperCase()} Successful!`);
         init();
+    } else {
+        alert("Failed: " + (result.message || "Unknown error"));
     }
+}
 
     function setupRoleOptions() {
         const sel = document.getElementById('mRole');
