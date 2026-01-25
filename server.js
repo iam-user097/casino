@@ -88,7 +88,7 @@ app.post('/api/create-user-advanced', (req, res) => {
             // --- PERFECTLY MATCHED SQL (Column names verified from your image) ---
             const sql = `INSERT INTO users (
                 username, first_name, password, role, 
-                parent_id, creator_id, balance, inr_balance, 
+                parent_id, balance, inr_balance, 
                 commission_percentage, force_password_change
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             
@@ -205,3 +205,4 @@ app.post('/api/delete-user', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server ${PORT} is ACTIVE !!`));
+
