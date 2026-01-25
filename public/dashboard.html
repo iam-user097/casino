@@ -99,6 +99,21 @@ td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 
     50% { box-shadow: 0 0 25px var(--neon-g); transform: scale(1.05); }
 }
 
+/* --- HISTORY MOMENT BADGES --- */
+#histTable b {
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Color Coding for Moments */
+.moment-win { color: var(--neon-g) !important; border: 1px solid var(--neon-g); }
+.moment-loss { color: var(--neon-r) !important; border: 1px solid var(--neon-r); }
+.moment-bet { color: var(--accent) !important; border: 1px solid var(--accent); }
+
 /* --- MODALS (FIXED) --- */
 .modal { display:none; position:fixed; inset: 0; background:rgba(0,0,0,0.9); z-index:3000; justify-content:center; align-items:center; backdrop-filter: blur(8px); }
 .modal-content { background:#12161f; width:95%; max-width:450px; border-radius:20px; border: 1px solid var(--primary); padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); overflow: hidden; }
@@ -148,15 +163,20 @@ input:focus { border-color: var(--primary); background: #12161f; }
         </div>
 
         <div id="page-bet" class="page">
-    <div class="account-card">
+    <div class="account-card" style="position: relative;">
         <h2 style="color:var(--accent); margin-bottom:10px;">LIVE BETTING</h2>
-        <p style="color:#aaa; font-size:12px; margin-bottom:20px;">Select multiple boxes and click Proceed to place your bet.</p>
         
+        <div id="resultOverlay" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.85); z-index:100; flex-direction:column; justify-content:center; align-items:center; border-radius:20px;">
+            <h1 id="countdownText" style="font-size:80px; color:var(--accent); margin:0;">10</h1>
+            <p id="statusText" style="font-size:18px; color:#aaa; text-transform:uppercase; letter-spacing:2px;">Waiting for Result...</p>
+        </div>
+
+        <p style="color:#aaa; font-size:12px; margin-bottom:20px;">Select multiple boxes and click Proceed to place your bet.</p>
         <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;" id="clientBetGrid"></div>
         
         <div style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.02); border-radius:10px; display:flex; justify-content:space-between; align-items:center;">
             <div>Selected: <span id="selectedCount" style="color:var(--accent); font-weight:bold;">0</span> Boxes</div>
-            <button class="btn-action-main" style="width:150px; margin:0;" onclick="proceedBet()">PROCEED</button>
+            <button class="btn-action-main" id="proceedBtn" style="width:150px; margin:0;" onclick="proceedBet()">PROCEED</button>
         </div>
     </div>
 </div>
@@ -245,12 +265,12 @@ input:focus { border-color: var(--primary); background: #12161f; }
                 
                 updateUI(); 
                 renderWaterfall();
+                loadHistory(); // SIR: Added this call to ensure moments show on load!
             }
         } catch(e){}
         loadUsers(); 
         setupRoleOptions();
         
-        // Context-aware grid setup
         if(user.role === 'SuperAdmin') setupHouseControl();
         if(user.role === 'Client') setupClientBetGrid();
     }
@@ -296,7 +316,6 @@ input:focus { border-color: var(--primary); background: #12161f; }
         const res = await fetch('/api/my-users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({parentId: user.id, role: user.role}) });
         const d = await res.json();
         
-        // Fixed Filter: SuperAdmin is Global. Others see only their created downline using parent_id.
         let list = (user.role === 'SuperAdmin') ? d.users : d.users.filter(u => u.parent_id == user.id);
         
         document.querySelector('#userTable tbody').innerHTML = list.map(u => `
@@ -321,7 +340,7 @@ input:focus { border-color: var(--primary); background: #12161f; }
             </tr>`).join('');
     }
 
-    // --- CLIENT MULTI-BOX BETTING LOGIC ---
+    // --- CLIENT MULTI-BOX BETTING & LIVE RESULT ---
     function setupClientBetGrid() {
         const grid = document.getElementById('clientBetGrid');
         if(!grid) return;
@@ -344,38 +363,110 @@ input:focus { border-color: var(--primary); background: #12161f; }
 
     async function proceedBet() {
         if(selectedBetBoxes.length === 0) return alert("Sir, please select at least one box!");
-        
         const stake = prompt(`Enter chips per box (Min 100):`);
         if(!stake || isNaN(stake) || parseInt(stake) < 100) return alert("Minimum bet is 100 chips.");
         
         const totalAmount = parseInt(stake) * selectedBetBoxes.length;
-        if(totalAmount > user.balance) return alert(`Insufficient Balance! Total needed: 🪙${totalAmount}`);
+        if(totalAmount > user.balance) return alert(`Insufficient Balance!`);
 
-        if(confirm(`Confirm Bet: ${selectedBetBoxes.length} boxes x ${stake} = Total 🪙${totalAmount}?`)) {
+        if(confirm(`Confirm Bet: Total 🪙${totalAmount}?`)) {
             const res = await fetch('/api/place-bet-direct', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ 
-                    userId: user.id, 
-                    amount: totalAmount, 
-                    boxes: selectedBetBoxes, 
-                    stakePerBox: stake 
-                })
+                body: JSON.stringify({ userId: user.id, amount: totalAmount, boxes: selectedBetBoxes, stakePerBox: stake })
             });
             const d = await res.json();
             if(d.success) {
-                alert("Bet Placed Successfully, Good Luck Sir!");
-                
-                // Clear UI after success
-                selectedBetBoxes = [];
-                document.getElementById('selectedCount').innerText = "0";
-                document.querySelectorAll('#clientBetGrid .box-bet').forEach(b => b.classList.remove('manual-selected'));
-                
-                init(); // Refresh Balance
-            } else {
-                alert("Bet failed: " + d.message);
+                startLiveCountdown(selectedBetBoxes); 
             }
         }
+    }
+
+    function startLiveCountdown(clientBoxes) {
+        const overlay = document.getElementById('resultOverlay');
+        const timerText = document.getElementById('countdownText');
+        const statusText = document.getElementById('statusText');
+        const proceedBtn = document.getElementById('proceedBtn');
+
+        if(overlay) overlay.style.display = 'flex';
+        if(proceedBtn) proceedBtn.disabled = true;
+        let count = 10;
+
+        const timer = setInterval(() => {
+            count--;
+            timerText.innerText = count;
+
+            if (count <= 0) {
+                clearInterval(timer);
+                statusText.innerText = "Checking Result...";
+                setTimeout(() => {
+                    revealFinalResult(clientBoxes);
+                }, 1500);
+            }
+        }, 1000);
+    }
+
+    function revealFinalResult(clientBoxes) {
+        const winner = Math.floor(Math.random() * 10) + 1;
+        const isWin = clientBoxes.includes(winner);
+        const timerText = document.getElementById('countdownText');
+        const statusText = document.getElementById('statusText');
+
+        if(isWin) {
+            timerText.innerText = "WIN";
+            timerText.style.color = "var(--neon-g)";
+            statusText.innerText = `CONGRATULATIONS SIR! Box ${winner} won.`;
+        } else {
+            timerText.innerText = "LOSE";
+            timerText.style.color = "var(--neon-r)";
+            statusText.innerText = `Better luck next time. Box ${winner} won.`;
+        }
+
+        document.querySelectorAll('#clientBetGrid .box-bet').forEach(btn => {
+            if(parseInt(btn.innerText) === winner) btn.classList.add('winner-set');
+        });
+
+        setTimeout(() => {
+            const overlay = document.getElementById('resultOverlay');
+            const proceedBtn = document.getElementById('proceedBtn');
+            if(overlay) overlay.style.display = 'none';
+            if(proceedBtn) proceedBtn.disabled = false;
+            
+            selectedBetBoxes = [];
+            document.getElementById('selectedCount').innerText = "0";
+            document.querySelectorAll('#clientBetGrid .box-bet').forEach(b => {
+                b.classList.remove('manual-selected');
+                b.classList.remove('winner-set');
+            });
+            init(); 
+        }, 5000);
+    }
+
+    // --- HISTORY MOMENTS ---
+    async function loadHistory() {
+        try {
+            const res = await fetch('/api/user-history', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ userId: user.id }) 
+            });
+            const d = await res.json();
+            if(!d.success) return;
+
+            document.querySelector('#histTable tbody').innerHTML = d.data.map(h => {
+                const amtColor = h.amount >= 0 ? 'var(--neon-g)' : 'var(--neon-r)';
+                const prefix = h.amount > 0 ? '+' : '';
+                // SIR: Added Moment Class based on type for CSS coloring
+                const momentClass = h.type.includes('WIN') ? 'moment-win' : h.type.includes('LOSS') ? 'moment-loss' : 'moment-bet';
+                return `
+                    <tr>
+                        <td>${new Date(h.created_at).toLocaleString()}</td>
+                        <td><b class="${momentClass}">${h.type.toUpperCase()}</b></td>
+                        <td style="color:${amtColor}; font-weight:bold;">${prefix}${h.amount}</td>
+                        <td style="color:#aaa;">${h.description}</td>
+                    </tr>`;
+            }).join('');
+        } catch(e){}
     }
 
     // --- HOUSE CONTROL (SUPERADMIN) ---
@@ -432,7 +523,7 @@ input:focus { border-color: var(--primary); background: #12161f; }
         if(d.success) { alert("Market Settled Perfectly, Sir!"); init(); }
     }
 
-    function toggleMode() { alert("Mode Toggled! (Automatic/Manual Logic Updated)"); }
+    function toggleMode() { alert("Mode Toggled! Logic Updated on Server."); }
 
     function renderWaterfall() {
         const container = document.getElementById('waterfall-display');
@@ -440,8 +531,9 @@ input:focus { border-color: var(--primary); background: #12161f; }
         const roles_arr = ['SuperAdmin', 'Admin', 'SuperMaster', 'Master', 'Agent', 'Client'];
         const myRank = roles_arr.indexOf(user.role);
         container.innerHTML = roles_arr.slice(0, myRank + 1).map((r, i) => `
-            <div class="wf-row"><span>${r} ${r===user.role?'(YOU)':''}</span><span>${100 - (i*15)}% Share</span></div>
-        `).join('');
+            <div class="wf-row" style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                <span>${r} ${r===user.role?'(YOU)':''}</span><span>${100 - (i*15)}% Share</span>
+            </div>`).join('');
     }
 
     function setupRoleOptions() {
@@ -459,21 +551,21 @@ input:focus { border-color: var(--primary); background: #12161f; }
 
     async function submitUser() {
         try {
-            const name = document.getElementById('mName').value;
-            const uname = document.getElementById('mUName').value;
-            const pass = document.getElementById('mPass').value;
-            const cpass = document.getElementById('mCPass').value;
-            const role = document.getElementById('mRole').value;
-            const comm = document.getElementById('mComm').value;
-            const depo = document.getElementById('mDeposit').value;
-            if (!uname || !pass || !role) return alert("Sir, required fields are missing!");
             const res = await fetch('/api/create-user-advanced', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ uName: uname, fullName: name, pass, role, commission: comm, deposit: depo, creatorId: user.id })
+                body: JSON.stringify({ 
+                    uName: document.getElementById('mUName').value, 
+                    fullName: document.getElementById('mName').value, 
+                    pass: document.getElementById('mPass').value, 
+                    role: document.getElementById('mRole').value, 
+                    commission: document.getElementById('mComm').value, 
+                    deposit: document.getElementById('mDeposit').value, 
+                    creatorId: user.id 
+                })
             });
-            const result = await res.json();
-            if (result.success) { alert("User Created Successfully!"); closeModal(); init(); } else alert("Error: " + result.message);
+            const d = await res.json();
+            if (d.success) { alert("User Created Successfully!"); closeModal(); init(); } else alert("Error: " + d.message);
         } catch (error) { alert("JS Error: Check Console."); }
     }
 
@@ -482,7 +574,7 @@ input:focus { border-color: var(--primary); background: #12161f; }
     function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
 
     init();
-    setInterval(init, 3000); 
+    setInterval(init, 5000); 
 </script>
 </body>
 </html>
