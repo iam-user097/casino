@@ -73,7 +73,7 @@ app.post('/api/my-users', (req, res) => {
     db.query(query, params, (err, r) => res.json({ users: r || [] }));
 });
 
-// --- FIXED USER CREATION: 9 columns and 9 values matched ---
+// --- FIXED USER CREATION: Matching Columns with your DB image ---
 app.post('/api/create-user-advanced', (req, res) => {
     const { uName, fullName, pass, role, deposit, commission, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
@@ -84,7 +84,7 @@ app.post('/api/create-user-advanced', (req, res) => {
         if (err) return res.json({ success: false, message: 'Database Connection Error' });
 
         conn.beginTransaction((err) => {
-            // MATCHED logic: Removed creator_id from both lists to prevent count mismatch
+            // Exactly 9 columns and 9 values to prevent count mismatch
             const sql = `INSERT INTO users (
                 username, first_name, password, role, 
                 parent_id, balance, inr_balance, 
@@ -103,12 +103,13 @@ app.post('/api/create-user-advanced', (req, res) => {
                 }
 
                 if (depAmt > 0) {
+                    // Update your account balance (Sir account)
                     conn.query('UPDATE users SET balance = balance - ?, inr_balance = inr_balance - ? WHERE id = ? AND balance >= ?', 
                     [depAmt, inrBal, creatorId, depAmt], (upErr, upRes) => {
                         if (upErr || upRes.affectedRows === 0) {
                             return conn.rollback(() => {
                                 conn.release();
-                                res.json({ success: false, message: 'Insufficient chips' });
+                                res.json({ success: false, message: 'Insufficient chips in your account' });
                             });
                         }
                         
@@ -171,23 +172,50 @@ app.post('/api/house-settle', async (req, res) => {
     } catch (err) { await conn.query('ROLLBACK'); res.json({ success: false }); }
 });
 
+// --- FIXED TRANSFER/DEPOSIT (Syncs INR) ---
 app.post('/api/transfer-credits', async (req, res) => {
     const { senderId, receiverId, amount } = req.body;
+    const amt = parseFloat(amount);
+    const inrAmt = amt * 10;
     const conn = db.promise();
     try {
-        const [update] = await conn.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amount, senderId, amount]);
+        const [update] = await conn.query('UPDATE users SET balance = balance - ?, inr_balance = inr_balance - ? WHERE id = ? AND balance >= ?', [amt, inrAmt, senderId, amt]);
         if (update.affectedRows > 0) {
-            await conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amount, receiverId]);
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [senderId, 'Sent', -amount, `Transferred chips out`]);
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [receiverId, 'Received', amount, `Received chips`]);
+            await conn.query('UPDATE users SET balance = balance + ?, inr_balance = inr_balance + ? WHERE id = ?', [amt, inrAmt, receiverId]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [senderId, 'Sent', -amt, `Transfer out`]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [receiverId, 'Received', amt, `Received chips`]);
             res.json({ success: true });
         } else res.json({ success: false });
     } catch (e) { res.json({ success: false }); }
 });
 
+// --- FIXED WITHDRAW (Clawback Logic) ---
+app.post('/api/withdraw-chips', async (req, res) => {
+    const { adminId, userId, amount } = req.body;
+    const amt = parseFloat(amount);
+    const inrAmt = amt * 10;
+    const conn = db.promise();
+    try {
+        const [update] = await conn.query('UPDATE users SET balance = balance - ?, inr_balance = inr_balance - ? WHERE id = ? AND balance >= ?', [amt, inrAmt, userId, amt]);
+        if (update.affectedRows > 0) {
+            await conn.query('UPDATE users SET balance = balance + ?, inr_balance = inr_balance + ? WHERE id = ?', [amt, inrAmt, adminId]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [userId, 'Withdrawal', -amt, `Clawback by Admin`]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [adminId, 'Clawback', amt, `Recovered from user`]);
+            res.json({ success: true });
+        } else res.json({ success: false });
+    } catch (e) { res.json({ success: false }); }
+});
+
+// --- FIXED DELETE USER ---
 app.post('/api/delete-user', (req, res) => {
     db.query('DELETE FROM users WHERE id = ? AND balance = 0', [req.body.id], (err, r) => {
-        res.json({ success: r?.affectedRows > 0 });
+        if (err) return res.json({ success: false, message: "Database Error" });
+        if (r.affectedRows > 0) {
+            db.query('DELETE FROM transactions WHERE user_id = ?', [req.body.id]);
+            res.json({ success: true });
+        } else {
+            res.json({ success: false, message: "User must have 0 balance to delete" });
+        }
     });
 });
 
