@@ -20,9 +20,13 @@ const db = mysql.createPool({
     queueLimit: 0
 });
 
-// --- MISSING ROUTE FIX: This solves "Cannot GET /" ---
+// --- FIXED ROUTES: One for Login, one for Dashboard ---
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
 // Helper for security checks
@@ -160,3 +164,4 @@ app.post('/api/delete-user', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server ${PORT} is ACTIVE !`));
+
