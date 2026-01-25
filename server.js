@@ -116,36 +116,67 @@ app.post('/api/house-settle', async (req, res) => {
     const conn = db.promise();
     try {
         await conn.query('START TRANSACTION');
+        
         for (let bet of activeBets) {
             const isWin = bet.boxes.map(Number).includes(parseInt(winnerBox));
+            const stake = parseFloat(bet.stakePerBox);
+            
             if (isWin) {
-                const winAmount = bet.stakePerBox * 9; // 9x payout
-                await conn.query('UPDATE users SET balance = balance + ?, inr_balance = (balance + ?) * 10 WHERE id = ?', [winAmount, winAmount, bet.userId]);
-                await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "Game Win", ?, ?)', [bet.userId, winAmount, `Won on box ${winnerBox}`]);
+                // MOMENT: WINNING (Payout is 9x)
+                const winAmount = stake * 9; 
+                const inrWin = winAmount * 10;
+
+                // 1. Update Client Balance & INR Sync
+                await conn.query('UPDATE users SET balance = balance + ?, inr_balance = inr_balance + ? WHERE id = ?', [winAmount, inrWin, bet.userId]);
                 
-                // Waterfall Commission Moments
+                // 2. MOMENT: Log Perfect Moment for Client
+                await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "GAME WIN", ?, ?)', 
+                [bet.userId, winAmount, `Result: Box ${winnerBox} (Multi-selection win)`]);
+                
+                // 3. COMMISSION WATERFALL (Perfect Distribution)
                 let currentId = bet.userId;
+                let lastCommissionRate = 0; // Tracks the child's rate to calculate the gap
+
                 while (true) {
+                    // Find the Parent
                     const [p] = await conn.query('SELECT parent_id FROM users WHERE id = ?', [currentId]);
                     if (!p[0] || !p[0].parent_id) break;
-                    const [pData] = await conn.query('SELECT id, commission_percentage FROM users WHERE id = ?', [p[0].parent_id]);
-                    if (!pData[0]) break;
                     
-                    const share = winAmount * (pData[0].commission_percentage / 100);
+                    // Get Parent's Details (Commission % set for them)
+                    const [pData] = await conn.query('SELECT id, username, commission_percentage FROM users WHERE id = ?', [p[0].parent_id]);
+                    if (!pData[0]) break;
+
+                    const parentRate = parseFloat(pData[0].commission_percentage);
+                    
+                    // FORMULA: (Parent % / 100) * WinAmount
+                    const share = winAmount * (parentRate / 100);
+                    
                     if (share > 0) {
-                        await conn.query('UPDATE users SET balance = balance + ?, inr_balance = (balance + ?) * 10 WHERE id = ?', [share, share, pData[0].id]);
-                        await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "Commission", ?, "Earned from downline win")', [pData[0].id, share]);
+                        await conn.query('UPDATE users SET balance = balance + ?, inr_balance = inr_balance + ? WHERE id = ?', [share, share * 10, pData[0].id]);
+                        
+                        // MOMENT: Chips Getting (Commission)
+                        await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "COMMISSION", ?, ?)', 
+                        [pData[0].id, share, `Earned ${parentRate}% from user win (ID: ${bet.userId})`]);
                     }
-                    currentId = pData[0].id;
+                    
+                    currentId = pData[0].id; // Move up to next level (Agent -> Master -> SuperMaster)
                 }
             } else {
-                await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "Game Loss", 0, ?)', [bet.userId, `Lost on box ${winnerBox}`]);
+                // MOMENT: LOG LOSS (Only if they didn't win)
+                await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "GAME LOSS", 0, ?)', 
+                [bet.userId, `Box ${winnerBox} won. Better luck next time Sir.`]);
             }
         }
-        activeBets = []; lockedWinner = null;
-        await conn.query('COMMIT');
+        
+        activeBets = []; 
+        lockedWinner = null;
+        await conn.commit();
         res.json({ success: true });
-    } catch (err) { await conn.query('ROLLBACK'); res.json({ success: false }); }
+    } catch (err) { 
+        console.error("Settle Error:", err);
+        await conn.rollback(); 
+        res.json({ success: false }); 
+    }
 });
 
 // --- NEW: HISTORY FETCHING ROUTE ---
@@ -173,3 +204,4 @@ app.post('/api/delete-user', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server ${PORT} is ACTIVE !!`));
+
