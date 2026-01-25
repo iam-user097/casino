@@ -78,15 +78,22 @@ app.post('/api/create-user-advanced', (req, res) => {
     const { uName, fullName, pass, role, deposit, commission, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
     const force = defaultPasswords.includes(pass) ? 1 : 0;
+
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
+            // Logic: Using first_name to match your image image_9c78f0.jpg exactly
             const sql = `INSERT INTO users(username, first_name, password, role, parent_id, creator_id, balance, commission_percentage, force_password_change) VALUES(?,?,?,?,?,?,?,?,?)`;
             conn.query(sql, [uName, fullName, pass, role, creatorId, creatorId, depAmt, commission, force], (err) => {
-                if (err) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'SQL Error' }); });
+                if (err) {
+                    console.error("SQL Error Details:", err);
+                    return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'User exists or SQL Error' }); });
+                }
+                
                 if (depAmt > 0) {
                     conn.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [depAmt, creatorId, depAmt], (err, upRes) => {
                         if (upRes.affectedRows === 0) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'No Chips' }); });
-                        conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [creatorId, 'Setup', -depAmt, `Setup: ${uName}`], () => {
+                        conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
+                        [creatorId, 'Setup', -depAmt, `Setup: ${uName}`], () => {
                             conn.commit(() => { conn.release(); res.json({ success: true }); });
                         });
                     });
@@ -164,3 +171,4 @@ app.post('/api/delete-user', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server ${PORT} is ACTIVE !`));
+
