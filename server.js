@@ -73,70 +73,58 @@ app.post('/api/my-users', (req, res) => {
     db.query(query, params, (err, r) => res.json({ users: r || [] }));
 });
 
+// --- FIXED USER CREATION: 9 columns and 9 values matched ---
 app.post('/api/create-user-advanced', (req, res) => {
     const { uName, fullName, pass, role, deposit, commission, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
-    const inrBal = depAmt * 10; // Logic: INR is always 10x chips
+    const inrBal = depAmt * 10;
     const force = defaultPasswords.includes(pass) ? 1 : 0;
 
     db.getConnection((err, conn) => {
         if (err) return res.json({ success: false, message: 'Database Connection Error' });
 
         conn.beginTransaction((err) => {
-            if (err) { conn.release(); return res.json({ success: false }); }
-
-            // --- PERFECTLY MATCHED SQL (Column names verified from your image) ---
+            // MATCHED logic: Removed creator_id from both lists to prevent count mismatch
             const sql = `INSERT INTO users (
                 username, first_name, password, role, 
                 parent_id, balance, inr_balance, 
                 commission_percentage, force_password_change
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             
-            const values = [
-                uName, fullName, pass, role, 
-                creatorId, creatorId, depAmt, inrBal, 
-                commission, force
-            ];
+            const values = [uName, fullName, pass, role, creatorId, depAmt, inrBal, commission, force];
 
             conn.query(sql, values, (err, result) => {
                 if (err) {
                     return conn.rollback(() => {
                         conn.release();
-                        console.error("Critical SQL Error:", err.sqlMessage);
+                        console.error("SQL Error:", err.sqlMessage);
                         res.json({ success: false, message: 'SQL Error: ' + err.sqlMessage });
                     });
                 }
 
-                // Deduction logic from creator
                 if (depAmt > 0) {
                     conn.query('UPDATE users SET balance = balance - ?, inr_balance = inr_balance - ? WHERE id = ? AND balance >= ?', 
                     [depAmt, inrBal, creatorId, depAmt], (upErr, upRes) => {
                         if (upErr || upRes.affectedRows === 0) {
                             return conn.rollback(() => {
                                 conn.release();
-                                res.json({ success: false, message: 'Insufficient chips in your account' });
+                                res.json({ success: false, message: 'Insufficient chips' });
                             });
                         }
                         
-                        // Transaction Log
                         conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, ?, ?, ?)', 
                         [creatorId, 'Setup', -depAmt, `Created Downline: ${uName}`], () => {
-                            conn.commit(() => {
-                                conn.release();
-                                res.json({ success: true });
-                            });
+                            conn.commit(() => { conn.release(); res.json({ success: true }); });
                         });
                     });
                 } else {
-                    conn.commit(() => {
-                        conn.release();
-                        res.json({ success: true });
-                    });
+                    conn.commit(() => { conn.release(); res.json({ success: true }); });
                 }
             });
         });
     });
 });
+
 app.post('/api/lock-winner', (req, res) => {
     lockedWinner = req.body.box;
     res.json({ success: true, message: `Locked to Box ${lockedWinner}` });
@@ -205,4 +193,3 @@ app.post('/api/delete-user', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server ${PORT} is ACTIVE !!`));
-
