@@ -20,7 +20,7 @@ const db = mysql.createPool({
     queueLimit: 0
 });
 
-// --- FIXED ROUTES: One for Login, one for Dashboard ---
+// --- ROUTE FIXES ---
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
@@ -29,7 +29,6 @@ app.get('/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
-// Helper for security checks
 const defaultPasswords = ['123456', '111111', '222222', '333333', '444444', '555555', '666666', '000000', '654321', '112233', '123654', '456321', '543210', '012345', '332211'];
 
 let activeBets = [];
@@ -66,7 +65,7 @@ app.post('/api/user-details', (req, res) => {
 
 app.post('/api/my-users', (req, res) => {
     const { parentId, role } = req.body;
-    let query = `SELECT id, username, full_name, role, balance, commission_percentage, 
+    let query = `SELECT id, username, first_name, role, balance, commission_percentage, 
                 CASE WHEN last_active >= NOW() - INTERVAL 5 MINUTE THEN 'Online' ELSE 'Offline' END AS status 
                 FROM users WHERE id != ?`;
     let params = [parentId];
@@ -74,6 +73,7 @@ app.post('/api/my-users', (req, res) => {
     db.query(query, params, (err, r) => res.json({ users: r || [] }));
 });
 
+// --- FIXED USER CREATION: Changed full_name to first_name ---
 app.post('/api/create-user-advanced', (req, res) => {
     const { uName, fullName, pass, role, deposit, commission, creatorId } = req.body;
     const depAmt = parseFloat(deposit) || 0;
@@ -81,19 +81,19 @@ app.post('/api/create-user-advanced', (req, res) => {
 
     db.getConnection((err, conn) => {
         conn.beginTransaction(() => {
-            // Logic: Using first_name to match your image image_9c78f0.jpg exactly
+            // Using first_name to match your DB column precisely
             const sql = `INSERT INTO users(username, first_name, password, role, parent_id, creator_id, balance, commission_percentage, force_password_change) VALUES(?,?,?,?,?,?,?,?,?)`;
             conn.query(sql, [uName, fullName, pass, role, creatorId, creatorId, depAmt, commission, force], (err) => {
                 if (err) {
-                    console.error("SQL Error Details:", err);
-                    return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'User exists or SQL Error' }); });
+                    console.error("SQL Error:", err);
+                    return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'Database Column Mismatch' }); });
                 }
                 
                 if (depAmt > 0) {
                     conn.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [depAmt, creatorId, depAmt], (err, upRes) => {
-                        if (upRes.affectedRows === 0) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'No Chips' }); });
+                        if (upRes.affectedRows === 0) return conn.rollback(() => { conn.release(); res.json({ success: false, message: 'Insufficient chips' }); });
                         conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', 
-                        [creatorId, 'Setup', -depAmt, `Setup: ${uName}`], () => {
+                        [creatorId, 'Setup', -depAmt, `Setup User: ${uName}`], () => {
                             conn.commit(() => { conn.release(); res.json({ success: true }); });
                         });
                     });
@@ -105,7 +105,7 @@ app.post('/api/create-user-advanced', (req, res) => {
 
 app.post('/api/lock-winner', (req, res) => {
     lockedWinner = req.body.box;
-    res.json({ success: true, message: `Locked to ${lockedWinner}` });
+    res.json({ success: true, message: `Locked to Box ${lockedWinner}` });
 });
 
 app.post('/api/place-bet-direct', (req, res) => {
@@ -156,7 +156,7 @@ app.post('/api/transfer-credits', async (req, res) => {
         const [update] = await conn.query('UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?', [amount, senderId, amount]);
         if (update.affectedRows > 0) {
             await conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [amount, receiverId]);
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [senderId, 'Sent', -amount, `Transferred out`]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [senderId, 'Sent', -amount, `Transferred chips out`]);
             await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?,?,?,?)', [receiverId, 'Received', amount, `Received chips`]);
             res.json({ success: true });
         } else res.json({ success: false });
@@ -170,5 +170,4 @@ app.post('/api/delete-user', (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server ${PORT} is ACTIVE !`));
-
+app.listen(PORT, () => console.log(`🚀 Magic9 Pro Active on ${PORT}`));
