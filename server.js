@@ -191,21 +191,37 @@ app.post('/api/my-users', async (req, res) => {
   }
 });
 
-// ================= DELETE USER =================
 app.post('/api/delete-user', async (req, res) => {
   try {
     const { targetId } = req.body;
 
     if (targetId == 1)
-      return res.json({ success: false, message: 'Cannot delete SuperAdmin' });
+      return res.json({ success:false, message:"Cannot delete SuperAdmin" });
 
+    // 🔒 CHECK BALANCE FIRST
+    const [[user]] = await pdb.query(
+      'SELECT balance FROM users WHERE id=?',
+      [targetId]
+    );
+
+    if (!user)
+      return res.json({ success:false, message:"User not found" });
+
+    if (user.balance > 0)
+      return res.json({
+        success:false,
+        message:"User balance must be ZERO to delete"
+      });
+
+    // ✅ SAFE TO DELETE
     await pdb.query('DELETE FROM transactions WHERE user_id=?', [targetId]);
     await pdb.query('DELETE FROM users WHERE id=?', [targetId]);
 
-    res.json({ success: true, message: 'User deleted ✅' });
+    res.json({ success:true, message:"User deleted ✅" });
+
   } catch (e) {
     console.error(e);
-    res.json({ success: false });
+    res.json({ success:false, message:e.message || e.toString() });
   }
 });
 
@@ -259,3 +275,4 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () =>
   console.log(`🚀 SERVER LIVE @ ${PORT}`)
 );
+
