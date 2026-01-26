@@ -318,8 +318,9 @@ async function loadUsers() {
             </button>
             <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
             <button class="act-btn btn-w" onclick="chipAction(${u.id},'withdraw')">W</button>
-            <button class="act-btn btn-del" onclick="deleteUser(${u.id})">
-              <i class="fas fa-trash"></i>
+            <button class="act-btn btn-delete" onclick="deleteUser(${u.id}, ${u.balance})"
+            title="Delete User">
+            <i class="fas fa-trash"></i>
             </button>
           </div>
         </td>
@@ -351,17 +352,37 @@ function openEditUserById(id){
   userModal.style.display = 'flex';
 }
 
-/* ===================== DELETE USER ===================== */
-async function deleteUser(targetId){
-  if (!confirm("Delete user permanently?")) return;
-  const res = await fetch('/api/delete-user',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ requesterId:user.id, targetId })
+function deleteUser(userId, balance) {
+
+  if (balance > 0) {
+    alert('❌ Cannot delete user.\nUser balance must be ZERO.');
+    return;
+  }
+
+  if (!confirm('⚠️ Delete this user permanently?\nThis action cannot be undone.'))
+    return;
+
+  fetch('/api/delete-user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      targetId: userId
+    })
+  })
+  .then(res => res.json())
+  .then(d => {
+    if (!d.success) {
+      alert(d.message || 'Delete failed');
+      return;
+    }
+
+    alert('✅ User deleted successfully');
+    loadUsers();
+  })
+  .catch(err => {
+    console.error(err);
+    alert('Server error');
   });
-  const d = await res.json();
-  alert(d.message || (d.success ? 'Deleted ✅':'Failed ❌'));
-  init();
 }
 
 /* ===================== CREATE / UPDATE USER ===================== */
@@ -433,3 +454,4 @@ setInterval(init,15000);
 </script>
 </body>
 </html>
+
