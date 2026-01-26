@@ -260,14 +260,14 @@ async function init() {
     sessionStorage.setItem('currentUser', JSON.stringify(user));
 
     if (user.role !== 'SuperAdmin' && DEFAULTS.includes(user.password)) {
-      document.getElementById('forcePassModal').style.display = 'flex';
+      forcePassModal.style.display = 'flex';
     }
 
     updateUI();
     renderWaterfall();
     loadUsers();
     loadHistory();
-  } catch(e){ console.error(e); }
+  } catch(e){ console.error("Init error:", e); }
 
   setupRoleOptions();
   if (user.role === 'Client') setupClientBetGrid();
@@ -310,7 +310,7 @@ async function loadUsers() {
         <td>${u.commission_percentage}%</td>
         <td>
           <div class="action-group">
-            <button class="act-btn btn-edit" onclick='openEditUser(${JSON.stringify(u)})'>
+            <button class="act-btn btn-edit" title="Edit User" onclick='openEditUser(${JSON.stringify(u)})'>
               <i class="fas fa-pen"></i>
             </button>
             <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
@@ -345,55 +345,64 @@ function openEditUser(u){
   userModal.style.display = 'flex';
 }
 
+/* ===================== DELETE USER ===================== */
+async function deleteUser(targetId){
+  if (!confirm("Delete user permanently?")) return;
+  const res = await fetch('/api/delete-user',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ requesterId:user.id, targetId })
+  });
+  const d = await res.json();
+  alert(d.message || (d.success ? 'Deleted ✅':'Failed ❌'));
+  init();
+}
+
 /* ===================== CREATE / UPDATE USER ===================== */
 async function submitUser(){
 
-  /* ---- EDIT MODE ---- */
+  /* ---------- EDIT MODE ---------- */
   if (editingUserId){
-    try{
-      const res = await fetch('/api/edit-user',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          targetId: editingUserId,
-          username: mUName.value,
-          commission: +mComm.value
-        })
-      });
-      const d = await res.json();
-      alert(d.success ? 'User updated ✅' : 'Update failed ❌');
-      closeModal();
-      init();
-      return;
-    }catch(e){ alert("Server error"); }
+    const res = await fetch('/api/edit-user',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        targetId: editingUserId,
+        username: mUName.value,
+        commission: +mComm.value
+      })
+    });
+    const d = await res.json();
+    alert(d.success ? 'User updated ✅':'Update failed ❌');
+    closeModal();
+    init();
+    return;
   }
 
-  /* ---- CREATE MODE ---- */
+  /* ---------- CREATE MODE ---------- */
   if (!mName.value || !mUName.value || !mPass.value || !mCPass.value || !mDeposit.value || !mComm.value)
     return alert("Fill all fields!");
 
   if (!/^\d{6}$/.test(mPass.value)) return alert("PIN must be 6 digits!");
   if (mPass.value !== mCPass.value) return alert("PIN mismatch!");
 
-  try{
-    const res = await fetch('/api/create-user-advanced',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        uName:mUName.value,
-        fullName:mName.value,
-        pass:mPass.value,
-        role:mRole.value,
-        commission:+mComm.value,
-        deposit:+mDeposit.value,
-        creatorId:user.id
-      })
-    });
-    const d = await res.json();
-    alert(d.message || (d.success ? 'User created ✅':'Failed ❌'));
-    if (d.success) closeModal();
-    init();
-  }catch(e){ alert("Server error"); }
+  const res = await fetch('/api/create-user-advanced',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      uName:mUName.value,
+      fullName:mName.value,
+      pass:mPass.value,
+      role:mRole.value,
+      commission:+mComm.value,
+      deposit:+mDeposit.value,
+      creatorId:user.id
+    })
+  });
+  const d = await res.json();
+  alert(d.message || (d.success ? 'User created ✅':'Failed ❌'));
+  if (d.success) closeModal();
+  init();
 }
 
 /* ===================== MODALS ===================== */
