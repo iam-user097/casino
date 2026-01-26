@@ -7,7 +7,16 @@ const path = require('path');
 const app = express();
 app.use(cors());
 app.use(express.json());
+// Serve static files (like your index.html)
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Redirect root "/" to your main HTML file
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+app.get('/dashboard',(req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // ================= DB =================
 const db = mysql.createPool({
@@ -291,3 +300,4 @@ app.post('/api/user-history', async (req,res)=>{
 // ================= SERVER =================
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, ()=>console.log(`🚀 SERVER LIVE @ ${PORT}`));
+
