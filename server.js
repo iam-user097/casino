@@ -34,7 +34,7 @@ const defaultPasswords = ['123456', '111111', '222222', '333333', '444444', '555
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 
-// --- AUTH & USER MGMT ---
+// --- AUTH & SECURITY ---
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     db.query('SELECT * FROM users WHERE username=? AND password=?', [username, password], (err, result) => {
@@ -51,10 +51,46 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+// Added for the Security Update Modal
+app.post('/api/update-password-secure', (req, res) => {
+    const { userId, newPass } = req.body;
+    db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err, r) => {
+        if (err) return res.json({ success: false });
+        res.json({ success: true });
+    });
+});
+
 app.post('/api/user-details', (req, res) => {
     db.query('SELECT * FROM users WHERE id=?', [req.body.id], (e, r) => {
         (r && r.length) ? res.json({ success: true, data: r[0] }) : res.json({ success: false });
     });
+});
+
+// --- ADVANCED USER CREATION ---
+app.post('/api/create-user-advanced', async (req, res) => {
+    const { uName, fullName, pass, role, commission, deposit, creatorId } = req.body;
+    const conn = await promiseDb.getConnection();
+    try {
+        await conn.beginTransaction();
+        const dep = parseFloat(deposit) || 0;
+        
+        // 1. Create User
+        const [result] = await conn.query(
+            'INSERT INTO users (username, first_name, password, role, commission_percentage, parent_id, balance, inr_balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [uName, fullName, pass, role, commission, creatorId, dep, dep * 10]
+        );
+        
+        // 2. Log initial deposit if any
+        if (dep > 0) {
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "Deposit", ?, "Initial Account Opening")', [result.insertId, dep]);
+        }
+        
+        await conn.commit();
+        res.json({ success: true });
+    } catch (e) {
+        await conn.rollback();
+        res.json({ success: false, message: e.message });
+    } finally { conn.release(); }
 });
 
 app.post('/api/my-users', (req, res) => {
@@ -112,7 +148,7 @@ app.post('/api/place-bet-direct', (req, res) => {
     const totalStake = parseFloat(amount);
     db.query('UPDATE users SET balance = balance - ?, inr_balance = (balance - ?) * 10 WHERE id = ? AND balance >= ?', [totalStake, totalStake, userId, totalStake], (err, r) => {
         if (r && r.affectedRows > 0) {
-            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "Bet Placed", ?, ?)', [userId, -totalStake, `Stake on boxes: ${boxes.join(',')}`]);
+            db.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "BET PLACED", ?, ?)', [userId, -totalStake, `Stake on boxes: ${boxes.join(',')}`]);
             activeBets.push({ userId, boxes, stakePerBox: parseFloat(stakePerBox) });
             res.json({ success: true });
         } else res.json({ success: false, message: 'Insufficient Balance' });
@@ -142,7 +178,6 @@ app.post('/api/house-settle', async (req, res) => {
                 await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "GAME WIN", ?, ?)', 
                     [bet.userId, winAmount, `Result: Box ${winnerBox}`]);
                 
-                // Commission Waterfall (Parent Distribution)
                 let currentId = bet.userId;
                 while (true) {
                     const [parents] = await conn.query('SELECT parent_id FROM users WHERE id = ?', [currentId]);
@@ -195,4 +230,3 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server ${PORT} is ACTIVE and perfectly connected !!`);
 });
-
