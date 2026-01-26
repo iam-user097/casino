@@ -25,6 +25,13 @@ const db = mysql.createPool({
 
 const promiseDb = db.promise();
 
+// --- DB HEARTBEAT (Prevents Hostinger/Render Timeouts) ---
+setInterval(() => {
+    db.query('SELECT 1', (err) => {
+        if (err) console.error("Heartbeat Error:", err);
+    });
+}, 30000);
+
 // --- STATE MANAGEMENT ---
 let activeBets = [];
 let lockedWinner = null;
@@ -51,10 +58,9 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// Added for the Security Update Modal
 app.post('/api/update-password-secure', (req, res) => {
     const { userId, newPass } = req.body;
-    db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err, r) => {
+    db.query('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?', [newPass, userId], (err) => {
         if (err) return res.json({ success: false });
         res.json({ success: true });
     });
@@ -74,15 +80,13 @@ app.post('/api/create-user-advanced', async (req, res) => {
         await conn.beginTransaction();
         const dep = parseFloat(deposit) || 0;
         
-        // 1. Create User
         const [result] = await conn.query(
             'INSERT INTO users (username, first_name, password, role, commission_percentage, parent_id, balance, inr_balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [uName, fullName, pass, role, commission, creatorId, dep, dep * 10]
         );
         
-        // 2. Log initial deposit if any
         if (dep > 0) {
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "Deposit", ?, "Initial Account Opening")', [result.insertId, dep]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "DEPOSIT", ?, "Initial Account Opening")', [result.insertId, dep]);
         }
         
         await conn.commit();
@@ -113,13 +117,11 @@ app.post('/api/transfer-credits', async (req, res) => {
         const [update] = await conn.query('UPDATE users SET balance = balance - ?, inr_balance = (balance - ?) * 10 WHERE id = ? AND balance >= ?', [amt, amt, senderId, amt]);
         if (update.affectedRows > 0) {
             await conn.query('UPDATE users SET balance = balance + ?, inr_balance = (balance + ?) * 10 WHERE id = ?', [amt, amt, receiverId]);
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "Sent", ?, ?)', [senderId, -amt, `Transfer to ID: ${receiverId}`]);
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "Received", ?, ?)', [receiverId, amt, `Received from ID: ${senderId}`]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "SENT", ?, ?)', [senderId, -amt, `Transfer to ID: ${receiverId}`]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "RECEIVED", ?, ?)', [receiverId, amt, `Received from ID: ${senderId}`]);
             await conn.commit();
             res.json({ success: true });
-        } else {
-            res.json({ success: false, message: "Insufficient balance" });
-        }
+        } else res.json({ success: false, message: "Insufficient balance" });
     } catch (e) { await conn.rollback(); res.json({ success: false }); }
     finally { conn.release(); }
 });
@@ -133,8 +135,8 @@ app.post('/api/withdraw-chips', async (req, res) => {
         const [update] = await conn.query('UPDATE users SET balance = balance - ?, inr_balance = (balance - ?) * 10 WHERE id = ? AND balance >= ?', [amt, amt, userId, amt]);
         if (update.affectedRows > 0) {
             await conn.query('UPDATE users SET balance = balance + ?, inr_balance = (balance + ?) * 10 WHERE id = ?', [amt, amt, adminId]);
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "Withdrawal", ?, "Clawback by Admin")', [userId, -amt]);
-            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "Clawback", ?, ?)', [adminId, amt, `Recovered from User: ${userId}`]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "WITHDRAWAL", ?, "Clawback by Admin")', [userId, -amt]);
+            await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "CLAWBACK", ?, ?)', [adminId, amt, `Recovered from User: ${userId}`]);
             await conn.commit();
             res.json({ success: true });
         } else res.json({ success: false });
