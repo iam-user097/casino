@@ -240,13 +240,15 @@ const DEFAULTS = [
 ];
 
 let selectedBetBoxes = [];
+let editingUserId = null;
+
 let user = JSON.parse(sessionStorage.getItem('currentUser'));
 if (!user) window.location.href = 'login.html';
 
 /* ===================== INIT ===================== */
 async function init() {
   try {
-    const res = await fetch('/api/user-details', {
+    const res = await fetch('/api/user-details',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ id:user.id })
@@ -257,7 +259,6 @@ async function init() {
     user = d.data;
     sessionStorage.setItem('currentUser', JSON.stringify(user));
 
-    // Force password change if default
     if (user.role !== 'SuperAdmin' && DEFAULTS.includes(user.password)) {
       document.getElementById('forcePassModal').style.display = 'flex';
     }
@@ -266,9 +267,7 @@ async function init() {
     renderWaterfall();
     loadUsers();
     loadHistory();
-  } catch(e) {
-    console.error("Init error:", e);
-  }
+  } catch(e){ console.error(e); }
 
   setupRoleOptions();
   if (user.role === 'Client') setupClientBetGrid();
@@ -276,37 +275,19 @@ async function init() {
 
 /* ===================== UI ===================== */
 function updateUI() {
-  const bal = parseFloat(user.balance || 0);
-  document.getElementById('headerBal').innerText = `🪙 ${bal.toLocaleString()}`;
-  document.getElementById('disp-chips').innerText = bal.toLocaleString();
-  document.getElementById('disp-inr').innerText = (bal * 10).toLocaleString();
+  const bal = +user.balance || 0;
+  headerBal.innerText = `🪙 ${bal.toLocaleString()}`;
+  dispChips.innerText = bal.toLocaleString();
+  dispInr.innerText = (bal * 10).toLocaleString();
 
   toggleEl('addBtn', user.role !== 'Client');
   toggleEl('autoSettleBtn', ['SuperAdmin','Admin'].includes(user.role));
   toggleEl('nav-bet-client', user.role === 'Client');
 }
 
-function toggleEl(id, show) {
+function toggleEl(id, show){
   const el = document.getElementById(id);
   if (el) el.style.display = show ? 'block' : 'none';
-}
-
-/* ===================== NAVIGATION ===================== */
-function nav(id, el) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-'+id)?.classList.add('active');
-
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  el?.classList.add('active');
-
-  if (window.innerWidth <= 768) toggleSidebar(false);
-}
-
-function toggleSidebar(force) {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('overlay');
-  sidebar.classList.toggle('show', force);
-  overlay.classList.toggle('show', force);
 }
 
 /* ===================== USERS ===================== */
@@ -320,250 +301,115 @@ async function loadUsers() {
     const d = await res.json();
     if (!d.success) return;
 
-    document.querySelector('#userTable tbody').innerHTML =
-      d.users.map(u => `
-        <tr>
-          <td><i class="fas fa-circle" style="color:${u.status==='Online'?'#22c55e':'#555'}"></i></td>
-          <td><b>${u.username}</b></td>
-          <td>${u.role}</td>
-          <td>🪙 ${(+u.balance).toLocaleString()}</td>
-          <td>${u.commission_percentage}%</td>
-          <td>
-  <div class="action-group">
-    <button class="act-btn btn-edit" title="Edit User" onclick='openEditUser(${JSON.stringify(u)})'>
-      <i class="fas fa-pen"></i>
-    </button>
-    <button class="act-btn btn-d" title="Deposit" onclick="chipAction(${u.id},'deposit')">D</button>
-    <button class="act-btn btn-w" title="Withdraw" onclick="chipAction(${u.id},'withdraw')">W</button>
-    <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
-  </div>
-</td>
-        </tr>
-      `).join('');
-  } catch(e) {
-    console.error("Load users error:", e);
-  }
+    userTable.querySelector('tbody').innerHTML = d.users.map(u=>`
+      <tr>
+        <td><i class="fas fa-circle" style="color:${u.status==='Online'?'#22c55e':'#555'}"></i></td>
+        <td><b>${u.username}</b></td>
+        <td>${u.role}</td>
+        <td>🪙 ${(+u.balance).toLocaleString()}</td>
+        <td>${u.commission_percentage}%</td>
+        <td>
+          <div class="action-group">
+            <button class="act-btn btn-edit" onclick='openEditUser(${JSON.stringify(u)})'>
+              <i class="fas fa-pen"></i>
+            </button>
+            <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
+            <button class="act-btn btn-w" onclick="chipAction(${u.id},'withdraw')">W</button>
+            <button class="act-btn btn-del" onclick="deleteUser(${u.id})">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  } catch(e){ console.error(e); }
 }
 
-async function deleteUser(targetId) {
-  if (!confirm("Delete user permanently?")) return;
-  try {
-    const res = await fetch('/api/delete-user',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ requesterId:user.id, targetId })
-    });
-    const d = await res.json();
-    alert(d.message || (d.success ? 'Deleted ✅' : 'Failed ❌'));
-    init();
-  } catch(e) {
-    alert("Error deleting user!");
-    console.error(e);
-  }
+/* ===================== EDIT USER ===================== */
+function openEditUser(u){
+  editingUserId = u.id;
+
+  mTitle.innerText = 'Edit User';
+  mName.value = u.first_name;
+  mUName.value = u.username;
+  mComm.value = u.commission_percentage;
+
+  mPass.style.display = 'none';
+  mCPass.style.display = 'none';
+  mRole.style.display = 'none';
+  mDeposit.style.display = 'none';
+
+  document.querySelector('.btn-action-main').innerHTML =
+    '<i class="fas fa-save"></i> UPDATE USER';
+
+  userModal.style.display = 'flex';
 }
 
-async function chipAction(id, type) {
-  const amt = +prompt(`Amount to ${type}:`);
-  if (!amt || amt <= 0) return;
+/* ===================== CREATE / UPDATE USER ===================== */
+async function submitUser(){
 
-  const ep = type==='deposit'?'/api/transfer-credits':'/api/withdraw-chips';
-  const body = type==='deposit'
-    ? { senderId:user.id, receiverId:id, amount:amt }
-    : { adminId:user.id, userId:id, amount:amt };
-
-  try {
-    const res = await fetch(ep,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(body)
-    });
-    const data = await res.json();
-    if (data.success) init();
-    else alert(data.message || "Action failed!");
-  } catch(e) {
-    console.error(e);
-    alert("Server error!");
-  }
-}
-
-/* ===================== CLIENT BET ===================== */
-function setupClientBetGrid() {
-  const g = document.getElementById('clientBetGrid');
-  if (!g) return;
-  g.innerHTML = Array.from({length:10},(_,i)=>`
-    <button class="box-bet" onclick="toggleClientSelection(this,${i+1})">${i+1}</button>
-  `).join('');
-}
-
-function toggleClientSelection(el, num) {
-  el.classList.toggle('manual-selected');
-  selectedBetBoxes = selectedBetBoxes.includes(num)
-    ? selectedBetBoxes.filter(n => n !== num)
-    : [...selectedBetBoxes, num];
-  document.getElementById('selectedCount').innerText = selectedBetBoxes.length;
-}
-
-async function proceedBet() {
-  if (!selectedBetBoxes.length) return alert("Select at least one box!");
-  const stake = +prompt("Chips per box (Min 100)");
-  if (!stake || stake < 100) return alert("Minimum stake is 100 chips!");
-
-  const total = stake * selectedBetBoxes.length;
-  if (total > user.balance) return alert("Insufficient balance!");
-
-  if (!confirm(`Confirm Bet 🪙${total}?`)) return;
-
-  try {
-    const res = await fetch('/api/place-bet-direct',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        userId:user.id,
-        amount:total,
-        boxes:selectedBetBoxes,
-        stakePerBox:stake
-      })
-    });
-    const data = await res.json();
-    if (data.success) startCountdown();
-    else alert(data.message || "Bet failed!");
-  } catch(e) {
-    console.error(e);
-    alert("Server error!");
-  }
-}
-
-function startCountdown() {
-  let c = 10;
-  const o = document.getElementById('resultOverlay');
-  o.style.display='flex';
-  const t = setInterval(()=>{
-    document.getElementById('countdownText').innerText = --c;
-    if (c<=0){
-      clearInterval(t);
-      o.style.display='none';
-      selectedBetBoxes = [];
-      document.getElementById('selectedCount').innerText='0';
-      document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('manual-selected'));
+  /* ---- EDIT MODE ---- */
+  if (editingUserId){
+    try{
+      const res = await fetch('/api/edit-user',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          targetId: editingUserId,
+          username: mUName.value,
+          commission: +mComm.value
+        })
+      });
+      const d = await res.json();
+      alert(d.success ? 'User updated ✅' : 'Update failed ❌');
+      closeModal();
       init();
-    }
-  },1000);
-}
-
-/* ===================== HISTORY ===================== */
-async function loadHistory() {
-  try {
-    const res = await fetch('/api/user-history',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ userId:user.id })
-    });
-    const d = await res.json();
-    if (!d.success) return;
-
-    document.querySelector('#histTable tbody').innerHTML =
-      d.data.map(h => `
-        <tr>
-          <td>${new Date(h.created_at).toLocaleString()}</td>
-          <td>${h.type}</td>
-          <td style="color:${h.amount>=0?'#22c55e':'#ef4444'}">🪙 ${h.amount}</td>
-          <td>${h.description}</td>
-        </tr>
-      `).join('');
-  } catch(e) {
-    console.error("History load error:", e);
+      return;
+    }catch(e){ alert("Server error"); }
   }
-}
 
-/* ===================== MARKET SETTLE ===================== */
-async function marketSettle() {
-  if (!confirm("Settle market now?")) return;
-  try {
-    const res = await fetch('/api/house-settle',{method:'POST'});
-    const d = await res.json();
-    alert(`Winner Box: ${d.winner || "N/A"}`);
-    init();
-  } catch(e) {
-    alert("Failed to settle market!");
-    console.error(e);
-  }
-}
-
-/* ===================== HIERARCHY ===================== */
-function renderWaterfall() {
-  const c = document.getElementById('waterfall-display');
-  if (!c) return;
-  const roles = Object.keys(ROLES).reverse();
-  c.innerHTML = roles.slice(roles.indexOf(user.role)).map((r,i)=>`
-    <div>${r} — ${100 - i*15}%</div>
-  `).join('');
-}
-
-/* ===================== SECURITY ===================== */
-async function updateForcePassword() {
-  const p = document.getElementById('newForcePass').value;
-  if (!/^\d{6}$/.test(p)) return alert("PIN must be 6 digits!");
-  try {
-    await fetch('/api/update-password-secure',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ userId:user.id, newPass:p })
-    });
-    document.getElementById('forcePassModal').style.display='none';
-    alert("PIN updated successfully ✅");
-    init();
-  } catch(e) {
-    console.error(e);
-    alert("Failed to update PIN!");
-  }
-}
-
-/* ===================== USER CREATE ===================== */
-async function submitUser() {
-  // Validation
-  if (!mName.value || !mUName.value || !mPass.value || !mCPass.value || !mDeposit.value || !mComm.value) 
+  /* ---- CREATE MODE ---- */
+  if (!mName.value || !mUName.value || !mPass.value || !mCPass.value || !mDeposit.value || !mComm.value)
     return alert("Fill all fields!");
+
   if (!/^\d{6}$/.test(mPass.value)) return alert("PIN must be 6 digits!");
-  if (mPass.value !== mCPass.value) return alert("PINs do not match!");
+  if (mPass.value !== mCPass.value) return alert("PIN mismatch!");
 
-  const payload = {
-    uName: mUName.value,
-    fullName: mName.value,
-    pass: mPass.value,
-    role: mRole.value,
-    commission: +mComm.value,
-    deposit: +mDeposit.value,
-    creatorId: user.id
-  };
-
-  try {
+  try{
     const res = await fetch('/api/create-user-advanced',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(payload)
+      body:JSON.stringify({
+        uName:mUName.value,
+        fullName:mName.value,
+        pass:mPass.value,
+        role:mRole.value,
+        commission:+mComm.value,
+        deposit:+mDeposit.value,
+        creatorId:user.id
+      })
     });
-    const data = await res.json();
-    alert(data.message || (data.success ? 'User created ✅' : 'Failed ❌'));
-    if (data.success) closeModal();
+    const d = await res.json();
+    alert(d.message || (d.success ? 'User created ✅':'Failed ❌'));
+    if (d.success) closeModal();
     init();
-  } catch(e) {
-    console.error(e);
-    alert("Server error!");
-  }
-}
-
-/* ===================== ROLE OPTIONS ===================== */
-function setupRoleOptions() {
-  const s = document.getElementById('mRole');
-  if (!s || s.options.length) return;
-  Object.keys(ROLES).forEach(r=>{
-    if (ROLES[r] < ROLES[user.role]) s.add(new Option(r,r));
-  });
+  }catch(e){ alert("Server error"); }
 }
 
 /* ===================== MODALS ===================== */
-function closeModal(){ document.getElementById('userModal').style.display='none'; }
-function openAddModal(){ document.getElementById('userModal').style.display='flex'; }
+function closeModal(){
+  userModal.style.display='none';
+  editingUserId = null;
+
+  mName.value = mUName.value = mPass.value = mCPass.value = mComm.value = mDeposit.value = '';
+  mPass.style.display = mCPass.style.display = mRole.style.display = mDeposit.style.display = '';
+
+  mTitle.innerText = 'Create Downline';
+  document.querySelector('.btn-action-main').innerHTML =
+    '<i class="fas fa-plus"></i> CREATE USER';
+}
+
+function openAddModal(){ userModal.style.display='flex'; }
 function logout(){ sessionStorage.clear(); location.href='login.html'; }
 
 /* ===================== START ===================== */
@@ -572,4 +418,3 @@ setInterval(init,15000);
 </script>
 </body>
 </html>
-
