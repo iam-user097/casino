@@ -331,7 +331,7 @@ async function loadUsers() {
           <td>
             <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
             <button class="act-btn btn-w" onclick="chipAction(${u.id},'withdraw')">W</button>
-            <button class="act-btn btn-del" onclick="deleteUser(${u.id})">🗑</button>
+            <button class="act-btn btn-del" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
           </td>
         </tr>
       `).join('');
@@ -567,3 +567,4 @@ setInterval(init,15000);
 </script>
 </body>
 </html>
+
