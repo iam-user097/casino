@@ -3,25 +3,31 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-const fs = require('fs');
-const publicPath = path.join(process.cwd(), 'public');
 
-console.log("Serving from:", publicPath);
-console.log("index.html exists?", fs.existsSync(path.join(publicPath, 'index.html')));
+// ================= PUBLIC PATH =================
+const PUBLIC_PATH = path.join(process.cwd(), 'public');
+console.log("Serving static files from:", PUBLIC_PATH);
 
-app.use(express.static(publicPath));
+// Check files exist
+console.log("index.html exists?", fs.existsSync(path.join(PUBLIC_PATH, 'index.html')));
+console.log("dashboard.html exists?", fs.existsSync(path.join(PUBLIC_PATH, 'dashboard.html')));
+
+app.use(express.static(PUBLIC_PATH));
+
+// Serve main pages
 app.get('/', (req, res) => {
-    res.sendFile(path.join(publicPath, 'index.html'));
+    res.sendFile(path.join(PUBLIC_PATH, 'index.html'));
 });
 app.get('/dashboard', (req, res) => {
-    res.sendFile(path.join(publicPath, 'dashboard.html')); // use dashboard.html
+    res.sendFile(path.join(PUBLIC_PATH, 'dashboard.html'));
 });
 
-// ================= DB =================
+// ================= DATABASE =================
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -124,10 +130,7 @@ app.post('/api/create-user-advanced', async (req,res)=>{
 // ================= USERS LIST =================
 app.post('/api/my-users', async (req,res)=>{
   const { parentId } = req.body;
-  const [r] = await pdb.query(
-    'SELECT * FROM users WHERE parent_id=?',
-    [parentId]
-  );
+  const [r] = await pdb.query('SELECT * FROM users WHERE parent_id=?', [parentId]);
   res.json({ users:r });
 });
 
@@ -141,7 +144,7 @@ app.post('/api/delete-user', async (req,res)=>{
   res.json({ success:true });
 });
 
-// ================= TRANSFER CREDITS (DEPOSIT) =================
+// ================= TRANSFER CREDITS =================
 app.post('/api/transfer-credits', async (req,res)=>{
   const { senderId, receiverId, amount } = req.body;
   if (amount <= 0) return res.json({ success:false });
@@ -226,19 +229,17 @@ app.post('/api/place-bet-direct', async (req,res)=>{
   res.json({ success:true });
 });
 
-// ================= MARKET SETTLE (DIFFERENTIAL COMMISSION) =================
+// ================= HOUSE SETTLE =================
 app.post('/api/house-settle', async (req,res)=>{
   if (!activeBets.length) return res.json({ success:false });
 
   const winner = Math.floor(Math.random()*10)+1;
   const conn = await pdb.getConnection();
-
   try {
     await conn.beginTransaction();
 
     for (const bet of activeBets) {
       if (!bet.boxes.includes(winner)) continue;
-
       const winAmt = bet.stakePerBox * 9;
 
       await conn.query(
@@ -250,28 +251,18 @@ app.post('/api/house-settle', async (req,res)=>{
         [bet.userId, winAmt]
       );
 
-      // DIFFERENTIAL COMMISSION
       let lastPercent = 0;
       let child = bet.userId;
 
-      while (true) {
-        const [[u]] = await conn.query(
-          'SELECT parent_id, commission_percentage FROM users WHERE id=?',
-          [child]
-        );
-        if (!u || !u.parent_id) break;
+      while(true){
+        const [[u]] = await conn.query('SELECT parent_id, commission_percentage FROM users WHERE id=?', [child]);
+        if(!u || !u.parent_id) break;
 
         const diff = u.commission_percentage - lastPercent;
-        if (diff > 0) {
-          const com = (winAmt * diff) / 100;
-          await conn.query(
-            'UPDATE users SET balance=balance+?, inr_balance=(balance+?)*10 WHERE id=?',
-            [com, com, u.parent_id]
-          );
-          await conn.query(
-            'INSERT INTO transactions VALUES (NULL,?, "COMMISSION", ?, "Downline commission", NOW())',
-            [u.parent_id, com]
-          );
+        if(diff>0){
+          const com = (winAmt*diff)/100;
+          await conn.query('UPDATE users SET balance=balance+?, inr_balance=(balance+?)*10 WHERE id=?', [com, com, u.parent_id]);
+          await conn.query('INSERT INTO transactions VALUES (NULL,?, "COMMISSION", ?, "Downline commission", NOW())', [u.parent_id, com]);
         }
 
         lastPercent = u.commission_percentage;
@@ -283,9 +274,9 @@ app.post('/api/house-settle', async (req,res)=>{
     await conn.commit();
     res.json({ success:true, winner });
 
-  } catch (e) {
+  } catch(e){
     await conn.rollback();
-    res.json({ success:false });
+    res.json({ success:false, message:e });
   } finally {
     conn.release();
   }
@@ -303,5 +294,3 @@ app.post('/api/user-history', async (req,res)=>{
 // ================= SERVER =================
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, ()=>console.log(`🚀 SERVER LIVE @ ${PORT}`));
-
-
