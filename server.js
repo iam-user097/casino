@@ -46,24 +46,48 @@ ensureSuperAdmin();
 let activeBets = [];
 
 // ================= LOGIN =================
+const DEFAULT_PASSWORDS = [
+  '123456','112233','223344','666666','665544','000000','012345','123654',
+  '321456','654321','111111','222222','333333','444444','555555','000111','111000'
+];
+
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
-  const [r] = await pdb.query(
-    'SELECT * FROM users WHERE username=? AND password=?',
-    [username, password]
+
+  // Fetch user by username
+  const [rows] = await pdb.query(
+    'SELECT * FROM users WHERE username=?',
+    [username]
   );
-  if (!r.length) return res.json({ success:false });
 
-  let user = r[0];
-  let force = user.force_password_change || 0;
-  if (user.role !== 'SuperAdmin' && password === '123456') force = 1;
+  if (!rows.length) return res.json({ success:false, message:"Invalid credentials" });
 
+  const user = rows[0];
+
+  // Check password
+  if (user.password !== password) {
+    return res.json({ success:false, message:"Invalid credentials" });
+  }
+
+  let force = 0;
+
+  // SuperAdmin never forced
+  if (user.role === 'SuperAdmin') {
+    force = 0;
+  } else {
+    // Force password change if password is in the default list
+    if (DEFAULT_PASSWORDS.includes(password)) {
+      force = 1;
+    }
+  }
+
+  // Update last_active and force_password_change
   await pdb.query(
     'UPDATE users SET force_password_change=?, last_active=NOW() WHERE id=?',
     [force, user.id]
   );
 
-  res.json({ success:true, user:{...user, force_password_change:force} });
+  res.json({ success:true, user:{ ...user, force_password_change:force } });
 });
 
 // ================= PASSWORD =================
@@ -300,5 +324,3 @@ app.post('/api/user-history', async (req,res)=>{
 // ================= SERVER =================
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, ()=>console.log(`🚀 SERVER LIVE @ ${PORT}`));
-
-
