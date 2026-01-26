@@ -129,15 +129,30 @@ app.post('/api/create-user-advanced', async (req,res)=>{
     }
 });
 
-// ================= USERS LIST =================
-app.post('/api/my-users', async (req,res)=>{
+app.post('/api/my-users', async (req, res) => {
     try {
-        const { parentId } = req.body;
-        const [r] = await pdb.query('SELECT * FROM users WHERE parent_id=?', [parentId]);
-        res.json({ users:r });
+        const { parentId, role } = req.body;
+
+        let rows;
+
+        // 🔥 SuperAdmin sees ALL users except himself
+        if (role === 'SuperAdmin') {
+            [rows] = await pdb.query(
+                'SELECT * FROM users WHERE id != 1 ORDER BY role DESC, id DESC'
+            );
+        } 
+        // 🔥 Other roles see ONLY their created users
+        else {
+            [rows] = await pdb.query(
+                'SELECT * FROM users WHERE parent_id = ? ORDER BY id DESC',
+                [parentId]
+            );
+        }
+
+        res.json({ success: true, users: rows });
     } catch (e) {
         console.error(e);
-        res.json({ users:[], message:e.message || e.toString() });
+        res.json({ success: false, users: [], message: e.message });
     }
 });
 
@@ -318,3 +333,4 @@ app.post('/api/user-history', async (req,res)=>{
 // ================= START SERVER =================
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, ()=>console.log(`🚀 SERVER LIVE @ ${PORT}`));
+
