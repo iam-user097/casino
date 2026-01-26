@@ -24,7 +24,7 @@ async function ensureSuperAdmin() {
   const [r] = await pdb.query(`SELECT id FROM users WHERE id=1`);
   if (!r.length) {
     await pdb.query(`
-      INSERT INTO users 
+      INSERT INTO users
       (id, username, first_name, password, role, balance, inr_balance, commission_percentage)
       VALUES (1,'sadmin','Main Holder','123456','SuperAdmin',100000,1000000,10)
     `);
@@ -33,7 +33,7 @@ async function ensureSuperAdmin() {
 }
 ensureSuperAdmin();
 
-// ================= GLOBAL STATE =================
+// ================= GLOBAL =================
 let activeBets = [];
 
 // ================= LOGIN =================
@@ -77,34 +77,36 @@ app.post('/api/user-details', async (req,res)=>{
 app.post('/api/create-user-advanced', async (req,res)=>{
   const { uName, fullName, pass, role, commission, deposit, creatorId } = req.body;
   const conn = await pdb.getConnection();
-  try{
+  try {
     await conn.beginTransaction();
 
-    if(creatorId!=1){
+    if (creatorId != 1) {
       const [d] = await conn.query(
         'UPDATE users SET balance=balance-?, inr_balance=(balance-?)*10 WHERE id=? AND balance>=?',
-        [deposit,deposit,creatorId,deposit]
+        [deposit, deposit, creatorId, deposit]
       );
-      if(!d.affectedRows) throw "Insufficient balance";
+      if (!d.affectedRows) throw "Insufficient balance";
     }
 
     const [u] = await conn.query(`
-      INSERT INTO users 
+      INSERT INTO users
       (username, first_name, password, role, commission_percentage, parent_id, balance, inr_balance)
       VALUES (?,?,?,?,?,?,?,?)
-    `,[uName,fullName,pass,role,commission,creatorId,deposit,deposit*10]);
+    `,[uName, fullName, pass, role, commission, creatorId, deposit, deposit*10]);
 
     await conn.query(
-      'INSERT INTO transactions VALUES (NULL,?, "RECEIVED", ?, "Initial Chips", NOW())',
-      [u.insertId,deposit]
+      'INSERT INTO transactions VALUES (NULL,?, "TRANSFER_IN", ?, "Initial Chips", NOW())',
+      [u.insertId, deposit]
     );
 
     await conn.commit();
-    res.json({success:true});
-  }catch(e){
+    res.json({ success:true });
+  } catch (e) {
     await conn.rollback();
-    res.json({success:false,message:e});
-  }finally{conn.release();}
+    res.json({ success:false, message:e });
+  } finally {
+    conn.release();
+  }
 });
 
 // ================= USERS LIST =================
@@ -119,40 +121,67 @@ app.post('/api/my-users', async (req,res)=>{
 
 // ================= DELETE USER =================
 app.post('/api/delete-user', async (req,res)=>{
-  const { id } = req.body;
-  if(id==1) return res.json({success:false});
-  await pdb.query('DELETE FROM transactions WHERE user_id=?',[id]);
-  await pdb.query('DELETE FROM users WHERE id=?',[id]);
-  res.json({success:true});
+  const { requesterId, targetId } = req.body;
+  if (targetId == 1) return res.json({ success:false, message:"Cannot delete SuperAdmin" });
+
+  await pdb.query('DELETE FROM transactions WHERE user_id=?',[targetId]);
+  await pdb.query('DELETE FROM users WHERE id=?',[targetId]);
+  res.json({ success:true });
 });
 
-// ================= DEPOSIT =================
-app.post('/api/deposit-chips', async (req,res)=>{
-  const { requesterId, targetId, amount } = req.body;
-  await pdb.query(
-    'UPDATE users SET balance=balance+?, inr_balance=(balance+?)*10 WHERE id=?',
-    [amount,amount,targetId]
-  );
-  await pdb.query(
-    'INSERT INTO transactions VALUES (NULL,?, "DEPOSIT", ?, "Admin Deposit", NOW())',
-    [targetId,amount]
-  );
-  res.json({success:true});
+// ================= TRANSFER CREDITS (DEPOSIT) =================
+app.post('/api/transfer-credits', async (req,res)=>{
+  const { senderId, receiverId, amount } = req.body;
+  if (amount <= 0) return res.json({ success:false });
+
+  const conn = await pdb.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [d] = await conn.query(
+      'UPDATE users SET balance=balance-?, inr_balance=(balance-?)*10 WHERE id=? AND balance>=?',
+      [amount, amount, senderId, amount]
+    );
+    if (!d.affectedRows) throw "Insufficient balance";
+
+    await conn.query(
+      'UPDATE users SET balance=balance+?, inr_balance=(balance+?)*10 WHERE id=?',
+      [amount, amount, receiverId]
+    );
+
+    await conn.query(
+      'INSERT INTO transactions VALUES (NULL,?, "TRANSFER_OUT", ?, "Transfer to user '+receiverId+'", NOW())',
+      [senderId, -amount]
+    );
+    await conn.query(
+      'INSERT INTO transactions VALUES (NULL,?, "TRANSFER_IN", ?, "Received from user '+senderId+'", NOW())',
+      [receiverId, amount]
+    );
+
+    await conn.commit();
+    res.json({ success:true });
+  } catch (e) {
+    await conn.rollback();
+    res.json({ success:false, message:e });
+  } finally {
+    conn.release();
+  }
 });
 
 // ================= WITHDRAW =================
 app.post('/api/withdraw-chips', async (req,res)=>{
-  const { targetId, amount } = req.body;
+  const { userId, amount } = req.body;
   const [r] = await pdb.query(
     'UPDATE users SET balance=balance-?, inr_balance=(balance-?)*10 WHERE id=? AND balance>=?',
-    [amount,amount,targetId,amount]
+    [amount, amount, userId, amount]
   );
-  if(!r.affectedRows) return res.json({success:false});
+  if (!r.affectedRows) return res.json({ success:false });
+
   await pdb.query(
     'INSERT INTO transactions VALUES (NULL,?, "WITHDRAW", ?, "Withdraw", NOW())',
-    [targetId,-amount]
+    [userId, -amount]
   );
-  res.json({success:true});
+  res.json({ success:true });
 });
 
 // ================= EDIT USER =================
@@ -160,81 +189,94 @@ app.post('/api/edit-user', async (req,res)=>{
   const { targetId, username, commission } = req.body;
   await pdb.query(
     'UPDATE users SET username=?, commission_percentage=? WHERE id=?',
-    [username,commission,targetId]
+    [username, commission, targetId]
   );
-  res.json({success:true});
+  res.json({ success:true });
 });
 
 // ================= BET =================
 app.post('/api/place-bet-direct', async (req,res)=>{
   const { userId, amount, boxes, stakePerBox } = req.body;
+
   const [r] = await pdb.query(
     'UPDATE users SET balance=balance-?, inr_balance=(balance-?)*10 WHERE id=? AND balance>=?',
-    [amount,amount,userId,amount]
+    [amount, amount, userId, amount]
   );
-  if(!r.affectedRows) return res.json({success:false});
+  if (!r.affectedRows) return res.json({ success:false });
 
   activeBets.push({ userId, boxes, stakePerBox });
+
   await pdb.query(
     'INSERT INTO transactions VALUES (NULL,?, "BET", ?, ?, NOW())',
-    [userId,-amount,`Boxes ${boxes.join(',')}`]
+    [userId, -amount, `Boxes ${boxes.join(',')}`]
   );
-  res.json({success:true});
+
+  res.json({ success:true });
 });
 
-// ================= MARKET SETTLE + COMMISSION =================
+// ================= MARKET SETTLE (DIFFERENTIAL COMMISSION) =================
 app.post('/api/house-settle', async (req,res)=>{
-  if(!activeBets.length) return res.json({success:false});
+  if (!activeBets.length) return res.json({ success:false });
 
   const winner = Math.floor(Math.random()*10)+1;
   const conn = await pdb.getConnection();
 
-  try{
+  try {
     await conn.beginTransaction();
 
-    for(const bet of activeBets){
-      if(bet.boxes.includes(winner)){
-        const winAmt = bet.stakePerBox * 9;
-        await conn.query(
-          'UPDATE users SET balance=balance+?, inr_balance=(balance+?)*10 WHERE id=?',
-          [winAmt,winAmt,bet.userId]
-        );
-        await conn.query(
-          'INSERT INTO transactions VALUES (NULL,?, "WIN", ?, "Winner Box '+winner+'", NOW())',
-          [bet.userId,winAmt]
-        );
+    for (const bet of activeBets) {
+      if (!bet.boxes.includes(winner)) continue;
 
-        // COMMISSION FLOW
-        let child = bet.userId;
-        while(true){
-          const [[u]] = await conn.query(
-            'SELECT parent_id, commission_percentage FROM users WHERE id=?',
-            [child]
-          );
-          if(!u || !u.parent_id) break;
+      const winAmt = bet.stakePerBox * 9;
 
-          const com = (winAmt * u.commission_percentage) / 100;
+      await conn.query(
+        'UPDATE users SET balance=balance+?, inr_balance=(balance+?)*10 WHERE id=?',
+        [winAmt, winAmt, bet.userId]
+      );
+      await conn.query(
+        'INSERT INTO transactions VALUES (NULL,?, "WIN", ?, "Winner Box '+winner+'", NOW())',
+        [bet.userId, winAmt]
+      );
+
+      // DIFFERENTIAL COMMISSION
+      let lastPercent = 0;
+      let child = bet.userId;
+
+      while (true) {
+        const [[u]] = await conn.query(
+          'SELECT parent_id, commission_percentage FROM users WHERE id=?',
+          [child]
+        );
+        if (!u || !u.parent_id) break;
+
+        const diff = u.commission_percentage - lastPercent;
+        if (diff > 0) {
+          const com = (winAmt * diff) / 100;
           await conn.query(
             'UPDATE users SET balance=balance+?, inr_balance=(balance+?)*10 WHERE id=?',
-            [com,com,u.parent_id]
+            [com, com, u.parent_id]
           );
           await conn.query(
-            'INSERT INTO transactions VALUES (NULL,?, "COMMISSION", ?, "Downline win commission", NOW())',
-            [u.parent_id,com]
+            'INSERT INTO transactions VALUES (NULL,?, "COMMISSION", ?, "Downline commission", NOW())',
+            [u.parent_id, com]
           );
-
-          child = u.parent_id;
         }
+
+        lastPercent = u.commission_percentage;
+        child = u.parent_id;
       }
     }
 
     activeBets = [];
     await conn.commit();
-    res.json({success:true,winner});
-  }catch(e){
+    res.json({ success:true, winner });
+
+  } catch (e) {
     await conn.rollback();
-    res.json({success:false});
-  }finally{conn.release();}
+    res.json({ success:false });
+  } finally {
+    conn.release();
+  }
 });
 
 // ================= HISTORY =================
@@ -243,7 +285,7 @@ app.post('/api/user-history', async (req,res)=>{
     'SELECT * FROM transactions WHERE user_id=? ORDER BY created_at DESC',
     [req.body.userId]
   );
-  res.json({success:true,data:r});
+  res.json({ success:true, data:r });
 });
 
 // ================= SERVER =================
