@@ -13,6 +13,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Redirect root "/" to your main HTML file
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 app.get('/dashboard',(req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
@@ -299,3 +300,4 @@ app.post('/api/user-history', async (req,res)=>{
 // ================= SERVER =================
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, ()=>console.log(`🚀 SERVER LIVE @ ${PORT}`));
+
