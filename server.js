@@ -129,31 +129,31 @@ app.post('/api/create-user-advanced', async (req,res)=>{
     }
 });
 
+// ================= USERS LIST =================
 app.post('/api/my-users', async (req, res) => {
-    try {
-        const { parentId, role } = req.body;
+  const { parentId, role } = req.body;
 
-        let rows;
+  try {
+    let rows;
 
-        // 🔥 SuperAdmin sees ALL users except himself
-        if (role === 'SuperAdmin') {
-            [rows] = await pdb.query(
-                'SELECT * FROM users WHERE id != 1 ORDER BY role DESC, id DESC'
-            );
-        } 
-        // 🔥 Other roles see ONLY their created users
-        else {
-            [rows] = await pdb.query(
-                'SELECT * FROM users WHERE parent_id = ? ORDER BY id DESC',
-                [parentId]
-            );
-        }
-
-        res.json({ success: true, users: rows });
-    } catch (e) {
-        console.error(e);
-        res.json({ success: false, users: [], message: e.message });
+    if (role === 'SuperAdmin') {
+      // 🔥 SuperAdmin sees ALL users except himself
+      [rows] = await pdb.query(
+        'SELECT * FROM users WHERE id != 1 ORDER BY id DESC'
+      );
+    } else {
+      // 🔒 Others see only their direct downline
+      [rows] = await pdb.query(
+        'SELECT * FROM users WHERE parent_id = ? ORDER BY id DESC',
+        [parentId]
+      );
     }
+
+    res.json({ success: true, users: rows });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false });
+  }
 });
 
 // ================= DELETE USER =================
@@ -333,4 +333,5 @@ app.post('/api/user-history', async (req,res)=>{
 // ================= START SERVER =================
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, ()=>console.log(`🚀 SERVER LIVE @ ${PORT}`));
+
 
