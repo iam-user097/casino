@@ -257,6 +257,7 @@ async function init() {
     user = d.data;
     sessionStorage.setItem('currentUser', JSON.stringify(user));
 
+    // Force password change if default
     if (user.role !== 'SuperAdmin' && DEFAULTS.includes(user.password)) {
       document.getElementById('forcePassModal').style.display = 'flex';
     }
@@ -266,7 +267,7 @@ async function init() {
     loadUsers();
     loadHistory();
   } catch(e) {
-    console.error(e);
+    console.error("Init error:", e);
   }
 
   setupRoleOptions();
@@ -290,62 +291,73 @@ function toggleEl(id, show) {
   if (el) el.style.display = show ? 'block' : 'none';
 }
 
-/* ===================== NAV ===================== */
+/* ===================== NAVIGATION ===================== */
 function nav(id, el) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+id)?.classList.add('active');
 
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el?.classList.add('active');
 
   if (window.innerWidth <= 768) toggleSidebar(false);
 }
 
 function toggleSidebar(force) {
-  document.getElementById('sidebar').classList.toggle('show', force);
-  document.getElementById('overlay').classList.toggle('show', force);
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+  sidebar.classList.toggle('show', force);
+  overlay.classList.toggle('show', force);
 }
 
 /* ===================== USERS ===================== */
 async function loadUsers() {
-  const res = await fetch('/api/my-users',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ parentId:user.id, role:user.role })
-  });
-  const d = await res.json();
-  if (!d.success) return;
+  try {
+    const res = await fetch('/api/my-users',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ parentId:user.id, role:user.role })
+    });
+    const d = await res.json();
+    if (!d.success) return;
 
-  document.querySelector('#userTable tbody').innerHTML =
-    d.users.map(u=>`
-      <tr>
-        <td><i class="fas fa-circle" style="color:${u.status==='Online'?'#22c55e':'#555'}"></i></td>
-        <td><b>${u.username}</b></td>
-        <td>${u.role}</td>
-        <td>🪙 ${(+u.balance).toLocaleString()}</td>
-        <td>${u.commission_percentage}%</td>
-        <td>
-          <button onclick="chipAction(${u.id},'deposit')">D</button>
-          <button onclick="chipAction(${u.id},'withdraw')">W</button>
-          <button onclick="deleteUser(${u.id})">🗑</button>
-        </td>
-      </tr>
-    `).join('');
+    document.querySelector('#userTable tbody').innerHTML =
+      d.users.map(u => `
+        <tr>
+          <td><i class="fas fa-circle" style="color:${u.status==='Online'?'#22c55e':'#555'}"></i></td>
+          <td><b>${u.username}</b></td>
+          <td>${u.role}</td>
+          <td>🪙 ${(+u.balance).toLocaleString()}</td>
+          <td>${u.commission_percentage}%</td>
+          <td>
+            <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
+            <button class="act-btn btn-w" onclick="chipAction(${u.id},'withdraw')">W</button>
+            <button class="act-btn btn-del" onclick="deleteUser(${u.id})">🗑</button>
+          </td>
+        </tr>
+      `).join('');
+  } catch(e) {
+    console.error("Load users error:", e);
+  }
 }
 
 async function deleteUser(targetId) {
   if (!confirm("Delete user permanently?")) return;
-  const res = await fetch('/api/delete-user',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ requesterId:user.id, targetId })
-  });
-  const d = await res.json();
-  alert(d.message || (d.success ? 'Deleted' : 'Failed'));
-  init();
+  try {
+    const res = await fetch('/api/delete-user',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ requesterId:user.id, targetId })
+    });
+    const d = await res.json();
+    alert(d.message || (d.success ? 'Deleted ✅' : 'Failed ❌'));
+    init();
+  } catch(e) {
+    alert("Error deleting user!");
+    console.error(e);
+  }
 }
 
-async function chipAction(id,type) {
+async function chipAction(id, type) {
   const amt = +prompt(`Amount to ${type}:`);
   if (!amt || amt <= 0) return;
 
@@ -354,13 +366,19 @@ async function chipAction(id,type) {
     ? { senderId:user.id, receiverId:id, amount:amt }
     : { adminId:user.id, userId:id, amount:amt };
 
-  const res = await fetch(ep,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(body)
-  });
-
-  if ((await res.json()).success) init();
+  try {
+    const res = await fetch(ep,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.success) init();
+    else alert(data.message || "Action failed!");
+  } catch(e) {
+    console.error(e);
+    alert("Server error!");
+  }
 }
 
 /* ===================== CLIENT BET ===================== */
@@ -372,36 +390,42 @@ function setupClientBetGrid() {
   `).join('');
 }
 
-function toggleClientSelection(el,num) {
+function toggleClientSelection(el, num) {
   el.classList.toggle('manual-selected');
   selectedBetBoxes = selectedBetBoxes.includes(num)
-    ? selectedBetBoxes.filter(n=>n!==num)
-    : [...selectedBetBoxes,num];
+    ? selectedBetBoxes.filter(n => n !== num)
+    : [...selectedBetBoxes, num];
   document.getElementById('selectedCount').innerText = selectedBetBoxes.length;
 }
 
 async function proceedBet() {
-  if (!selectedBetBoxes.length) return alert("Select at least one box");
+  if (!selectedBetBoxes.length) return alert("Select at least one box!");
   const stake = +prompt("Chips per box (Min 100)");
-  if (stake < 100) return;
+  if (!stake || stake < 100) return alert("Minimum stake is 100 chips!");
 
   const total = stake * selectedBetBoxes.length;
-  if (total > user.balance) return alert("Insufficient balance");
+  if (total > user.balance) return alert("Insufficient balance!");
 
   if (!confirm(`Confirm Bet 🪙${total}?`)) return;
 
-  const res = await fetch('/api/place-bet-direct',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      userId:user.id,
-      amount:total,
-      boxes:selectedBetBoxes,
-      stakePerBox:stake
-    })
-  });
-
-  if ((await res.json()).success) startCountdown();
+  try {
+    const res = await fetch('/api/place-bet-direct',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        userId:user.id,
+        amount:total,
+        boxes:selectedBetBoxes,
+        stakePerBox:stake
+      })
+    });
+    const data = await res.json();
+    if (data.success) startCountdown();
+    else alert(data.message || "Bet failed!");
+  } catch(e) {
+    console.error(e);
+    alert("Server error!");
+  }
 }
 
 function startCountdown() {
@@ -413,9 +437,9 @@ function startCountdown() {
     if (c<=0){
       clearInterval(t);
       o.style.display='none';
-      selectedBetBoxes=[];
+      selectedBetBoxes = [];
       document.getElementById('selectedCount').innerText='0';
-      document.querySelectorAll('.box-bet').forEach(b=>b.classList.remove('manual-selected'));
+      document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('manual-selected'));
       init();
     }
   },1000);
@@ -423,32 +447,41 @@ function startCountdown() {
 
 /* ===================== HISTORY ===================== */
 async function loadHistory() {
-  const res = await fetch('/api/user-history',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ userId:user.id })
-  });
-  const d = await res.json();
-  if (!d.success) return;
+  try {
+    const res = await fetch('/api/user-history',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ userId:user.id })
+    });
+    const d = await res.json();
+    if (!d.success) return;
 
-  document.querySelector('#histTable tbody').innerHTML =
-    d.data.map(h=>`
-      <tr>
-        <td>${new Date(h.created_at).toLocaleString()}</td>
-        <td>${h.type}</td>
-        <td style="color:${h.amount>=0?'#22c55e':'#ef4444'}">${h.amount}</td>
-        <td>${h.description}</td>
-      </tr>
-    `).join('');
+    document.querySelector('#histTable tbody').innerHTML =
+      d.data.map(h => `
+        <tr>
+          <td>${new Date(h.created_at).toLocaleString()}</td>
+          <td>${h.type}</td>
+          <td style="color:${h.amount>=0?'#22c55e':'#ef4444'}">🪙 ${h.amount}</td>
+          <td>${h.description}</td>
+        </tr>
+      `).join('');
+  } catch(e) {
+    console.error("History load error:", e);
+  }
 }
 
-/* ===================== SETTLE ===================== */
+/* ===================== MARKET SETTLE ===================== */
 async function marketSettle() {
   if (!confirm("Settle market now?")) return;
-  const res = await fetch('/api/house-settle',{method:'POST'});
-  const d = await res.json();
-  alert(`Winner Box: ${d.winner}`);
-  init();
+  try {
+    const res = await fetch('/api/house-settle',{method:'POST'});
+    const d = await res.json();
+    alert(`Winner Box: ${d.winner || "N/A"}`);
+    init();
+  } catch(e) {
+    alert("Failed to settle market!");
+    console.error(e);
+  }
 }
 
 /* ===================== HIERARCHY ===================== */
@@ -464,37 +497,57 @@ function renderWaterfall() {
 /* ===================== SECURITY ===================== */
 async function updateForcePassword() {
   const p = document.getElementById('newForcePass').value;
-  if (p.length!==6) return alert("6 digit PIN only");
-  await fetch('/api/update-password-secure',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ userId:user.id, newPass:p })
-  });
-  document.getElementById('forcePassModal').style.display='none';
-  init();
+  if (!/^\d{6}$/.test(p)) return alert("PIN must be 6 digits!");
+  try {
+    await fetch('/api/update-password-secure',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ userId:user.id, newPass:p })
+    });
+    document.getElementById('forcePassModal').style.display='none';
+    alert("PIN updated successfully ✅");
+    init();
+  } catch(e) {
+    console.error(e);
+    alert("Failed to update PIN!");
+  }
 }
 
 /* ===================== USER CREATE ===================== */
 async function submitUser() {
+  // Validation
+  if (!mName.value || !mUName.value || !mPass.value || !mCPass.value || !mDeposit.value || !mComm.value) 
+    return alert("Fill all fields!");
+  if (!/^\d{6}$/.test(mPass.value)) return alert("PIN must be 6 digits!");
+  if (mPass.value !== mCPass.value) return alert("PINs do not match!");
+
   const payload = {
-    uName:mUName.value,
-    fullName:mName.value,
-    pass:mPass.value,
-    role:mRole.value,
-    commission:mComm.value,
-    deposit:mDeposit.value,
-    creatorId:user.id
+    uName: mUName.value,
+    fullName: mName.value,
+    pass: mPass.value,
+    role: mRole.value,
+    commission: +mComm.value,
+    deposit: +mDeposit.value,
+    creatorId: user.id
   };
-  const res = await fetch('/api/create-user-advanced',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(payload)
-  });
-  alert((await res.json()).message || 'Done');
-  closeModal();
-  init();
+
+  try {
+    const res = await fetch('/api/create-user-advanced',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const data = await res.json();
+    alert(data.message || (data.success ? 'User created ✅' : 'Failed ❌'));
+    if (data.success) closeModal();
+    init();
+  } catch(e) {
+    console.error(e);
+    alert("Server error!");
+  }
 }
 
+/* ===================== ROLE OPTIONS ===================== */
 function setupRoleOptions() {
   const s = document.getElementById('mRole');
   if (!s || s.options.length) return;
@@ -503,6 +556,7 @@ function setupRoleOptions() {
   });
 }
 
+/* ===================== MODALS ===================== */
 function closeModal(){ document.getElementById('userModal').style.display='none'; }
 function openAddModal(){ document.getElementById('userModal').style.display='flex'; }
 function logout(){ sessionStorage.clear(); location.href='login.html'; }
