@@ -329,10 +329,15 @@ async function loadUsers() {
           <td>🪙 ${(+u.balance).toLocaleString()}</td>
           <td>${u.commission_percentage}%</td>
           <td>
-            <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
-            <button class="act-btn btn-w" onclick="chipAction(${u.id},'withdraw')">W</button>
-            <button class="act-btn btn-del" onclick="deleteUser(${u.id})">🗑</button>
-          </td>
+  <div class="action-group">
+    <button class="act-btn btn-edit" title="Edit User" onclick='openEditUser(${JSON.stringify(u)})'>
+      <i class="fas fa-pen"></i>
+    </button>
+    <button class="act-btn btn-d" title="Deposit" onclick="chipAction(${u.id},'deposit')">D</button>
+    <button class="act-btn btn-w" title="Withdraw" onclick="chipAction(${u.id},'withdraw')">W</button>
+    <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
+  </div>
+</td>
         </tr>
       `).join('');
   } catch(e) {
@@ -567,3 +572,4 @@ setInterval(init,15000);
 </script>
 </body>
 </html>
+
