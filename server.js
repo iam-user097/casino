@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
@@ -8,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- DATABASE CONNECTION ---
+// --- DATABASE CONNECTION POOL ---
 const db = mysql.createPool({
     host: process.env.DB_HOST || "srv1952.hstgr.io",
     user: process.env.DB_USER || "u178691095_magic9",
@@ -16,36 +17,43 @@ const db = mysql.createPool({
     database: process.env.DB_NAME || "u178691095_magic9_db",
     port: 3306,
     waitForConnections: true,
-    connectionLimit: 15,
-    queueLimit: 0
+    connectionLimit: 20,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000
 });
+
+const promiseDb = db.promise();
+
+// --- STATE MANAGEMENT ---
+let activeBets = [];
+let lockedWinner = null;
+const defaultPasswords = ['123456', '111111', '222222', '333333', '444444', '555555', '666666', '000000', '654321', '112233', '123654', '456321', '543210', '012345', '332211'];
 
 // --- ROUTES ---
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 
-const defaultPasswords = ['123456', '111111', '222222', '333333', '444444', '555555', '666666', '000000', '654321', '112233', '123654', '456321', '543210', '012345', '332211'];
-
-let activeBets = [];
-let lockedWinner = null;
-
-// --- AUTH & SECURITY ---
+// --- AUTH & USER MGMT ---
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     db.query('SELECT * FROM users WHERE username=? AND password=?', [username, password], (err, result) => {
+        if (err) return res.status(500).json({ success: false, message: "Database Error" });
         if (result && result.length > 0) {
             const user = result[0];
             let forceFlag = user.force_password_change;
             if (user.role !== 'SuperAdmin' && defaultPasswords.includes(password)) forceFlag = 1;
             db.query('UPDATE users SET force_password_change=?, last_active=NOW() WHERE id=?', [forceFlag, user.id]);
             res.json({ success: true, user: { ...user, force_password_change: forceFlag } });
-        } else res.json({ success: false, message: "Invalid credentials" });
+        } else {
+            res.json({ success: false, message: "Invalid credentials" });
+        }
     });
 });
 
 app.post('/api/user-details', (req, res) => {
     db.query('SELECT * FROM users WHERE id=?', [req.body.id], (e, r) => {
-        r && r.length ? res.json({ success: true, data: r[0] }) : res.json({ success: false });
+        (r && r.length) ? res.json({ success: true, data: r[0] }) : res.json({ success: false });
     });
 });
 
@@ -59,14 +67,13 @@ app.post('/api/my-users', (req, res) => {
     db.query(query, params, (err, r) => res.json({ users: r || [] }));
 });
 
-// --- CHIP MANAGEMENT (WITH PERFECT MOMENTS) ---
-
+// --- CHIP & CREDIT MANAGEMENT ---
 app.post('/api/transfer-credits', async (req, res) => {
     const { senderId, receiverId, amount } = req.body;
     const amt = parseFloat(amount);
-    const conn = db.promise();
+    const conn = await promiseDb.getConnection();
     try {
-        await conn.query('START TRANSACTION');
+        await conn.beginTransaction();
         const [update] = await conn.query('UPDATE users SET balance = balance - ?, inr_balance = (balance - ?) * 10 WHERE id = ? AND balance >= ?', [amt, amt, senderId, amt]);
         if (update.affectedRows > 0) {
             await conn.query('UPDATE users SET balance = balance + ?, inr_balance = (balance + ?) * 10 WHERE id = ?', [amt, amt, receiverId]);
@@ -74,16 +81,19 @@ app.post('/api/transfer-credits', async (req, res) => {
             await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "Received", ?, ?)', [receiverId, amt, `Received from ID: ${senderId}`]);
             await conn.commit();
             res.json({ success: true });
-        } else res.json({ success: false, message: "Insufficient balance" });
+        } else {
+            res.json({ success: false, message: "Insufficient balance" });
+        }
     } catch (e) { await conn.rollback(); res.json({ success: false }); }
+    finally { conn.release(); }
 });
 
 app.post('/api/withdraw-chips', async (req, res) => {
     const { adminId, userId, amount } = req.body;
     const amt = parseFloat(amount);
-    const conn = db.promise();
+    const conn = await promiseDb.getConnection();
     try {
-        await conn.query('START TRANSACTION');
+        await conn.beginTransaction();
         const [update] = await conn.query('UPDATE users SET balance = balance - ?, inr_balance = (balance - ?) * 10 WHERE id = ? AND balance >= ?', [amt, amt, userId, amt]);
         if (update.affectedRows > 0) {
             await conn.query('UPDATE users SET balance = balance + ?, inr_balance = (balance + ?) * 10 WHERE id = ?', [amt, amt, adminId]);
@@ -93,10 +103,10 @@ app.post('/api/withdraw-chips', async (req, res) => {
             res.json({ success: true });
         } else res.json({ success: false });
     } catch (e) { await conn.rollback(); res.json({ success: false }); }
+    finally { conn.release(); }
 });
 
 // --- LIVE BETTING SYSTEM ---
-
 app.post('/api/place-bet-direct', (req, res) => {
     const { userId, amount, boxes, stakePerBox } = req.body;
     const totalStake = parseFloat(amount);
@@ -109,65 +119,49 @@ app.post('/api/place-bet-direct', (req, res) => {
     });
 });
 
+app.post('/api/lock-winner', (req, res) => {
+    lockedWinner = req.body.box;
+    res.json({ success: true, message: `Locked to Box ${lockedWinner}` });
+});
+
 app.post('/api/house-settle', async (req, res) => {
     const winnerBox = lockedWinner || req.body.winnerBox;
     if (!winnerBox) return res.json({ success: false, message: "No winner set" });
     
-    const conn = db.promise();
+    const conn = await promiseDb.getConnection();
     try {
-        await conn.query('START TRANSACTION');
-        
+        await conn.beginTransaction();
         for (let bet of activeBets) {
             const isWin = bet.boxes.map(Number).includes(parseInt(winnerBox));
             const stake = parseFloat(bet.stakePerBox);
             
             if (isWin) {
-                // MOMENT: WINNING (Payout is 9x)
                 const winAmount = stake * 9; 
                 const inrWin = winAmount * 10;
-
-                // 1. Update Client Balance & INR Sync
                 await conn.query('UPDATE users SET balance = balance + ?, inr_balance = inr_balance + ? WHERE id = ?', [winAmount, inrWin, bet.userId]);
-                
-                // 2. MOMENT: Log Perfect Moment for Client
                 await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "GAME WIN", ?, ?)', 
-                [bet.userId, winAmount, `Result: Box ${winnerBox} (Multi-selection win)`]);
+                    [bet.userId, winAmount, `Result: Box ${winnerBox}`]);
                 
-                // 3. COMMISSION WATERFALL (Perfect Distribution)
+                // Commission Waterfall (Parent Distribution)
                 let currentId = bet.userId;
-                let lastCommissionRate = 0; // Tracks the child's rate to calculate the gap
-
                 while (true) {
-                    // Find the Parent
-                    const [p] = await conn.query('SELECT parent_id FROM users WHERE id = ?', [currentId]);
-                    if (!p[0] || !p[0].parent_id) break;
-                    
-                    // Get Parent's Details (Commission % set for them)
-                    const [pData] = await conn.query('SELECT id, username, commission_percentage FROM users WHERE id = ?', [p[0].parent_id]);
+                    const [parents] = await conn.query('SELECT parent_id FROM users WHERE id = ?', [currentId]);
+                    if (!parents[0] || !parents[0].parent_id) break;
+                    const [pData] = await conn.query('SELECT id, commission_percentage FROM users WHERE id = ?', [parents[0].parent_id]);
                     if (!pData[0]) break;
-
-                    const parentRate = parseFloat(pData[0].commission_percentage);
-                    
-                    // FORMULA: (Parent % / 100) * WinAmount
-                    const share = winAmount * (parentRate / 100);
-                    
+                    const share = winAmount * (parseFloat(pData[0].commission_percentage) / 100);
                     if (share > 0) {
                         await conn.query('UPDATE users SET balance = balance + ?, inr_balance = inr_balance + ? WHERE id = ?', [share, share * 10, pData[0].id]);
-                        
-                        // MOMENT: Chips Getting (Commission)
                         await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "COMMISSION", ?, ?)', 
-                        [pData[0].id, share, `Earned ${parentRate}% from user win (ID: ${bet.userId})`]);
+                            [pData[0].id, share, `Earned from user win (ID: ${bet.userId})`]);
                     }
-                    
-                    currentId = pData[0].id; // Move up to next level (Agent -> Master -> SuperMaster)
+                    currentId = pData[0].id;
                 }
             } else {
-                // MOMENT: LOG LOSS (Only if they didn't win)
                 await conn.query('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "GAME LOSS", 0, ?)', 
-                [bet.userId, `Box ${winnerBox} won. Better luck next time Sir.`]);
+                    [bet.userId, `Box ${winnerBox} won. Better luck next time Sir.`]);
             }
         }
-        
         activeBets = []; 
         lockedWinner = null;
         await conn.commit();
@@ -176,21 +170,15 @@ app.post('/api/house-settle', async (req, res) => {
         console.error("Settle Error:", err);
         await conn.rollback(); 
         res.json({ success: false }); 
-    }
+    } finally { conn.release(); }
 });
 
-// --- NEW: HISTORY FETCHING ROUTE ---
 app.post('/api/user-history', (req, res) => {
     const { userId } = req.body;
     db.query('SELECT type, amount, description, created_at FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 50', [userId], (err, results) => {
         if (err) return res.json({ success: false });
         res.json({ success: true, data: results });
     });
-});
-
-app.post('/api/lock-winner', (req, res) => {
-    lockedWinner = req.body.box;
-    res.json({ success: true, message: `Locked to Box ${lockedWinner}` });
 });
 
 app.post('/api/delete-user', (req, res) => {
@@ -202,5 +190,8 @@ app.post('/api/delete-user', (req, res) => {
     });
 });
 
+// --- SERVER START ---
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server ${PORT} is ACTIVE !!`));
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server ${PORT} is ACTIVE and perfectly connected !!`);
+});
