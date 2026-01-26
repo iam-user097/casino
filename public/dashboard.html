@@ -241,6 +241,7 @@ const DEFAULTS = [
 
 let selectedBetBoxes = [];
 let editingUserId = null;
+let usersCache = []; // ✅ IMPORTANT
 
 let user = JSON.parse(sessionStorage.getItem('currentUser'));
 if (!user) window.location.href = 'login.html';
@@ -301,7 +302,9 @@ async function loadUsers() {
     const d = await res.json();
     if (!d.success) return;
 
-    userTable.querySelector('tbody').innerHTML = d.users.map(u=>`
+    usersCache = d.users; // ✅ store safely
+
+    userTable.querySelector('tbody').innerHTML = usersCache.map(u=>`
       <tr>
         <td><i class="fas fa-circle" style="color:${u.status==='Online'?'#22c55e':'#555'}"></i></td>
         <td><b>${u.username}</b></td>
@@ -310,7 +313,7 @@ async function loadUsers() {
         <td>${u.commission_percentage}%</td>
         <td>
           <div class="action-group">
-            <button class="act-btn btn-edit" title="Edit User" onclick='openEditUser(${JSON.stringify(u)})'>
+            <button class="act-btn btn-edit" title="Edit User" onclick="openEditUserById(${u.id})">
               <i class="fas fa-pen"></i>
             </button>
             <button class="act-btn btn-d" onclick="chipAction(${u.id},'deposit')">D</button>
@@ -326,11 +329,14 @@ async function loadUsers() {
 }
 
 /* ===================== EDIT USER ===================== */
-function openEditUser(u){
+function openEditUserById(id){
+  const u = usersCache.find(x => x.id === id);
+  if (!u) return alert('User not found');
+
   editingUserId = u.id;
 
   mTitle.innerText = 'Edit User';
-  mName.value = u.first_name;
+  mName.value = u.username; // ✅ FIXED
   mUName.value = u.username;
   mComm.value = u.commission_percentage;
 
