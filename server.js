@@ -9,200 +9,243 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- DATABASE CONNECTION POOL ---
+// ================= DB =================
 const db = mysql.createPool({
-  host: process.env.DB_HOST || "srv1952.hstgr.io",
-  user: process.env.DB_USER || "u178691095_magic9",
-  password: process.env.DB_PASSWORD || "Magic@097",
-  database: process.env.DB_NAME || "u178691095_magic9_db",
-  port: 3306,
-  waitForConnections: true,
-  connectionLimit: 20,
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 10000
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  connectionLimit: 20
 });
+const pdb = db.promise();
 
-const promiseDb = db.promise();
-
-// --- ENSURE SUPERADMIN (AUTO CREATE IF MISSING) ---
+// ================= SUPERADMIN =================
 async function ensureSuperAdmin() {
-  const [rows] = await promiseDb.query(
-    "SELECT id FROM users WHERE id = 1 OR role = 'SuperAdmin' LIMIT 1"
-  );
-
-  if (rows.length === 0) {
-    await promiseDb.query(`
-      INSERT INTO users
+  const [r] = await pdb.query(`SELECT id FROM users WHERE id=1`);
+  if (!r.length) {
+    await pdb.query(`
+      INSERT INTO users 
       (id, username, first_name, password, role, balance, inr_balance, commission_percentage)
-      VALUES
-      (1, 'sadmin', 'Main Holder', '123456', 'SuperAdmin', 100000, 1000000, 10)
+      VALUES (1,'sadmin','Main Holder','123456','SuperAdmin',100000,1000000,10)
     `);
-    console.log("✅ SuperAdmin CREATED (id=1)");
-  } else {
-    console.log("✅ SuperAdmin already exists");
+    console.log("✅ SuperAdmin Created");
   }
 }
+ensureSuperAdmin();
 
-// --- DB HEARTBEAT ---
-setInterval(() => {
-  db.query('SELECT 1', err => {
-    if (err) console.error("Heartbeat Error:", err);
-  });
-}, 30000);
-
-// --- INIT ---
-(async () => {
-  try {
-    await ensureSuperAdmin();
-  } catch (err) {
-    console.error("SuperAdmin Init Error:", err);
-  }
-})();
-
-// --- STATE MANAGEMENT ---
+// ================= GLOBAL STATE =================
 let activeBets = [];
-const defaultPasswords = [
-  '123456','111111','222222','333333','444444',
-  '555555','666666','000000','654321','112233',
-  '123654','456321','543210','012345','332211'
-];
 
-// --- ROUTES ---
-app.get('/', (req, res) =>
-  res.sendFile(path.join(__dirname, 'public', 'login.html'))
-);
-
-app.get('/dashboard', (req, res) =>
-  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'))
-);
-
-// --- LOGIN (DB BASED, SUPERADMIN SAFE) ---
-app.post('/api/login', (req, res) => {
+// ================= LOGIN =================
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
-
-  db.query(
+  const [r] = await pdb.query(
     'SELECT * FROM users WHERE username=? AND password=?',
-    [username, password],
-    (err, result) => {
-      if (err) return res.status(500).json({ success: false });
-
-      if (!result.length)
-        return res.json({ success: false, message: "Invalid credentials" });
-
-      const user = result[0];
-      let forceFlag = user.force_password_change || 0;
-
-      if (user.role !== 'SuperAdmin' && defaultPasswords.includes(password))
-        forceFlag = 1;
-
-      db.query(
-        'UPDATE users SET force_password_change=?, last_active=NOW() WHERE id=?',
-        [forceFlag, user.id]
-      );
-
-      res.json({
-        success: true,
-        user: { ...user, force_password_change: forceFlag }
-      });
-    }
+    [username, password]
   );
+  if (!r.length) return res.json({ success:false });
+
+  let user = r[0];
+  let force = user.force_password_change || 0;
+  if (user.role !== 'SuperAdmin' && password === '123456') force = 1;
+
+  await pdb.query(
+    'UPDATE users SET force_password_change=?, last_active=NOW() WHERE id=?',
+    [force, user.id]
+  );
+
+  res.json({ success:true, user:{...user, force_password_change:force} });
 });
 
-// --- UPDATE PASSWORD ---
-app.post('/api/update-password-secure', (req, res) => {
+// ================= PASSWORD =================
+app.post('/api/update-password-secure', async (req,res)=>{
   const { userId, newPass } = req.body;
-  db.query(
+  await pdb.query(
     'UPDATE users SET password=?, force_password_change=0 WHERE id=?',
-    [newPass, userId],
-    err => {
-      if (err) return res.json({ success: false });
-      res.json({ success: true });
-    }
+    [newPass, userId]
   );
+  res.json({ success:true });
 });
 
-// --- USER DETAILS ---
-app.post('/api/user-details', (req, res) => {
-  db.query(
-    'SELECT * FROM users WHERE id=?',
-    [req.body.id],
-    (e, r) => {
-      (r && r.length)
-        ? res.json({ success: true, data: r[0] })
-        : res.json({ success: false });
-    }
-  );
+// ================= USER DETAILS =================
+app.post('/api/user-details', async (req,res)=>{
+  const [r] = await pdb.query('SELECT * FROM users WHERE id=?',[req.body.id]);
+  r.length ? res.json({success:true,data:r[0]}) : res.json({success:false});
 });
 
-// --- CREATE USER (ADVANCED) ---
-app.post('/api/create-user-advanced', async (req, res) => {
+// ================= CREATE USER =================
+app.post('/api/create-user-advanced', async (req,res)=>{
   const { uName, fullName, pass, role, commission, deposit, creatorId } = req.body;
-  const conn = await promiseDb.getConnection();
-
-  try {
+  const conn = await pdb.getConnection();
+  try{
     await conn.beginTransaction();
-    const dep = parseFloat(deposit) || 0;
 
-    if (creatorId != 1) {
-      const [deduct] = await conn.query(
-        'UPDATE users SET balance = balance - ?, inr_balance = (balance - ?) * 10 WHERE id = ? AND balance >= ?',
-        [dep, dep, creatorId, dep]
+    if(creatorId!=1){
+      const [d] = await conn.query(
+        'UPDATE users SET balance=balance-?, inr_balance=(balance-?)*10 WHERE id=? AND balance>=?',
+        [deposit,deposit,creatorId,deposit]
       );
-      if (deduct.affectedRows === 0)
-        throw new Error("Insufficient creator balance");
+      if(!d.affectedRows) throw "Insufficient balance";
     }
 
-    const [result] = await conn.query(
-      `INSERT INTO users
-       (username, first_name, password, role, commission_percentage, parent_id, balance, inr_balance)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [uName, fullName, pass, role, commission, creatorId, dep, dep * 10]
-    );
+    const [u] = await conn.query(`
+      INSERT INTO users 
+      (username, first_name, password, role, commission_percentage, parent_id, balance, inr_balance)
+      VALUES (?,?,?,?,?,?,?,?)
+    `,[uName,fullName,pass,role,commission,creatorId,deposit,deposit*10]);
 
     await conn.query(
-      'INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "SENT", ?, ?)',
-      [creatorId, -dep, `Created user ${uName}`]
-    );
-
-    await conn.query(
-      'INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "RECEIVED", ?, ?)',
-      [result.insertId, dep, `Initial chips from creator`]
+      'INSERT INTO transactions VALUES (NULL,?, "RECEIVED", ?, "Initial Chips", NOW())',
+      [u.insertId,deposit]
     );
 
     await conn.commit();
-    res.json({ success: true });
-  } catch (e) {
+    res.json({success:true});
+  }catch(e){
     await conn.rollback();
-    res.json({ success: false, message: e.message });
-  } finally {
-    conn.release();
-  }
+    res.json({success:false,message:e});
+  }finally{conn.release();}
 });
 
-// --- BETTING ---
-app.post('/api/place-bet-direct', (req, res) => {
-  const { userId, amount, boxes, stakePerBox } = req.body;
-  const totalStake = parseFloat(amount);
-
-  db.query(
-    'UPDATE users SET balance = balance - ?, inr_balance = (balance - ?) * 10 WHERE id = ? AND balance >= ?',
-    [totalStake, totalStake, userId, totalStake],
-    (err, r) => {
-      if (r && r.affectedRows > 0) {
-        db.query(
-          'INSERT INTO transactions (user_id, type, amount, description) VALUES (?, "BET PLACED", ?, ?)',
-          [userId, -totalStake, `Stake on: ${boxes.join(',')}`]
-        );
-        activeBets.push({ userId, boxes, stakePerBox: parseFloat(stakePerBox) });
-        res.json({ success: true });
-      } else res.json({ success: false, message: 'Insufficient Balance' });
-    }
+// ================= USERS LIST =================
+app.post('/api/my-users', async (req,res)=>{
+  const { parentId } = req.body;
+  const [r] = await pdb.query(
+    'SELECT * FROM users WHERE parent_id=?',
+    [parentId]
   );
+  res.json({ users:r });
 });
 
-// --- SERVER ---
+// ================= DELETE USER =================
+app.post('/api/delete-user', async (req,res)=>{
+  const { id } = req.body;
+  if(id==1) return res.json({success:false});
+  await pdb.query('DELETE FROM transactions WHERE user_id=?',[id]);
+  await pdb.query('DELETE FROM users WHERE id=?',[id]);
+  res.json({success:true});
+});
+
+// ================= DEPOSIT =================
+app.post('/api/deposit-chips', async (req,res)=>{
+  const { requesterId, targetId, amount } = req.body;
+  await pdb.query(
+    'UPDATE users SET balance=balance+?, inr_balance=(balance+?)*10 WHERE id=?',
+    [amount,amount,targetId]
+  );
+  await pdb.query(
+    'INSERT INTO transactions VALUES (NULL,?, "DEPOSIT", ?, "Admin Deposit", NOW())',
+    [targetId,amount]
+  );
+  res.json({success:true});
+});
+
+// ================= WITHDRAW =================
+app.post('/api/withdraw-chips', async (req,res)=>{
+  const { targetId, amount } = req.body;
+  const [r] = await pdb.query(
+    'UPDATE users SET balance=balance-?, inr_balance=(balance-?)*10 WHERE id=? AND balance>=?',
+    [amount,amount,targetId,amount]
+  );
+  if(!r.affectedRows) return res.json({success:false});
+  await pdb.query(
+    'INSERT INTO transactions VALUES (NULL,?, "WITHDRAW", ?, "Withdraw", NOW())',
+    [targetId,-amount]
+  );
+  res.json({success:true});
+});
+
+// ================= EDIT USER =================
+app.post('/api/edit-user', async (req,res)=>{
+  const { targetId, username, commission } = req.body;
+  await pdb.query(
+    'UPDATE users SET username=?, commission_percentage=? WHERE id=?',
+    [username,commission,targetId]
+  );
+  res.json({success:true});
+});
+
+// ================= BET =================
+app.post('/api/place-bet-direct', async (req,res)=>{
+  const { userId, amount, boxes, stakePerBox } = req.body;
+  const [r] = await pdb.query(
+    'UPDATE users SET balance=balance-?, inr_balance=(balance-?)*10 WHERE id=? AND balance>=?',
+    [amount,amount,userId,amount]
+  );
+  if(!r.affectedRows) return res.json({success:false});
+
+  activeBets.push({ userId, boxes, stakePerBox });
+  await pdb.query(
+    'INSERT INTO transactions VALUES (NULL,?, "BET", ?, ?, NOW())',
+    [userId,-amount,`Boxes ${boxes.join(',')}`]
+  );
+  res.json({success:true});
+});
+
+// ================= MARKET SETTLE + COMMISSION =================
+app.post('/api/house-settle', async (req,res)=>{
+  if(!activeBets.length) return res.json({success:false});
+
+  const winner = Math.floor(Math.random()*10)+1;
+  const conn = await pdb.getConnection();
+
+  try{
+    await conn.beginTransaction();
+
+    for(const bet of activeBets){
+      if(bet.boxes.includes(winner)){
+        const winAmt = bet.stakePerBox * 9;
+        await conn.query(
+          'UPDATE users SET balance=balance+?, inr_balance=(balance+?)*10 WHERE id=?',
+          [winAmt,winAmt,bet.userId]
+        );
+        await conn.query(
+          'INSERT INTO transactions VALUES (NULL,?, "WIN", ?, "Winner Box '+winner+'", NOW())',
+          [bet.userId,winAmt]
+        );
+
+        // COMMISSION FLOW
+        let child = bet.userId;
+        while(true){
+          const [[u]] = await conn.query(
+            'SELECT parent_id, commission_percentage FROM users WHERE id=?',
+            [child]
+          );
+          if(!u || !u.parent_id) break;
+
+          const com = (winAmt * u.commission_percentage) / 100;
+          await conn.query(
+            'UPDATE users SET balance=balance+?, inr_balance=(balance+?)*10 WHERE id=?',
+            [com,com,u.parent_id]
+          );
+          await conn.query(
+            'INSERT INTO transactions VALUES (NULL,?, "COMMISSION", ?, "Downline win commission", NOW())',
+            [u.parent_id,com]
+          );
+
+          child = u.parent_id;
+        }
+      }
+    }
+
+    activeBets = [];
+    await conn.commit();
+    res.json({success:true,winner});
+  }catch(e){
+    await conn.rollback();
+    res.json({success:false});
+  }finally{conn.release();}
+});
+
+// ================= HISTORY =================
+app.post('/api/user-history', async (req,res)=>{
+  const [r] = await pdb.query(
+    'SELECT * FROM transactions WHERE user_id=? ORDER BY created_at DESC',
+    [req.body.userId]
+  );
+  res.json({success:true,data:r});
+});
+
+// ================= SERVER =================
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, '0.0.0.0', () =>
-  console.log(`🚀 Server ${PORT} is ACTIVE`)
-);
+app.listen(PORT, ()=>console.log(`🚀 SERVER LIVE @ ${PORT}`));
