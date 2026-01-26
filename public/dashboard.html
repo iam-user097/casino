@@ -129,7 +129,7 @@ input:focus { border-color: var(--primary); background: #12161f; }
     .sidebar.show { transform: translateX(260px); }
     .sidebar-overlay.show { display: block; }
 }
-</style>
+    </style>
 </head>
 <body>
 
@@ -139,7 +139,6 @@ input:focus { border-color: var(--primary); background: #12161f; }
         <div class="logo">MAGIC9 PRO</div>
         <div class="nav-item active" onclick="nav('user', this)"><i class="fas fa-users-cog"></i> Users</div>
         <div id="nav-bet-client" class="nav-item" style="display:none;" onclick="nav('bet', this)"><i class="fas fa-dice"></i> Live Betting</div>
-        <div id="nav-mgmt-sa" class="nav-item" style="display:none;" onclick="nav('mgmt', this)"><i class="fas fa-tools"></i> House Control</div>
         <div class="nav-item" onclick="nav('history', this)"><i class="fas fa-history"></i> History</div>
         <div class="nav-item" onclick="nav('account', this)"><i class="fas fa-wallet"></i> Wallet</div>
         <div class="nav-item logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
@@ -155,9 +154,12 @@ input:focus { border-color: var(--primary); background: #12161f; }
         </div>
 
         <div id="page-user" class="page active">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search Downline..." style="padding:10px; border-radius:8px; background:#12161f; border:1px solid #333; color:white; width: 250px;">
-                <button id="addBtn" class="btn-action-main" style="width:120px; margin:0;" onclick="openAddModal()">+ ADD USER</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; gap: 10px; flex-wrap: wrap;">
+                <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Search Downline..." style="padding:10px; border-radius:8px; background:#12161f; border:1px solid #333; color:white; width: 250px; margin: 0;">
+                <div style="display: flex; gap: 10px;">
+                    <button id="addBtn" class="btn-action-main" style="width:120px; margin:0;" onclick="openAddModal()">+ ADD USER</button>
+                    <button id="autoSettleBtn" class="btn-action-main" style="width:150px; margin:0; background: var(--primary);" onclick="marketSettle()">SETTLE MARKET</button>
+                </div>
             </div>
             <div class="table-container"><table id="userTable"><thead><tr><th>Status</th><th>Name</th><th>Role</th><th>Chips</th><th>Share %</th><th>Action</th></tr></thead><tbody></tbody></table></div>
         </div>
@@ -180,17 +182,6 @@ input:focus { border-color: var(--primary); background: #12161f; }
         </div>
     </div>
 </div>
-
-        <div id="page-mgmt" class="page">
-            <div class="account-card">
-                <h2 style="color:var(--accent);">HOUSE CONTROL</h2>
-                <p style="color:#aaa; font-size:12px; margin-bottom: 20px;">Set the PERMANENT winning box for the next rounds.</p>
-                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;" id="houseGrid"></div>
-                <br>
-                <button class="btn-action-main" onclick="savePermanentWinner()">LOCK WINNING BOX</button>
-                <div id="adminStatus" style="margin-top:15px; color:var(--neon-g); font-weight:bold;">MODE: MANUAL</div>
-            </div>
-        </div>
 
         <div id="page-history" class="page">
             <div class="account-card">
@@ -235,7 +226,7 @@ input:focus { border-color: var(--primary); background: #12161f; }
             <select id="mRole"></select>
             <input type="number" id="mComm" placeholder="Commission %">
             <input type="number" id="mDeposit" placeholder="Initial chips">
-            <button class="btn-action-main" onclick="submitUser()"><i class=fas fa-plus></i> CREATE USER</button>
+            <button class="btn-action-main" onclick="submitUser()"><i class="fas fa-plus"></i> CREATE USER</button>
             <button style="width:100%; margin-top:10px; background:#444; border:none; padding:12px; border-radius:8px; color:white;" onclick="closeModal()">CANCEL</button>
         </div>
     </div>
@@ -247,8 +238,6 @@ input:focus { border-color: var(--primary); background: #12161f; }
     
     let user = JSON.parse(sessionStorage.getItem('currentUser'));
     if (!user) window.location.href = 'login.html';
-
-    let selectedWinner = null; 
 
     // --- CORE ENGINE ---
     async function init() {
@@ -265,14 +254,11 @@ input:focus { border-color: var(--primary); background: #12161f; }
                 
                 updateUI(); 
                 renderWaterfall();
-                loadHistory(); // SIR: Added this call to ensure moments show on load!
+                loadHistory(); 
             }
         } catch(e){}
         loadUsers(); 
         setupRoleOptions();
-        
-        if(user.role === 'SuperAdmin') setupHouseControl();
-        if(user.role === 'Client') setupClientBetGrid();
     }
 
     function updateUI() {
@@ -283,12 +269,12 @@ input:focus { border-color: var(--primary); background: #12161f; }
         
         const addBtn = document.getElementById('addBtn');
         if(addBtn) addBtn.style.display = user.role === 'Client' ? 'none' : 'block';
+
+        const settleBtn = document.getElementById('autoSettleBtn');
+        if(settleBtn) settleBtn.style.display = (user.role === 'SuperAdmin' || user.role === 'Admin') ? 'block' : 'none';
         
         const navBet = document.getElementById('nav-bet-client');
         if(navBet) navBet.style.display = user.role === 'Client' ? 'flex' : 'none';
-        
-        const navSA = document.getElementById('nav-mgmt-sa');
-        if(navSA) navSA.style.display = user.role === 'SuperAdmin' ? 'flex' : 'none';
     }
 
     // --- NAVIGATION ---
@@ -311,7 +297,7 @@ input:focus { border-color: var(--primary); background: #12161f; }
         document.getElementById('overlay').classList.toggle('show');
     }
 
-    // --- USER MANAGEMENT (HIERARCHY LOGIC) ---
+    // --- USER MANAGEMENT ---
     async function loadUsers() {
         const res = await fetch('/api/my-users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({parentId: user.id, role: user.role}) });
         const d = await res.json();
@@ -320,7 +306,7 @@ input:focus { border-color: var(--primary); background: #12161f; }
         
         document.querySelector('#userTable tbody').innerHTML = list.map(u => `
             <tr>
-                <td><i class="fas fa-circle" style="color:var(--neon-g); font-size:10px;"></i></td>
+                <td><i class="fas fa-circle" style="color:${u.status === 'Online' ? 'var(--neon-g)' : '#555'}; font-size:10px;"></i></td>
                 <td><b>${u.username}</b></td><td>${u.role}</td>
                 <td>🪙 ${parseFloat(u.balance).toLocaleString()}</td><td>${u.commission_percentage}%</td>
                 <td>
@@ -328,19 +314,13 @@ input:focus { border-color: var(--primary); background: #12161f; }
                         <button class="act-btn btn-edit" title="Edit" onclick="alert('Edit functionality for ID: '+${u.id})"><i class="fas fa-pen"></i></button>
                         <button class="act-btn btn-d" title="Deposit" onclick="chipAction(${u.id},'deposit')">D</button>
                         <button class="act-btn btn-w" title="Withdraw" onclick="chipAction(${u.id},'withdraw')">W</button>
-                        
-                        ${user.role === 'SuperAdmin' ? `
-                            <button class="act-btn btn-mode" title="Change Mode" onclick="toggleMode()"><i class="fas fa-sync"></i></button>
-                            <button class="act-btn btn-ms" title="Market Settle" onclick="marketSettle()"><i class="fas fa-check-circle"></i></button>
-                        ` : ''}
-                        
                         <button class="act-btn btn-del" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
                     </div>
                 </td>
             </tr>`).join('');
     }
 
-    // --- CLIENT MULTI-BOX BETTING & LIVE RESULT ---
+    // --- CLIENT BETTING ---
     function setupClientBetGrid() {
         const grid = document.getElementById('clientBetGrid');
         if(!grid) return;
@@ -385,7 +365,6 @@ input:focus { border-color: var(--primary); background: #12161f; }
     function startLiveCountdown(clientBoxes) {
         const overlay = document.getElementById('resultOverlay');
         const timerText = document.getElementById('countdownText');
-        const statusText = document.getElementById('statusText');
         const proceedBtn = document.getElementById('proceedBtn');
 
         if(overlay) overlay.style.display = 'flex';
@@ -395,68 +374,31 @@ input:focus { border-color: var(--primary); background: #12161f; }
         const timer = setInterval(() => {
             count--;
             timerText.innerText = count;
-
             if (count <= 0) {
                 clearInterval(timer);
-                statusText.innerText = "Checking Result...";
                 setTimeout(() => {
-                    revealFinalResult(clientBoxes);
-                }, 1500);
+                    if(overlay) overlay.style.display = 'none';
+                    if(proceedBtn) proceedBtn.disabled = false;
+                    alert("Bet Placed Sir! Result will show in History after Admin Settle.");
+                    selectedBetBoxes = [];
+                    document.getElementById('selectedCount').innerText = "0";
+                    document.querySelectorAll('.box-bet').forEach(b => b.classList.remove('manual-selected'));
+                    init();
+                }, 1000);
             }
         }, 1000);
     }
 
-    function revealFinalResult(clientBoxes) {
-        const winner = Math.floor(Math.random() * 10) + 1;
-        const isWin = clientBoxes.includes(winner);
-        const timerText = document.getElementById('countdownText');
-        const statusText = document.getElementById('statusText');
-
-        if(isWin) {
-            timerText.innerText = "WIN";
-            timerText.style.color = "var(--neon-g)";
-            statusText.innerText = `CONGRATULATIONS SIR! Box ${winner} won.`;
-        } else {
-            timerText.innerText = "LOSE";
-            timerText.style.color = "var(--neon-r)";
-            statusText.innerText = `Better luck next time. Box ${winner} won.`;
-        }
-
-        document.querySelectorAll('#clientBetGrid .box-bet').forEach(btn => {
-            if(parseInt(btn.innerText) === winner) btn.classList.add('winner-set');
-        });
-
-        setTimeout(() => {
-            const overlay = document.getElementById('resultOverlay');
-            const proceedBtn = document.getElementById('proceedBtn');
-            if(overlay) overlay.style.display = 'none';
-            if(proceedBtn) proceedBtn.disabled = false;
-            
-            selectedBetBoxes = [];
-            document.getElementById('selectedCount').innerText = "0";
-            document.querySelectorAll('#clientBetGrid .box-bet').forEach(b => {
-                b.classList.remove('manual-selected');
-                b.classList.remove('winner-set');
-            });
-            init(); 
-        }, 5000);
-    }
-
-    // --- HISTORY MOMENTS ---
+    // --- HISTORY ---
     async function loadHistory() {
         try {
-            const res = await fetch('/api/user-history', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ userId: user.id }) 
-            });
+            const res = await fetch('/api/user-history', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: user.id }) });
             const d = await res.json();
             if(!d.success) return;
 
             document.querySelector('#histTable tbody').innerHTML = d.data.map(h => {
                 const amtColor = h.amount >= 0 ? 'var(--neon-g)' : 'var(--neon-r)';
                 const prefix = h.amount > 0 ? '+' : '';
-                // SIR: Added Moment Class based on type for CSS coloring
                 const momentClass = h.type.includes('WIN') ? 'moment-win' : h.type.includes('LOSS') ? 'moment-loss' : 'moment-bet';
                 return `
                     <tr>
@@ -469,36 +411,17 @@ input:focus { border-color: var(--primary); background: #12161f; }
         } catch(e){}
     }
 
-    // --- HOUSE CONTROL (SUPERADMIN) ---
-    function setupHouseControl() {
-        const grid = document.getElementById('houseGrid');
-        if(!grid) return;
-        grid.innerHTML = Array.from({length: 10}, (_, i) => `
-            <button class="box-bet" onclick="selectManualWinner(this, ${i+1})">${i+1}</button>
-        `).join('');
-    }
-
-    function selectManualWinner(el, num) {
-        document.querySelectorAll('#houseGrid .box-bet').forEach(b => b.classList.remove('manual-selected'));
-        el.classList.add('manual-selected');
-        selectedWinner = num;
-    }
-
-    async function savePermanentWinner() {
-        if(!selectedWinner) return alert("Select a box first, Sir!");
-        const res = await fetch('/api/lock-winner', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ box: selectedWinner })
-        });
+    // --- SYSTEM ACTIONS ---
+    async function marketSettle() {
+        if(!confirm("Sir, Settle Market? Server will pick an automated random winner.")) return;
+        const res = await fetch('/api/house-settle', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({}) });
         const d = await res.json();
-        if(d.success) {
-            document.getElementById('adminStatus').innerText = `MODE: MANUAL (Box ${selectedWinner})`;
-            alert(`Box ${selectedWinner} locked as winner!`);
+        if(d.success) { 
+            alert(`Market Settled Perfectly, Sir! Winner Box: ${d.winner}`); 
+            init(); 
         }
     }
 
-    // --- SYSTEM LOGIC ---
     async function deleteUser(id) {
         if(!confirm("Sir, delete user permanently?")) return;
         const res = await fetch('/api/delete-user', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id }) });
@@ -515,15 +438,6 @@ input:focus { border-color: var(--primary); background: #12161f; }
         const res = await fetch(endpoint, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
         if((await res.json()).success) { alert(`${type.toUpperCase()} Successful!`); init(); }
     }
-
-    async function marketSettle() {
-        if(!confirm("Sir, Settle Market now?")) return;
-        const res = await fetch('/api/house-settle', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ winnerBox: selectedWinner }) });
-        const d = await res.json();
-        if(d.success) { alert("Market Settled Perfectly, Sir!"); init(); }
-    }
-
-    function toggleMode() { alert("Mode Toggled! Logic Updated on Server."); }
 
     function renderWaterfall() {
         const container = document.getElementById('waterfall-display');
@@ -552,8 +466,7 @@ input:focus { border-color: var(--primary); background: #12161f; }
     async function submitUser() {
         try {
             const res = await fetch('/api/create-user-advanced', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ 
                     uName: document.getElementById('mUName').value, 
                     fullName: document.getElementById('mName').value, 
@@ -574,8 +487,8 @@ input:focus { border-color: var(--primary); background: #12161f; }
     function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
 
     init();
-    setInterval(init, 10000); 
+    setInterval(init, 15000); 
+    if(user.role === 'Client') setupClientBetGrid();
 </script>
 </body>
 </html>
-
