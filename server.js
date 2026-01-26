@@ -1,44 +1,126 @@
+require('dotenv').config();
 const express = require('express');
-const mysql = require('mysql2/promise');
+const mysql = require('mysql2');
+const cors = require('cors');
 const path = require('path');
+
 const app = express();
 
-// ================= CONFIG =================
-const PORT = process.env.PORT || 3000;
-
-const db = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASS || '',
-  database: process.env.DB_NAME || 'panel',
-  waitForConnections: true,
-  connectionLimit: 10
-});
-
 // ================= MIDDLEWARE =================
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ================= STATIC PAGES =================
+app.get('/', (req, res) =>
+  res.sendFile(path.join(__dirname, 'public', 'login.html'))
+);
+
+app.get('/dashboard', (req, res) =>
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'))
+);
+
+// ================= DATABASE =================
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  connectionLimit: 20
+});
+const pdb = db.promise();
+
+// ================= SUPERADMIN =================
+async function ensureSuperAdmin() {
+  try {
+    const [r] = await pdb.query('SELECT id FROM users WHERE id=1');
+    if (!r.length) {
+      await pdb.query(`
+        INSERT INTO users
+        (id, username, first_name, password, role, balance, inr_balance, commission_percentage)
+        VALUES (1,'sadmin','Main Holder','123456','SuperAdmin',100000,1000000,10)
+      `);
+      console.log('✅ SuperAdmin created');
+    }
+  } catch (e) {
+    console.error('SuperAdmin check error:', e);
+  }
+}
+ensureSuperAdmin();
+
+// ================= GLOBAL =================
+let activeBets = [];
+const DEFAULT_PASSWORDS = [
+  '123456','112233','223344','666666','665544','000000',
+  '012345','123654','321456','654321',
+  '111111','222222','333333','444444','555555',
+  '000111','111000'
+];
+
 // ================= LOGIN =================
 app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
-
   try {
-    const [rows] = await db.query(
-      'SELECT * FROM users WHERE username=? AND password=?',
-      [username, password]
-    );
+    const { username, password } = req.body;
 
+    const [rows] = await pdb.query(
+      'SELECT * FROM users WHERE username=?',
+      [username]
+    );
     if (!rows.length)
-      return res.json({ success: false, msg: 'Invalid credentials' });
+      return res.json({ success: false, message: 'Invalid credentials' });
 
-    await db.query(
-      'UPDATE users SET last_active=NOW() WHERE id=?',
-      [rows[0].id]
+    const user = rows[0];
+    if (user.password !== password)
+      return res.json({ success: false, message: 'Invalid credentials' });
+
+    const force =
+      user.role !== 'SuperAdmin' && DEFAULT_PASSWORDS.includes(password) ? 1 : 0;
+
+    await pdb.query(
+      'UPDATE users SET force_password_change=?, last_active=NOW() WHERE id=?',
+      [force, user.id]
     );
 
-    res.json({ success: true, user: rows[0] });
+    res.json({
+      success: true,
+      user: { ...user, force_password_change: force }
+    });
+  } catch (e) {
+    console.error(e);
+    res.json({ success: false, message: 'Login error' });
+  }
+});
+
+// ================= UPDATE PASSWORD =================
+app.post('/api/update-password-secure', async (req, res) => {
+  try {
+    const { userId, newPass } = req.body;
+
+    await pdb.query(
+      'UPDATE users SET password=?, force_password_change=0 WHERE id=?',
+      [newPass, userId]
+    );
+
+    res.json({ success: true, message: 'PIN updated successfully ✅' });
+  } catch (e) {
+    console.error(e);
+    res.json({ success: false });
+  }
+});
+
+// ================= USER DETAILS =================
+app.post('/api/user-details', async (req, res) => {
+  try {
+    const [r] = await pdb.query(
+      'SELECT * FROM users WHERE id=?',
+      [req.body.id]
+    );
+
+    if (!r.length)
+      return res.json({ success: false, message: 'User not found' });
+
+    res.json({ success: true, data: r[0] });
   } catch (e) {
     console.error(e);
     res.json({ success: false });
@@ -47,36 +129,40 @@ app.post('/api/login', async (req, res) => {
 
 // ================= CREATE USER =================
 app.post('/api/create-user-advanced', async (req, res) => {
-  const { creatorId, username, password, role, deposit } = req.body;
+  const { uName, fullName, pass, role, commission, deposit, creatorId } = req.body;
+  const conn = await pdb.getConnection();
 
   try {
-    const [creator] = await db.query(
-      'SELECT * FROM users WHERE id=?',
-      [creatorId]
+    await conn.beginTransaction();
+
+    if (creatorId != 1) {
+      const [d] = await conn.query(
+        'UPDATE users SET balance=balance-?, inr_balance=(balance-?)*10 WHERE id=? AND balance>=?',
+        [deposit, deposit, creatorId, deposit]
+      );
+      if (!d.affectedRows)
+        throw new Error('Insufficient balance');
+    }
+
+    const [u] = await conn.query(`
+      INSERT INTO users
+      (username, first_name, password, role, commission_percentage, parent_id, balance, inr_balance)
+      VALUES (?,?,?,?,?,?,?,?)
+    `, [uName, fullName, pass, role, commission, creatorId, deposit, deposit * 10]);
+
+    await conn.query(
+      'INSERT INTO transactions (user_id,type,amount,description,created_at) VALUES (?,?,?,?,NOW())',
+      [u.insertId, 'TRANSFER_IN', deposit, 'Initial Chips']
     );
 
-    if (!creator.length)
-      return res.json({ success: false, msg: 'Creator not found' });
-
-    if (creator[0].balance < deposit)
-      return res.json({ success: false, msg: 'Insufficient balance' });
-
-    await db.query(
-      `INSERT INTO users
-       (username,password,role,balance,parent_id,created_at)
-       VALUES (?,?,?,?,?,NOW())`,
-      [username, password, role, deposit, creatorId]
-    );
-
-    await db.query(
-      'UPDATE users SET balance=balance-? WHERE id=?',
-      [deposit, creatorId]
-    );
-
-    res.json({ success: true });
+    await conn.commit();
+    res.json({ success: true, message: 'User created ✅' });
   } catch (e) {
+    await conn.rollback();
     console.error(e);
-    res.json({ success: false });
+    res.json({ success: false, message: e.message });
+  } finally {
+    conn.release();
   }
 });
 
@@ -88,21 +174,14 @@ app.post('/api/my-users', async (req, res) => {
     let rows;
 
     if (role === 'SuperAdmin') {
-      [rows] = await db.query(`
-        SELECT *,
-        IF(last_active > NOW() - INTERVAL 5 MINUTE,'Online','Offline') AS status
-        FROM users
-        WHERE id != 1
-        ORDER BY id DESC
-      `);
+      [rows] = await pdb.query(
+        'SELECT * FROM users WHERE id!=1 ORDER BY id DESC'
+      );
     } else {
-      [rows] = await db.query(`
-        SELECT *,
-        IF(last_active > NOW() - INTERVAL 5 MINUTE,'Online','Offline') AS status
-        FROM users
-        WHERE parent_id=?
-        ORDER BY id DESC
-      `, [parentId]);
+      [rows] = await pdb.query(
+        'SELECT * FROM users WHERE parent_id=? ORDER BY id DESC',
+        [parentId]
+      );
     }
 
     res.json({ success: true, users: rows });
@@ -112,125 +191,71 @@ app.post('/api/my-users', async (req, res) => {
   }
 });
 
-// ================= EDIT USER =================
-app.post('/api/edit-user', async (req, res) => {
-  const { id, username, commission } = req.body;
-
-  try {
-    await db.query(
-      'UPDATE users SET username=?, commission_percentage=? WHERE id=?',
-      [username, commission, id]
-    );
-    res.json({ success: true });
-  } catch (e) {
-    console.error(e);
-    res.json({ success: false });
-  }
-});
-
 // ================= DELETE USER =================
 app.post('/api/delete-user', async (req, res) => {
-  const { userId, requesterId, requesterRole } = req.body;
-
   try {
-    // ❌ prevent self delete
-    if (userId === requesterId)
-      return res.json({ success: false, msg: 'Cannot delete yourself' });
+    const { targetId } = req.body;
 
-    // check target user
-    const [target] = await db.query(
-      'SELECT * FROM users WHERE id=?',
-      [userId]
-    );
+    if (targetId == 1)
+      return res.json({ success: false, message: 'Cannot delete SuperAdmin' });
 
-    if (!target.length)
-      return res.json({ success: false, msg: 'User not found' });
+    await pdb.query('DELETE FROM transactions WHERE user_id=?', [targetId]);
+    await pdb.query('DELETE FROM users WHERE id=?', [targetId]);
 
-    // check ownership
-    if (requesterRole !== 'SuperAdmin' &&
-        target[0].parent_id !== requesterId)
-      return res.json({ success: false, msg: 'Permission denied' });
-
-    // ❌ block delete if user has downline
-    const [child] = await db.query(
-      'SELECT id FROM users WHERE parent_id=? LIMIT 1',
-      [userId]
-    );
-
-    if (child.length)
-      return res.json({ success: false, msg: 'User has downline' });
-
-    await db.query('DELETE FROM users WHERE id=?', [userId]);
-
-    res.json({ success: true });
+    res.json({ success: true, message: 'User deleted ✅' });
   } catch (e) {
     console.error(e);
     res.json({ success: false });
   }
 });
 
-// ================= DEPOSIT =================
-app.post('/api/deposit', async (req, res) => {
-  const { fromId, toId, amount } = req.body;
+// ================= TRANSFER =================
+app.post('/api/transfer-credits', async (req, res) => {
+  const { senderId, receiverId, amount } = req.body;
+  const conn = await pdb.getConnection();
 
   try {
-    const [from] = await db.query(
-      'SELECT balance FROM users WHERE id=?',
-      [fromId]
+    await conn.beginTransaction();
+
+    const [d] = await conn.query(
+      'UPDATE users SET balance=balance-? WHERE id=? AND balance>=?',
+      [amount, senderId, amount]
+    );
+    if (!d.affectedRows)
+      throw new Error('Insufficient balance');
+
+    await conn.query(
+      'UPDATE users SET balance=balance+? WHERE id=?',
+      [amount, receiverId]
     );
 
-    if (from[0].balance < amount)
-      return res.json({ success: false });
+    await conn.commit();
+    res.json({ success: true, message: 'Transfer successful ✅' });
+  } catch (e) {
+    await conn.rollback();
+    console.error(e);
+    res.json({ success: false });
+  } finally {
+    conn.release();
+  }
+});
 
-    await db.query('UPDATE users SET balance=balance-? WHERE id=?',
-      [amount, fromId]);
-
-    await db.query('UPDATE users SET balance=balance+? WHERE id=?',
-      [amount, toId]);
-
-    res.json({ success: true });
+// ================= HISTORY =================
+app.post('/api/user-history', async (req, res) => {
+  try {
+    const [r] = await pdb.query(
+      'SELECT * FROM transactions WHERE user_id=? ORDER BY created_at DESC',
+      [req.body.userId]
+    );
+    res.json({ success: true, data: r });
   } catch (e) {
     console.error(e);
     res.json({ success: false });
   }
 });
-
-// ================= WITHDRAW =================
-app.post('/api/withdraw', async (req, res) => {
-  const { fromId, toId, amount } = req.body;
-
-  try {
-    const [to] = await db.query(
-      'SELECT balance FROM users WHERE id=?',
-      [toId]
-    );
-
-    if (to[0].balance < amount)
-      return res.json({ success: false });
-
-    await db.query('UPDATE users SET balance=balance-? WHERE id=?',
-      [amount, toId]);
-
-    await db.query('UPDATE users SET balance=balance+? WHERE id=?',
-      [amount, fromId]);
-
-    res.json({ success: true });
-  } catch (e) {
-    console.error(e);
-    res.json({ success: false });
-  }
-});
-
-// ================= STATIC ROUTES =================
-app.get('/', (req, res) =>
-  res.sendFile(path.join(__dirname, 'public/index.html'))
-);
-
-app.get('/dashboard', (req, res) =>
-  res.sendFile(path.join(__dirname, 'public/dashboard.html'))
-);
 
 // ================= START SERVER =================
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () =>
-  console.log('Server running on port ' + PORT)
+  console.log(`🚀 SERVER LIVE @ ${PORT}`)
 );
